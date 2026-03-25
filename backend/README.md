@@ -1,166 +1,396 @@
 # NEXTBULL Backend
 
-Go matching engine + GBM market generator + WebSocket hub.
+This folder contains the Go backend for the trading terminal. It provides:
 
-## Quick Start
+- A real-time in-memory matching engine (price-time priority)
+- A synthetic market generator (GBM-based) that continuously places orders
+- HTTP APIs for manual order entry and historical candles
+- WebSocket streaming for order book, trades, stats, and portfolio updates
+
+This README is written for readers who are new to Docker and Go.
+
+## What You Are Running
+
+When the backend starts, four main parts run together:
+
+1. HTTP server on port 8080 by default
+2. WebSocket hub for real-time broadcasting to clients
+3. Matching engine loop (single goroutine)
+4. GBM generator that injects synthetic buy/sell limit orders
+
+All orders (from users and from the generator) are pushed into one shared channel and processed in sequence by the matcher.
+
+## Prerequisites
+
+You can run this backend in two ways:
+
+1. With Docker (recommended for beginners)
+2. Directly with Go on your machine
+
+### Option A: Docker prerequisites
+
+- Docker Engine (with Docker Compose plugin)
+- Verify installation:
 
 ```bash
-# Run locally
-cd backend
-GBM_S0=100 GBM_TICK_MS=10 go run ./cmd/server/
+docker --version
+docker compose version
+```
 
-# Run with Docker (from repo root)
+### Option B: Go prerequisites
+
+- Go 1.25.x (this repository uses Go 1.25.8 in `go.mod`)
+- Verify installation:
+
+```bash
+go version
+```
+
+## Quick Start (Docker, Recommended)
+
+Run from the repository root (not from the `backend` folder):
+
+```bash
 cp .env.example .env
-docker-compose up --build
+docker compose up --build backend
 ```
 
-Server starts on `:8080`.
+What this does:
 
----
+- Copies example environment variables to `.env`
+- Builds `backend/Dockerfile`
+- Starts the backend container and maps port 8080 to your machine
 
-## Architecture
+You should see a log line similar to:
 
-```
-inChan (buffered 1024)
-     │
-     ▼
-┌─────────────┐     trades/updates     ┌──────────┐     JSON     ┌─────────┐
-│  GBM Gen    │ ──────────────────────▶│  Matcher │ ──────────▶  │   Hub   │──▶ WS clients
-│  (goroutine)│                        │ (single  │              │         │
-└─────────────┘                        │  goroutine)             └─────────┘
-                                       └──────────┘
-HTTP handlers ──────────────────────────────▲
-(POST /orders, DELETE /orders/{id})         │ human orders via inChan
+```text
+NEXTBULL backend listening on :8080
 ```
 
-**Key rule:** The Matcher runs on a **single goroutine** — no mutexes on the hot path. All orders (human + GBM) go through `inChan`. Results fan out through the Hub.
+Stop it with `Ctrl+C`.
 
----
+## Quick Start (Local Go, No Docker)
 
-## File Map
+Run from inside the `backend` folder:
 
+```bash
+go mod download
+go run ./cmd/server/
 ```
+
+The server will start on `:8080` unless overridden by `BACKEND_PORT`.
+
+## Verify It Is Running
+
+From a new terminal:
+
+```bash
+curl -i http://localhost:8080/health
+```
+
+Expected response:
+
+- HTTP status `200 OK`
+- body: `{"status":"ok"}`
+
+## Architecture (Code-Verified)
+
+```text
+            +-----------------------------+
+            |  GBM Generator (goroutine) |
+            +--------------+--------------+
+                           |
+                           v
+      +-------------------------------------------+
+      | inChan (buffered channel, size = 1024)    |
+      +-------------------+-----------------------+
+                          |
+                          v
+            +-----------------------------+
+            | Matcher (single goroutine)  |
+            | owns OrderBook + matching   |
+            +-------------+---------------+
+                          |
+                          v
+            +-----------------------------+
+            | WebSocket Hub               |
+            | broadcasts pre-serialized   |
+            | JSON messages to clients    |
+            +-----------------------------+
+
+HTTP POST /orders and DELETE /orders/{id}
+also push into the same inChan.
+```
+
+Design note: the matcher is intentionally single-threaded for deterministic price-time priority and to avoid lock contention on the hot path.
+
+## Folder Layout
+
+```text
 backend/
-├── cmd/server/main.go              # Wires everything, starts goroutines
-└── internal/
-    ├── engine/
-    │   ├── types.go                # Order, Trade, PriceLevel, Event types
-    │   ├── orderbook.go            # BTree limit order book, O(1) cancel
-    │   ├── orderbook_test.go
-    │   ├── matcher.go              # Price-time matching (single goroutine)
-    │   ├── matcher_test.go
-    │   ├── candles.go              # 1s OHLCV ring buffer + session stats
-    │   └── portfolio.go            # Human P&L tracker (cash, holdings, PnL)
-    ├── generator/
-    │   └── gbm.go                  # GBM price process, ~100 orders/sec
-    ├── hub/
-    │   └── hub.go                  # WebSocket hub, per-client write pump
-    └── api/
-        └── handlers.go             # HTTP handlers + CORS middleware
+├── cmd/server/main.go
+├── internal/
+│   ├── api/handlers.go
+│   ├── engine/
+│   │   ├── candles.go
+│   │   ├── matcher.go
+│   │   ├── matcher_test.go
+│   │   ├── orderbook.go
+│   │   ├── orderbook_test.go
+│   │   ├── portfolio.go
+│   │   └── types.go
+│   ├── generator/gbm.go
+│   └── hub/hub.go
+├── Dockerfile
+├── go.mod
+└── go.sum
 ```
 
----
+## API Reference
 
-## HTTP API
+Base URL (local): `http://localhost:8080`
 
-| Method | Path | Body | Response |
-|--------|------|------|----------|
-| `POST` | `/orders` | `{"type":"limit","side":"buy","price":100,"size":10}` | `{"order_id":"o_...","status":"accepted"}` |
-| `POST` | `/orders` | `{"type":"market","side":"sell","size":5}` | `{"order_id":"o_...","status":"accepted"}` |
-| `DELETE` | `/orders/{id}` | — | `204 No Content` |
-| `GET` | `/candles?limit=300` | — | `{"candles":[...]}` |
-| `GET` | `/health` | — | `{"status":"ok"}` |
-| `GET` | `/ws` | — | WebSocket upgrade |
+### `POST /orders`
 
----
+Accepts a new human order.
 
-## WebSocket Messages
+Limit order example:
 
-All messages are JSON. Connect to `ws://localhost:8080/ws`.
+```bash
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -d '{"type":"limit","side":"buy","price":100.25,"size":2}'
+```
 
-**On connect — snapshot (once):**
+Market order example:
+
+```bash
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -d '{"type":"market","side":"sell","size":1.5}'
+```
+
+Response shape:
+
 ```json
 {
-  "type": "snapshot",
-  "book": { "bids": [[100.5, 20], ...], "asks": [[100.6, 15], ...], "ts": 1234 },
-  "candles": [{ "time": 1234, "open": 100, "high": 101, "low": 99, "close": 100.5, "volume": 500 }],
-  "portfolio": { ... },
-  "ts": 1234
+  "order_id": "o_<uuid>",
+  "status": "accepted"
 }
 ```
 
-**Every 100ms — order book:**
-```json
-{ "type": "book", "bids": [[price, size], ...], "asks": [[price, size], ...], "ts": 1234 }
-```
+Validation rules implemented in code:
 
-**On each trade:**
-```json
-{ "type": "trade", "id": "t_...", "price": 100.5, "size": 5, "side": "buy", "ts": 1234 }
-```
-`side` = aggressor/taker side (used for trade tape color: green=buy, red=sell)
+- `size` must be `> 0`
+- `type` must be `limit` or `market`
+- `side` must be `buy` or `sell`
+- for `limit`, `price` must be `> 0`
 
-**Every 1s — session stats:**
-```json
-{ "type": "stats", "session_open": 100, "session_high": 105, "session_low": 98, "last_price": 102, "session_volume": 12400, "change_pct": 2.0, "ts": 1234 }
-```
+### `DELETE /orders/{id}`
 
-**On human order fill (partial or full):**
-```json
-{ "type": "order_update", "order_id": "o_...", "status": "open|partial|filled|cancelled", "filled_size": 3, "remaining_size": 7, "price": 100, "side": "buy", "ts": 1234 }
-```
-
-**After human fill — portfolio:**
-```json
-{ "type": "portfolio", "cash": 99500, "holdings": 5, "avg_entry": 100, "unrealized_pnl": 10, "realized_pnl": 0, "equity": 100010, "ts": 1234 }
-```
-
-> **Time units:** `ts` fields are Unix **milliseconds**. Candle `time` field is Unix **seconds** (TradingView requirement).
-
----
-
-## Order Book Design
-
-- **BTree** (`github.com/google/btree` v1.1.3) — one tree for bids (descending), one for asks (ascending)
-- **Best bid** = highest price = `bids.Min()`
-- **Best ask** = lowest price = `asks.Min()`
-- **O(1) cancel** via `orderIndex` map (`orderID → *LevelOrder`)
-- **FIFO within level** — doubly-linked list, new orders appended to tail, matched from head
-
-## GBM Generator
-
-Each tick (10ms by default):
-```
-S(t+dt) = S(t) × exp((μ - σ²/2)×dt + σ×√dt×Z)    where Z ~ N(0,1)
-```
-Emits 3–5 bid and 3–5 ask limit orders per tick, spread 0–0.5% around mid.
-
-Default params: `S0=100`, `μ=0`, `σ=0.02`, `tick=10ms` → ~70 orders/tick × 100 ticks/sec = ~7000 orders/sec flowing through the engine.
-
-## Portfolio Tracking
-
-The `Trade` struct carries `HumanInvolved` and `HumanIsBuyer` fields so the portfolio correctly updates whether the human was the **maker** (sitting in book) or the **taker** (incoming order). This matters because the incoming order `o` is always the system order when a human maker gets hit.
-
----
-
-## Running Tests
+Requests cancellation by order ID.
 
 ```bash
-cd backend
-go test ./...         # all tests
-go test ./internal/engine/... -v   # verbose engine tests
+curl -X DELETE http://localhost:8080/orders/o_your_order_id
 ```
 
-14 tests covering: order book (8) and matching engine (6).
+Response: `204 No Content`
 
----
+### `GET /candles?limit=300`
+
+Returns candle history (1-second candles).
+
+```bash
+curl http://localhost:8080/candles?limit=100
+```
+
+Notes:
+
+- default `limit` is 300
+- allowed range is 1 to 1000
+
+Response shape:
+
+```json
+{
+  "candles": [
+    {
+      "time": 1711372800,
+      "open": 100.1,
+      "high": 100.4,
+      "low": 99.9,
+      "close": 100.2,
+      "volume": 125.5
+    }
+  ]
+}
+```
+
+### `GET /health`
+
+Readiness endpoint used by Docker health checks.
+
+```bash
+curl http://localhost:8080/health
+```
+
+Returns:
+
+- `200` with `{"status":"ok"}` when ready
+- `503` with `not ready` during startup
+
+### `GET /ws`
+
+WebSocket endpoint for live stream.
+
+Local URL:
+
+```text
+ws://localhost:8080/ws
+```
+
+## WebSocket Message Types
+
+All WebSocket messages are JSON.
+
+### 1. `snapshot` (sent once on connect)
+
+Contains initial state:
+
+- `book`: top bids/asks
+- `candles`: recent candles (up to 300)
+- `portfolio`: human portfolio snapshot
+
+### 2. `book` (every 100ms)
+
+Order book depth update:
+
+```json
+{
+  "type": "book",
+  "bids": [[100.5, 10.0]],
+  "asks": [[100.6, 8.5]],
+  "ts": 1711372800123
+}
+```
+
+### 3. `trade` (on every executed trade)
+
+```json
+{
+  "type": "trade",
+  "id": "t_<uuid>",
+  "price": 100.5,
+  "size": 2,
+  "side": "buy",
+  "ts": 1711372800456
+}
+```
+
+`side` is aggressor (taker) side.
+
+### 4. `stats` (every 1 second)
+
+Session summary values (`session_open`, `session_high`, `session_low`, `last_price`, `session_volume`, `change_pct`, `ts`).
+
+### 5. `order_update` (human order lifecycle)
+
+Statuses used by the matcher:
+
+- `open`
+- `partial`
+- `filled`
+- `cancelled`
+
+### 6. `portfolio` (after human fills)
+
+Includes:
+
+- `cash`
+- `holdings`
+- `avg_entry`
+- `unrealized_pnl`
+- `realized_pnl`
+- `equity`
+
+Time fields:
+
+- most `ts` fields are Unix milliseconds
+- candle `time` is Unix seconds
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BACKEND_PORT` | `8080` | HTTP/WS listen port |
-| `GBM_S0` | `100.0` | Initial asset price |
-| `GBM_MU` | `0.0` | Drift (0 = fair market) |
-| `GBM_SIGMA` | `0.02` | Volatility |
-| `GBM_TICK_MS` | `10` | Generator tick interval (ms) |
+These backend variables are consumed by `cmd/server/main.go`:
+
+| Variable       | Default | Meaning                                 |
+| -------------- | ------- | --------------------------------------- |
+| `BACKEND_PORT` | `8080`  | HTTP/WS listen port                     |
+| `GBM_S0`       | `100.0` | Initial synthetic price                 |
+| `GBM_MU`       | `0.0`   | GBM drift                               |
+| `GBM_SIGMA`    | `0.02`  | GBM volatility                          |
+| `GBM_TICK_MS`  | `10`    | Generator tick interval in milliseconds |
+
+The repository root `.env.example` already includes these values.
+
+## Testing
+
+Run all backend tests:
+
+```bash
+cd backend
+go test ./...
+```
+
+Run only engine tests in verbose mode:
+
+```bash
+go test ./internal/engine/... -v
+```
+
+Current test files in this folder cover:
+
+- order book behaviors (best bid/ask, cancel, depth, FIFO)
+- matching behaviors (limit, market sweep, cancel, partial fill updates)
+
+## Docker Notes (Beginner-Friendly)
+
+`backend/Dockerfile` is multi-stage:
+
+1. Build stage uses `golang:1.25-alpine`
+2. Final runtime stage uses `gcr.io/distroless/static-debian12:nonroot`
+
+Why this is good practice:
+
+- smaller production image
+- fewer unnecessary tools in runtime container
+- non-root runtime user by default
+
+The project-level `compose.yaml` defines a `backend` service and reads environment variables from `.env`.
+
+## Troubleshooting
+
+### Port 8080 already in use
+
+Set a different host port mapping in `compose.yaml` or stop the process using 8080.
+
+### Health endpoint returns `503 not ready`
+
+Wait a moment and retry. The readiness flag is set during startup before normal serving.
+
+### `POST /orders` returns 400
+
+Check request JSON against validation rules (`type`, `side`, `size`, and `price` for limit orders).
+
+### No WebSocket updates seen
+
+- verify backend is running
+- verify client is connected to `ws://localhost:8080/ws`
+- check browser/network console for connection errors
+
+## Implementation Notes
+
+- The matching loop is single-goroutine by design (deterministic sequencing).
+- The generator may drop orders when the input channel is full (non-blocking send).
+- Slow WebSocket clients are disconnected when their outbound buffer fills.
+
+These behaviors are intentional and implemented in the current codebase.

@@ -1,2 +1,7 @@
 .worktrees/
 .env
+
+# Frontend planning docs — kept local to avoid biasing parallel UI teams
+docs/superpowers/
+.impeccable.md
+CLAUDE.md
