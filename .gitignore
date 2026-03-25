@@ -1,5 +1,6 @@
 .worktrees/
 .env
+.claude
 
 # Frontend planning docs — kept local to avoid biasing parallel UI teams
 docs/superpowers/
