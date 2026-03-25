@@ -1,106 +1,125 @@
-# Git Quick Reference — NEXTBULL Trading Terminal
-
-**Working directory:** `/home/jadon/Programming/open-soft/opensoft-trading-terminal/`
+# Git & GitHub Guide — NEXTBULL Trading Terminal
 
 ---
 
-## Project Structure
+## Repository Structure
 
 ```
 opensoft-trading-terminal/
-├── backend/         # Phase 1: Go matching engine + GBM + WebSocket
-├── frontend/        # Phase 2: Next.js trading terminal
-├── bots/            # Phase 3: Python market maker + alpha bot
-├── docs/superpowers/
-│   ├── specs/       # Design specifications
-│   └── plans/       # Implementation plans
-├── PS.md            # Competition problem statement
-├── plan.md          # Project roadmap
-└── compose.yaml     # Docker Compose
+├── backend/         # Go backend — matching engine, WebSocket, REST API (complete)
+├── ui/              # Your frontend lives here
+├── compose.yaml     # Docker Compose — runs the backend
+├── .env.example     # Environment variable template
+└── README.md        # Project overview
 ```
 
 ---
 
-## First-Time Setup
+## Getting Started
+
+### 1. Clone the repo
 
 ```bash
-# Configure Git
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
-
-# Initialize repository (if needed)
-cd /home/jadon/Programming/open-soft/opensoft-trading-terminal
-git init
-git add .
-git commit -m "chore: initial project structure"
-
-# Connect to GitHub (if needed)
-git remote add origin https://github.com/YOUR_USERNAME/opensoft-trading-terminal.git
-git push -u origin main
+git clone https://github.com/YOUR_ORG/opensoft-trading-terminal.git
+cd opensoft-trading-terminal
 ```
+
+### 2. Set up environment
+
+```bash
+cp .env.example .env
+```
+
+### 3. Start the backend
+
+```bash
+docker compose up --build
+```
+
+Backend is now running at `http://localhost:8080`. WebSocket at `ws://localhost:8080/ws`.
+
+### 4. Create your team branch
+
+```bash
+git checkout -b ui/team-alice
+```
+
+Build your frontend inside `ui/`.
+
+---
+
+## Branch Naming
+
+| Purpose | Pattern            | Example              |
+| ------- | ------------------ | -------------------- |
+| UI team | `ui/team-name`     | `ui/team-alice`      |
+| Bug fix | `fix/description`  | `fix/ws-reconnect`   |
+| Docs    | `docs/description` | `docs/api-examples`  |
 
 ---
 
 ## Daily Workflow
 
-### 1. Start work on a new task
+### Start of day — sync with main
 
 ```bash
 git checkout main
 git pull origin main
-git checkout -b phase1/task-N-description
+git checkout ui/your-team
+git merge main          # bring in any updates from main
 ```
 
-**Branch naming:**
-- `phase1/task-N-description` — Backend (e.g., `phase1/task-3-orderbook`)
-- `phase2/component-name` — Frontend (e.g., `phase2/candlestick-chart`)
-- `phase3/bot-name` — Bots (e.g., `phase3/market-maker`)
-- `fix/bug-description` — Bug fixes
-- `docs/what-changed` — Documentation
-
-### 2. Make changes and commit
+### Make changes and commit
 
 ```bash
-git status                           # See what changed
-git add .                            # Stage all changes
-git commit -m "feat(engine): implement order book"
+git status                          # see what changed
+git add ui/src/components/Chart.tsx # stage specific file
+git add ui/                         # or stage everything in ui/
+git commit -m "feat(ui): add candlestick chart"
 ```
 
-**Commit format:** `type(scope): description`
+### Push your work
+
+```bash
+git push -u origin ui/your-team     # first push
+git push                            # after that
+```
+
+### Open a Pull Request
+
+1. Go to the repo on GitHub
+2. Click **Compare & pull request** on your branch
+3. Write a short description of what you built
+4. Request a review if needed
+5. Merge when approved
+
+### After merging
+
+```bash
+git checkout main
+git pull origin main
+git branch -d ui/your-team          # clean up local branch
+```
+
+---
+
+## Commit Message Format
+
+```text
+type(scope): short description
+```
 
 **Types:** `feat`, `fix`, `test`, `docs`, `refactor`, `chore`
 
-**Scopes:** `engine`, `generator`, `hub`, `api`, `ui`, `bots`, `plan`, `spec`
+**Scope:** the area you changed — `ui`, `backend`, `api`, `docs`
 
 **Examples:**
-```
-feat(engine): implement BTree-based order book
-fix(hub): prevent slow clients from blocking broadcast
-test(matcher): add price-time priority test cases
-docs(plan): add Phase 2 tasks
-```
-
-### 3. Push to GitHub
 
 ```bash
-git push -u origin phase1/task-N-description   # First push
-git push                                        # Subsequent pushes
-```
-
-### 4. Open Pull Request (optional)
-
-1. Go to GitHub repository
-2. Click "Compare & pull request"
-3. Title: `Phase 1 Task 3: Implement BTree order book`
-4. Describe: what changed, which task, how to test
-5. Create PR
-
-### 5. After PR merges (or work is done)
-
-```bash
-git checkout main
-git pull origin main
-git branch -d phase1/task-N-description
+git commit -m "feat(ui): add order book with depth visualization"
+git commit -m "fix(ui): correct WebSocket reconnect on disconnect"
+git commit -m "feat(ui): animate price ticker flash on update"
+git commit -m "docs: update README with setup steps"
 ```
 
 ---
@@ -108,137 +127,132 @@ git branch -d phase1/task-N-description
 ## Essential Commands
 
 ```bash
-# Status & info
-git status              # What changed?
-git log --oneline       # Commit history
-git diff                # View uncommitted changes
+# Check state
+git status                  # what's changed?
+git log --oneline -10       # last 10 commits
+git diff                    # unstaged changes
+git diff --staged           # staged changes
 
 # Branches
-git branch              # List branches
-git checkout -b name    # Create & switch to new branch
-git checkout main       # Switch to main
+git branch                  # list local branches
+git branch -a               # list all branches including remote
+git checkout -b ui/my-team  # create and switch to new branch
+git checkout main           # switch to main
 
-# Staging & committing
-git add file.go         # Stage specific file
-git add .               # Stage everything
-git commit -m "msg"     # Commit with message
+# Staging and committing
+git add ui/src/App.tsx      # stage one file
+git add ui/                 # stage entire folder
+git add .                   # stage everything
+git commit -m "feat: ..."   # commit with message
 
 # Syncing
-git pull                # Pull latest from remote
-git push                # Push commits to remote
+git pull origin main        # pull latest main
+git push                    # push current branch
+git push -u origin ui/name  # push and set upstream (first time)
 
-# Undo changes
-git restore file.go     # Discard uncommitted changes to file
-git reset HEAD~1        # Undo last commit (keep changes)
-```
-
----
-
-## NEXTBULL-Specific Workflows
-
-### Testing before commit
-
-```bash
-# Backend
-cd backend && go test ./...
-
-# Frontend
-cd frontend && npm test && npm run lint
-
-# Bots
-cd bots && python -m pytest tests/
-```
-
-### Following the implementation plan
-
-Plan: `docs/superpowers/plans/2026-03-25-phase1-backend.md`
-
-Each task has checkboxes:
-```markdown
-- [ ] Step 1: Write the failing test
-- [ ] Step 2: Run test to verify it fails
-- [ ] Step 3: Write minimal implementation
-- [ ] Step 4: Run test to verify it passes
-- [ ] Step 5: Commit
-```
-
-After each step:
-```bash
-git add <files>
-git commit -m "feat(scope): complete step N of task M"
-```
-
-### Running the full stack
-
-```bash
-docker compose up --build
-
-# Access:
-# Backend:  http://localhost:8080
-# Frontend: http://localhost:3000
-# WebSocket: ws://localhost:8080/ws
+# Undo
+git restore ui/src/App.tsx  # discard uncommitted changes to a file
+git restore .               # discard ALL uncommitted changes ⚠️
+git reset HEAD~1            # undo last commit, keep changes staged
 ```
 
 ---
 
 ## Common Scenarios
 
-**Sync with latest main:**
+### Someone updated main while you were working
+
 ```bash
 git checkout main
 git pull origin main
-git checkout your-branch
+git checkout ui/your-team
 git merge main
+# fix any conflicts, then:
+git add .
+git commit -m "chore: merge latest main"
 ```
 
-**Discard all uncommitted changes:**
+### You committed to the wrong branch
+
 ```bash
-git restore .           # ⚠️ Cannot be undone!
+git log --oneline -3        # copy the commit hash you want to move
+git reset HEAD~1            # undo the commit, keep changes
+git checkout ui/correct-branch
+git add .
+git commit -m "feat: ..."   # re-commit on the right branch
 ```
 
-**Undo last commit (keep changes):**
+### You want to see what another team did
+
 ```bash
-git reset HEAD~1
+
+git fetch origin
+git log --oneline origin/ui/team-bob   # see their commits
+git diff main...origin/ui/team-bob     # diff vs main
 ```
 
-**See who changed a line:**
+### Merge conflict
+
 ```bash
-git blame path/to/file.go
+git merge main
+# Git marks conflicts in the file like this:
+# <<<<<<< HEAD
+# your code
+# =======
+# their code
+# >>>>>>> main
+
+# Open the file, decide what to keep, then:
+git add conflicted-file.tsx
+git commit -m "chore: resolve merge conflict"
+```
+
+### Undo last commit (before pushing)
+
+```bash
+git reset HEAD~1            # keeps your changes, unstages them
+```
+
+### See who changed a line
+
+```bash
+git blame ui/src/App.tsx
 ```
 
 ---
 
-## Quick Reference
+## Testing Before Pushing
 
-### Daily routine
 ```bash
-1. git checkout main && git pull origin main
-2. git checkout -b phase1/task-N-description
-3. # Make changes
-4. git add . && git commit -m "feat(scope): description"
-5. git push -u origin phase1/task-N-description
+# Backend (already complete, but to verify it still runs):
+cd backend && go test ./...
+
+# Your frontend (example for common setups):
+cd ui && npm test
+cd ui && npm run build      # make sure it builds without errors
 ```
 
-### Before opening PR
-```bash
-git checkout main && git pull origin main
-git checkout your-branch && git merge main
-go test ./...       # or npm test, python -m pytest
-```
+---
 
-### After PR merges
+## Quick Cheatsheet
+
 ```bash
+# Morning
 git checkout main && git pull origin main
-git branch -d your-branch
+git checkout ui/your-team && git merge main
+
+# During work
+git add . && git commit -m "feat(ui): what you built"
+
+# End of day
+git push
 ```
 
 ---
 
 ## Need Help?
 
-- **Git docs:** https://git-scm.com/doc
-- **Interactive tutorial:** https://learngitbranching.js.org/
-- **Cheat sheet:** https://education.github.com/git-cheat-sheet-education.pdf
-- When stuck: `git status` shows current state, Google the error message
-
-**Remember:** The same 10 commands cover 95% of daily work. You've got this!
+- **Git docs:** [git-scm.com/doc](https://git-scm.com/doc)
+- **Interactive tutorial:** [learngitbranching.js.org](https://learngitbranching.js.org)
+- **GitHub docs:** [docs.github.com](https://docs.github.com)
+- When stuck: `git status` first, then Google the error message
