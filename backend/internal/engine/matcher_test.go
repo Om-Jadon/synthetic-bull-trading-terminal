@@ -106,6 +106,104 @@ func TestMatcher_PartialFill_EmitsUpdate(t *testing.T) {
 	}
 }
 
+// --- Cancel metadata ---
+
+func TestMatcher_CancelOrder_PreservesOriginalMetadata(t *testing.T) {
+	m := NewMatcher()
+	m.Process(newOrder("bid1", TypeLimit, Buy, 99.0, 10.0, "human"))
+	cancel := &Order{ID: "bid1", Type: TypeCancel}
+	_, updates := m.Process(cancel)
+	if len(updates) != 1 {
+		t.Fatalf("expected 1 cancel update, got %d", len(updates))
+	}
+	if updates[0].Price != 99.0 {
+		t.Fatalf("expected cancel update Price 99.0, got %f", updates[0].Price)
+	}
+	if updates[0].Side != Buy {
+		t.Fatalf("expected cancel update Side buy, got %s", updates[0].Side)
+	}
+}
+
+func TestMatcher_CancelSystemOrder_DoesNotRemoveFromBook(t *testing.T) {
+	m := NewMatcher()
+	m.Process(newOrder("sys_1", TypeLimit, Sell, 100.0, 5.0, "system"))
+	if m.ob.BestAsk() == nil {
+		t.Fatal("system ask should be in book before cancel attempt")
+	}
+	cancel := &Order{ID: "sys_1", Type: TypeCancel}
+	_, updates := m.Process(cancel)
+	// System order must NOT be removed from the book
+	if m.ob.BestAsk() == nil {
+		t.Fatal("system order should NOT be cancellable via API")
+	}
+	if len(updates) != 0 {
+		t.Fatal("cancelling system order should emit no updates")
+	}
+}
+
+// --- Human maker lifecycle ---
+
+func TestMatcher_HumanMakerBid_FilledBySystemSell_EmitsFilledUpdate(t *testing.T) {
+	m := NewMatcher()
+	// Human places limit buy — rests as maker
+	m.Process(newOrder("h_bid", TypeLimit, Buy, 100.0, 5.0, "human"))
+	// System market sell fills the human maker
+	_, updates := m.Process(newOrder("sys_sell", TypeMarket, Sell, 0, 5.0, "system"))
+	filled := filterByStatus(updates, StatusFilled)
+	if len(filled) == 0 {
+		t.Fatal("expected filled order_update for human maker bid")
+	}
+	if filled[0].OrderID != "h_bid" {
+		t.Fatalf("expected update for h_bid, got %s", filled[0].OrderID)
+	}
+	if filled[0].FilledSize != 5.0 {
+		t.Fatalf("expected filled_size 5.0, got %f", filled[0].FilledSize)
+	}
+}
+
+func TestMatcher_HumanMakerAsk_FilledBySystemBuy_EmitsFilledUpdate(t *testing.T) {
+	m := NewMatcher()
+	// Human places limit sell — rests as maker
+	m.Process(newOrder("h_ask", TypeLimit, Sell, 100.0, 5.0, "human"))
+	// System market buy fills the human maker
+	_, updates := m.Process(newOrder("sys_buy", TypeMarket, Buy, 0, 5.0, "system"))
+	filled := filterByStatus(updates, StatusFilled)
+	if len(filled) == 0 {
+		t.Fatal("expected filled order_update for human maker ask")
+	}
+	if filled[0].OrderID != "h_ask" {
+		t.Fatalf("expected update for h_ask, got %s", filled[0].OrderID)
+	}
+}
+
+func TestMatcher_HumanMakerBid_PartialFill_EmitsPartialUpdate(t *testing.T) {
+	m := NewMatcher()
+	// Human limit buy for 10, rests as maker
+	m.Process(newOrder("h_bid", TypeLimit, Buy, 100.0, 10.0, "human"))
+	// System sells only 4 — partial fill of human maker
+	_, updates := m.Process(newOrder("sys_sell", TypeMarket, Sell, 0, 4.0, "system"))
+	partials := filterByStatus(updates, StatusPartial)
+	if len(partials) == 0 {
+		t.Fatal("expected partial order_update for human maker bid")
+	}
+	if partials[0].FilledSize != 4.0 {
+		t.Fatalf("expected filled_size 4.0, got %f", partials[0].FilledSize)
+	}
+	if partials[0].RemainingSize != 6.0 {
+		t.Fatalf("expected remaining_size 6.0, got %f", partials[0].RemainingSize)
+	}
+}
+
+func TestMatcher_HumanMakerFilled_RemovedFromFilledSizes(t *testing.T) {
+	m := NewMatcher()
+	m.Process(newOrder("h_bid", TypeLimit, Buy, 100.0, 5.0, "human"))
+	m.Process(newOrder("sys_sell", TypeMarket, Sell, 0, 5.0, "system"))
+	// After full fill, h_bid must be gone from filledSizes (no leak)
+	if _, exists := m.filledSizes["h_bid"]; exists {
+		t.Fatal("filledSizes should not retain fully-filled maker order")
+	}
+}
+
 func filterByStatus(updates []*OrderUpdate, status string) []*OrderUpdate {
 	var out []*OrderUpdate
 	for _, u := range updates {

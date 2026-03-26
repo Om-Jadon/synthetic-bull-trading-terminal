@@ -27,11 +27,18 @@ type OrderResponse struct {
 
 // Handlers holds dependencies for HTTP handlers.
 type Handlers struct {
-	inChan chan<- *engine.Order
+	inChan     chan<- *engine.Order
+	portfolio  portfolio
+	lastPrice  func() float64
 }
 
-func New(inChan chan<- *engine.Order) *Handlers {
-	return &Handlers{inChan: inChan}
+// portfolio is the subset of engine.Portfolio used by handlers.
+type portfolio interface {
+	State(lastPrice float64) map[string]any
+}
+
+func New(inChan chan<- *engine.Order, p portfolio, lastPrice func() float64) *Handlers {
+	return &Handlers{inChan: inChan, portfolio: p, lastPrice: lastPrice}
 }
 
 func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +76,21 @@ func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "side must be buy or sell", http.StatusBadRequest)
 		return
+	}
+
+	// Validate cash for limit buy orders. Short selling is permitted (PS line 96)
+	// so sell orders and market buy orders (no price) are not restricted.
+	if side == engine.Buy && typ == engine.TypeLimit {
+		snap := h.portfolio.State(h.lastPrice())
+		cash, ok := snap["cash"].(float64)
+		if !ok {
+			http.Error(w, "portfolio unavailable", http.StatusInternalServerError)
+			return
+		}
+		if req.Price*req.Size > cash {
+			http.Error(w, "insufficient cash", http.StatusBadRequest)
+			return
+		}
 	}
 
 	orderID := "o_" + uuid.NewString()

@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -60,8 +61,8 @@ func (g *Generator) tick(dt float64) {
 	g.t += dt
 
 	mid := g.price
-	numBids := 3 + rand.IntN(3) // 3–5 orders per side
-	numAsks := 3 + rand.IntN(3)
+	numBids := 1 + rand.IntN(2) // 1–2 orders per side → ~20–40 msgs/sec at default tick
+	numAsks := 1 + rand.IntN(2)
 
 	for i := 0; i < numBids; i++ {
 		offset := rand.Float64() * 0.005 // 0–0.5% below mid
@@ -92,7 +93,7 @@ func (g *Generator) emit(side engine.Side, price, size float64) {
 	select {
 	case g.inChan <- o:
 	default:
-		// inChan full — drop silently (engine overloaded, rare)
+		log.Printf("WARN: generator dropped order (channel full)")
 	}
 }
 

@@ -185,6 +185,9 @@ Validation rules implemented in code:
 - `type` must be `limit` or `market`
 - `side` must be `buy` or `sell`
 - for `limit`, `price` must be `> 0`
+- for `limit buy`, `price * size` must not exceed available cash — returns `400 {"error":"insufficient cash"}` otherwise
+
+Short selling is supported: you can place a sell order larger than your current holdings, or sell when you hold nothing. The portfolio will track a negative `holdings` value and compute P&L accordingly.
 
 ### `DELETE /orders/{id}`
 
@@ -302,12 +305,14 @@ Statuses used by the matcher:
 - `filled`
 - `cancelled`
 
+Emitted for both taker fills (immediate) and maker fills (when a resting human order is hit by a system taker). Cancel updates include the original `price` and `side` of the order.
+
 ### 6. `portfolio` (after human fills)
 
 Includes:
 
 - `cash`
-- `holdings`
+- `holdings` — positive for long positions, negative for short positions, zero when flat
 - `avg_entry`
 - `unrealized_pnl`
 - `realized_pnl`
@@ -328,7 +333,7 @@ These backend variables are consumed by `cmd/server/main.go`:
 | `GBM_S0`       | `100.0` | Initial synthetic price                 |
 | `GBM_MU`       | `0.0`   | GBM drift                               |
 | `GBM_SIGMA`    | `0.02`  | GBM volatility                          |
-| `GBM_TICK_MS`  | `10`    | Generator tick interval in milliseconds |
+| `GBM_TICK_MS`  | `50`    | Generator tick interval in milliseconds |
 
 The repository root `.env.example` already includes these values.
 
@@ -350,7 +355,9 @@ go test ./internal/engine/... -v
 Current test files in this folder cover:
 
 - order book behaviors (best bid/ask, cancel, depth, FIFO)
-- matching behaviors (limit, market sweep, cancel, partial fill updates)
+- matching behaviors (limit, market sweep, cancel, partial fill updates, maker lifecycle, cancel ownership)
+- portfolio behaviors (long/short positions, P&L, position reversals, equity)
+- API handlers (cash validation, short selling)
 
 ## Docker Notes (Beginner-Friendly)
 
@@ -379,7 +386,7 @@ Wait a moment and retry. The readiness flag is set during startup before normal 
 
 ### `POST /orders` returns 400
 
-Check request JSON against validation rules (`type`, `side`, `size`, and `price` for limit orders).
+Check request JSON against validation rules (`type`, `side`, `size`, and `price` for limit orders). For limit buy orders, also verify `price * size` does not exceed your available cash.
 
 ### No WebSocket updates seen
 

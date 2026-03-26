@@ -23,7 +23,7 @@ func main() {
 		S0:     envFloat("GBM_S0", 100.0),
 		Mu:     envFloat("GBM_MU", 0.0),
 		Sigma:  envFloat("GBM_SIGMA", 0.02),
-		TickMs: envInt("GBM_TICK_MS", 10),
+		TickMs: envInt("GBM_TICK_MS", 50),
 	}
 	port := envStr("BACKEND_PORT", "8080")
 
@@ -39,7 +39,7 @@ func main() {
 
 	var ready atomic.Bool
 
-	handlers := api.New(inChan)
+	handlers := api.New(inChan, portfolio, func() float64 { return candleStore.Stats().LastPrice })
 
 	// Snapshot function — called on each new WS connection
 	snapshotFn := func() []byte {
@@ -128,6 +128,9 @@ func main() {
 				}
 
 			case <-bookTicker.C:
+				if purged := matcher.PurgeStaleHumanOrders(30 * time.Minute); purged > 0 {
+					log.Printf("purged %d stale human orders (no fill/cancel in 30min)", purged)
+				}
 				bids, asks := matcher.Depth(20)
 				msg, _ := json.Marshal(map[string]any{
 					"type": "book",

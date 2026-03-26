@@ -1,22 +1,27 @@
 package engine
 
 import (
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 // Matcher owns the order book and runs matching logic.
-// Must be called from a single goroutine only.
+// Process and PurgeStaleHumanOrders must be called from a single goroutine.
+// Depth is safe to call concurrently (e.g. from an HTTP snapshot handler).
 type Matcher struct {
+	mu          sync.RWMutex
 	ob          *OrderBook
-	filledSizes map[string]float64 // tracks total filled per human order ID
+	filledSizes map[string]float64 // tracks cumulative filled size per human order ID
+	humanOrders map[string]*Order  // original order details for cancel metadata and maker updates
 }
 
 func NewMatcher() *Matcher {
 	return &Matcher{
 		ob:          NewOrderBook(),
 		filledSizes: make(map[string]float64),
+		humanOrders: make(map[string]*Order),
 	}
 }
 
@@ -24,6 +29,8 @@ func NewMatcher() *Matcher {
 // Returns trades executed and order updates for human orders.
 // MUST be called from a single goroutine.
 func (m *Matcher) Process(o *Order) ([]*Trade, []*OrderUpdate) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	switch o.Type {
 	case TypeCancel:
 		return m.handleCancel(o)
@@ -36,20 +43,27 @@ func (m *Matcher) Process(o *Order) ([]*Trade, []*OrderUpdate) {
 }
 
 func (m *Matcher) handleCancel(o *Order) ([]*Trade, []*OrderUpdate) {
-	// Check before cancel — filledSizes is initialized for all human orders
+	// Ownership check BEFORE touching the book — system orders are never in
+	// filledSizes so this prevents cancelling non-human orders.
 	filled, isHumanOrder := m.filledSizes[o.ID]
-	ok := m.ob.Cancel(o.ID)
-	if !ok || !isHumanOrder {
+	if !isHumanOrder {
 		return nil, nil
 	}
+	orig := m.humanOrders[o.ID]
+	ok := m.ob.Cancel(o.ID)
 	delete(m.filledSizes, o.ID)
+	delete(m.humanOrders, o.ID)
+	if !ok {
+		// Order was already fully filled (removed from book) — no update needed.
+		return nil, nil
+	}
 	return nil, []*OrderUpdate{{
 		OrderID:       o.ID,
 		Status:        StatusCancelled,
 		FilledSize:    filled,
 		RemainingSize: 0,
-		Price:         o.Price,
-		Side:          o.Side,
+		Price:         orig.Price,
+		Side:          orig.Side,
 		Ts:            nowMs(),
 	}}
 }
@@ -60,7 +74,8 @@ func (m *Matcher) handleLimit(o *Order) ([]*Trade, []*OrderUpdate) {
 	isHuman := o.UserID == "human"
 
 	if isHuman {
-		m.filledSizes[o.ID] = 0 // initialize so cancel can detect human orders
+		m.filledSizes[o.ID] = 0
+		m.humanOrders[o.ID] = o
 		updates = append(updates, &OrderUpdate{
 			OrderID:       o.ID,
 			Status:        StatusOpen,
@@ -82,7 +97,9 @@ func (m *Matcher) handleLimit(o *Order) ([]*Trade, []*OrderUpdate) {
 	if o.Remaining > 0 {
 		m.ob.AddOrder(o)
 	} else if isHuman {
+		// Fully filled as taker — clean up tracking
 		delete(m.filledSizes, o.ID)
+		delete(m.humanOrders, o.ID)
 	}
 	return trades, updates
 }
@@ -96,7 +113,10 @@ func (m *Matcher) handleMarket(o *Order) ([]*Trade, []*OrderUpdate) {
 	} else {
 		trades, updates = m.matchAgainstBids(o, trades, updates, isHuman)
 	}
-	// Market orders don't rest — discard remainder
+	// Market orders never rest — clean up any tracking entries
+	if isHuman {
+		delete(m.filledSizes, o.ID)
+	}
 	return trades, updates
 }
 
@@ -157,6 +177,9 @@ func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUp
 					Side:          o.Side,
 					Ts:            nowMs(),
 				})
+			}
+			if makerIsHuman {
+				updates = append(updates, m.emitMakerUpdate(maker.ID, fillSize))
 			}
 			if o.Remaining <= 0 {
 				break
@@ -222,6 +245,9 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 					Ts:            nowMs(),
 				})
 			}
+			if makerIsHuman {
+				updates = append(updates, m.emitMakerUpdate(maker.ID, fillSize))
+			}
 			if o.Remaining <= 0 {
 				break
 			}
@@ -230,9 +256,53 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 	return trades, updates
 }
 
-// Depth delegates to the order book for snapshot broadcast.
+// emitMakerUpdate builds an OrderUpdate for a human maker order being filled.
+// Cleans up tracking state when the maker order is fully filled.
+func (m *Matcher) emitMakerUpdate(makerID string, fillSize float64) *OrderUpdate {
+	m.filledSizes[makerID] += fillSize
+	filled := m.filledSizes[makerID]
+	orig := m.humanOrders[makerID]
+	remaining := orig.Size - filled
+	status := StatusPartial
+	if remaining <= 0 {
+		status = StatusFilled
+		delete(m.filledSizes, makerID)
+		delete(m.humanOrders, makerID)
+	}
+	return &OrderUpdate{
+		OrderID:       makerID,
+		Status:        status,
+		FilledSize:    filled,
+		RemainingSize: maxF(0, remaining),
+		Price:         orig.Price,
+		Side:          orig.Side,
+		Ts:            nowMs(),
+	}
+}
+
+// Depth returns the top-N price levels. Safe to call concurrently with Process.
 func (m *Matcher) Depth(n int) (bids, asks [][2]float64) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.ob.Depth(n)
+}
+
+// PurgeStaleHumanOrders cancels and removes tracking for resting human orders
+// older than maxAge. Call periodically from the matching goroutine.
+func (m *Matcher) PurgeStaleHumanOrders(maxAge time.Duration) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	cutoff := time.Now().Add(-maxAge)
+	purged := 0
+	for id, o := range m.humanOrders {
+		if o.CreatedAt.Before(cutoff) {
+			m.ob.Cancel(id)
+			delete(m.filledSizes, id)
+			delete(m.humanOrders, id)
+			purged++
+		}
+	}
+	return purged
 }
 
 func nowMs() int64 {
