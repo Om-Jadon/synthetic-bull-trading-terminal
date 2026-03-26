@@ -2,6 +2,20 @@
 .env
 .claude
 
+# OS/editor noise
+.DS_Store
+*.log
+*.tmp
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Backend build/test artifacts
+backend/server
+backend/*.test
+backend/coverage.out
+
 # Frontend planning docs — kept local to avoid biasing parallel UI teams
 docs/superpowers/
 .impeccable.md
