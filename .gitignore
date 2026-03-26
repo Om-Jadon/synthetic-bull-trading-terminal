@@ -1,8 +1,59 @@
-.worktrees/
+# ── Environment & secrets ──────────────────────────────────────────────────────
 .env
-.claude
+.env.*
+!.env.example
 
-# Frontend planning docs — kept local to avoid biasing parallel UI teams
-docs/superpowers/
+# ── Node / Next.js ─────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+.npm/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+next-env.d.ts
+*.tsbuildinfo
+
+# ── Go ─────────────────────────────────────────────────────────────────────────
+backend/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ── OS ─────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+
+# ── Editor / IDE ───────────────────────────────────────────────────────────────
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# ── Docker ─────────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ── Claude / tooling (local only) ──────────────────────────────────────────────
+.claude
+.worktrees/
 .impeccable.md
 CLAUDE.md
+
+# ── Frontend planning docs (kept local) ────────────────────────────────────────
+docs/superpowers/
