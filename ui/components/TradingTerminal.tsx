@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import CandlestickChart from "@/components/Chart/CandlestickChart";
+import CommandPalette from "@/components/CommandPalette/CommandPalette";
 import AssetBar from "@/components/Header/AssetBar";
+import * as sounds from "@/lib/sound";
 import OrderBook, { type BookMode } from "@/components/OrderBook/OrderBook";
 import OrderEntry from "@/components/OrderEntry/OrderEntry";
 import PortfolioWidget from "@/components/Portfolio/PortfolioWidget";
@@ -12,15 +14,54 @@ import { useTradingStore } from "@/store/tradingStore";
 
 export default function TradingTerminal() {
     const [mode, setMode] = useState<BookMode>("tab");
+    const [paletteOpen, setPaletteOpen] = useState(false);
     const priceRef = useRef<HTMLSpanElement | null>(null);
     const priceFlashRef = useRef<HTMLDivElement | null>(null);
     const directionRef = useRef<HTMLSpanElement | null>(null);
 
     useWebSocket({ priceRef, priceFlashRef, directionRef });
 
+    // Bootstrap AudioContext on first user gesture (browser autoplay policy)
+    useEffect(() => {
+        const init = () => {
+            sounds.initAudio();
+            sounds.setMuted(sounds.loadMutePreference());
+            window.removeEventListener("pointerdown", init);
+            window.removeEventListener("keydown", init);
+        };
+        window.addEventListener("pointerdown", init, { once: true });
+        window.addEventListener("keydown", init, { once: true });
+        return () => {
+            window.removeEventListener("pointerdown", init);
+            window.removeEventListener("keydown", init);
+        };
+    }, []);
+
+    // Global Cmd+K / Ctrl+K to open the command palette
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+                e.preventDefault();
+                setPaletteOpen((prev) => !prev);
+            }
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, []);
+
     const portfolio = useTradingStore((state) => state.portfolio);
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const pnl = portfolio ? portfolio.unrealized_pnl + portfolio.realized_pnl : null;
+
+    // "MARKET OPEN" flash — shows once per connect, fades after 1.8s
+    const [marketFlash, setMarketFlash] = useState<"hidden" | "visible" | "fading">("hidden");
+    useEffect(() => {
+        if (!snapshotReady) return;
+        setMarketFlash("visible");
+        const t1 = setTimeout(() => setMarketFlash("fading"), 1800);
+        const t2 = setTimeout(() => setMarketFlash("hidden"), 2400);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+    }, [snapshotReady]);
 
     const positionLabel = (h: number) => (h > 0 ? "LONG" : h < 0 ? "SHORT" : "FLAT");
 
@@ -35,6 +76,24 @@ export default function TradingTerminal() {
         <div
             className={`terminal-shell flex h-dvh min-h-screen flex-col overflow-hidden bg-bg-primary text-text-primary ${snapshotReady ? "is-live" : ""}`}
         >
+            <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+            {/* Boot sequence — "MARKET OPEN" flash on first connect */}
+            {marketFlash !== "hidden" && (
+                <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
+                    <div
+                        aria-live="polite"
+                        className={`notice-enter border border-border bg-bg-panel px-5 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition-opacity duration-500 ${
+                            marketFlash === "fading" ? "opacity-0" : "opacity-100"
+                        }`}
+                    >
+                        <span className="text-text-muted">Market Open · </span>
+                        <span className="text-brand">NEXTBULL</span>
+                        <span className="text-text-muted"> · Live</span>
+                    </div>
+                </div>
+            )}
+
             <AssetBar priceRef={priceRef} priceFlashRef={priceFlashRef} directionRef={directionRef} />
 
             <main

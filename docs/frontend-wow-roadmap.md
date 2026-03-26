@@ -37,6 +37,11 @@ These were identified as gaps but have since been implemented. Do not re-impleme
 | LONG/SHORT/FLAT position label | ✅ Done | Status strip and portfolio widget, derived from holdings sign |
 | Inline order error feedback | ✅ Done | `role="alert"` error below submit button |
 | Accessibility (labels, aria-live, touch targets) | ✅ Done | Full audit pass completed |
+| Command Palette (Cmd+K) | ✅ Done | `CommandPalette.tsx` — buy/sell/cancel/help, parse preview, arrow nav, Tab fill, aria-activedescendant |
+| Hotkey Onboarding Hint | ✅ Done | Fades in 4s on `snapshotReady`, one-shot per session, `aria-hidden` |
+| Sound Design | ✅ Done | `lib/sound.ts` — Web Audio API, tick/fill/cancel tones, mute toggle in AssetBar, localStorage persistence |
+| Boot Sequence | ✅ Done | AssetBar connecting state + stats-reveal on ready + "MARKET OPEN · NEXTBULL · LIVE" flash overlay |
+| Keyboard Shortcuts | ✅ Done | B/S/M/L/1-4/Enter/Shift+C/Escape wired to OrderEntry; amber ring flash on each keypress |
 
 ---
 
@@ -46,11 +51,11 @@ These features are either table stakes (judges notice their absence) or guarante
 
 ---
 
-### 1. Command Palette — Cmd+K (3 hours) ⚡ HIGHEST SINGLE ROI
+### 1. Command Palette — Cmd+K ✅ DONE
 
 **Why it matters:** No other student project will have this. Judges recognize Linear/Vercel/Raycast UX patterns. A command palette signals production-quality engineering thinking more than any other single feature.
 
-**Current state:** ❌ Not implemented
+**Current state:** ✅ Shipped — `components/CommandPalette/CommandPalette.tsx`
 
 **Target behavior:**
 
@@ -92,11 +97,11 @@ help                       → show command list
 
 ---
 
-### 2. Sound Design (30 minutes) 🔊
+### 2. Sound Design (30 minutes) 🔊 ✅ DONE
 
 **Why it matters:** Bloomberg terminals have sound. Hyperliquid has sound. It makes the market feel *alive* in a way no visual element can. Nobody else will build this. It costs 30 minutes.
 
-**Current state:** ❌ Silent
+**Current state:** ✅ Shipped — `lib/sound.ts` — Web Audio API, tick/fill/cancel tones, mute toggle in AssetBar, localStorage persistence
 
 **Target sounds (Web Audio API — no external files needed):**
 
@@ -133,11 +138,11 @@ export const sounds = { tick: (vol: number) => ..., fill: () => ..., cancel: () 
 
 ---
 
-### 3. Theatrical Boot Sequence (30 minutes) 🎬
+### 3. Theatrical Boot Sequence (30 minutes) 🎬 ✅ DONE
 
 **Why it matters:** First impressions are scored before any interaction. The panel stagger is good but lasts 2 seconds. A deliberate boot sequence creates a *moment* judges remember.
 
-**Current state:** ⚠️ Panels stagger in but header immediately shows live data
+**Current state:** ✅ Shipped — AssetBar "Connecting to market" state + stats-reveal animation on ready + "MARKET OPEN · NEXTBULL · LIVE" flash overlay
 
 **Target sequence:**
 
@@ -157,11 +162,11 @@ export const sounds = { tick: (vol: number) => ..., fill: () => ..., cancel: () 
 
 ---
 
-### 4. Keyboard-First Workflow (90 minutes) ⚡
+### 4. Keyboard-First Workflow (90 minutes) ⚡ ✅ DONE
 
 **Why it matters:** Professional traders never touch the mouse during live trading. Judges will test this.
 
-**Current state:** ❌ Zero keyboard shortcuts
+**Current state:** ✅ Shipped — B/S/M/L/1–4/Enter/Shift+C/Escape wired to `OrderEntry.tsx`; amber ring flash feedback on each keypress
 
 **Target behavior:**
 
@@ -188,11 +193,11 @@ Cmd+K      → Command palette (see #1)
 
 ---
 
-### 5. Hotkey Onboarding Hint (20 minutes) 💡
+### 5. Hotkey Onboarding Hint ✅ DONE
 
 **Why it matters:** Keyboard shortcuts that judges don't discover are worth zero.
 
-**Current state:** ❌ No discoverability mechanism
+**Current state:** ✅ Shipped — inline in `OrderEntry.tsx`, fades after 4s
 
 **Target behavior:** On first `snapshotReady`, fade in a hint strip for 4 seconds then fade out:
 
@@ -518,18 +523,17 @@ Press `?` to show all hotkeys. The onboarding hint (#5) handles discovery; this 
 
 ## Implementation Priority Roadmap
 
-### Sprint 1 — Sensory + Theatrical (~5 hours)
-**Target:** Judges are stopped in their tracks within 60 seconds
+### Sprint 1 — Sensory + Theatrical (~5 hours) ✅ COMPLETE
 
-| Feature | Time |
-|---------|------|
-| Command palette Cmd+K | 3h |
-| Sound design | 30m |
-| Boot sequence theater | 30m |
-| Hotkey onboarding hint | 20m |
-| Keyboard shortcuts | 90m |
+| Feature | Time | Status |
+| ------- | ---- | ------ |
+| Command palette Cmd+K | 3h | ✅ Done |
+| Hotkey onboarding hint | 20m | ✅ Done |
+| Sound design | 30m | ✅ Done |
+| Boot sequence theater | 30m | ✅ Done |
+| Keyboard shortcuts | 90m | ✅ Done |
 
-**Outcome:** Judge opens terminal → dramatic boot → hears market → presses Cmd+K → executes trade with voice command. **No other team will do any of this.**
+**Outcome:** Judge opens terminal → dramatic boot → hears market → presses Cmd+K → types `buy 2 at market` → order executes. **No other team will do any of this.**
 
 ---
 

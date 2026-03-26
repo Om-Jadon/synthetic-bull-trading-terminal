@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 
 type AssetBarProps = {
@@ -15,6 +18,19 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     const sessionHigh = useTradingStore((state) => state.sessionHigh);
     const sessionLow = useTradingStore((state) => state.sessionLow);
     const connectionStatus = useTradingStore((state) => state.connectionStatus);
+
+    const [muted, setMutedState] = useState(false);
+
+    // Load persisted mute preference after mount (localStorage is client-only)
+    useEffect(() => {
+        setMutedState(sounds.loadMutePreference());
+    }, []);
+
+    const toggleMute = () => {
+        const next = !muted;
+        sounds.setMuted(next);
+        setMutedState(next);
+    };
 
     const isUp = changePct >= 0;
     const statusTone =
@@ -54,33 +70,60 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                     </span>
                 </div>
 
-                {/* Center: session stats */}
-                <div className="hidden items-center gap-4 font-mono text-[11px] md:flex">
-                    <span className="text-text-muted">
-                        H{" "}
-                        <span className="text-text-primary">
-                            {snapshotReady ? sessionHigh.toFixed(4) : "—"}
+                {/* Center: boot connecting state → live session stats */}
+                <div className="hidden items-center md:flex">
+                    {snapshotReady ? (
+                        // key forces remount on snapshotReady flip → re-triggers stats-reveal animation
+                        <div key="live" className="stats-reveal flex items-center gap-4 font-mono text-[11px]">
+                            <span className="text-text-muted">
+                                H{" "}
+                                <span className="text-text-primary">{sessionHigh.toFixed(4)}</span>
+                            </span>
+                            <span className="text-text-muted">
+                                L{" "}
+                                <span className="text-text-primary">{sessionLow.toFixed(4)}</span>
+                            </span>
+                            <span className="text-text-muted">
+                                Vol{" "}
+                                <span className="text-text-primary">{sessionVolume.toFixed(2)}</span>
+                            </span>
+                        </div>
+                    ) : (
+                        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                            <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-text-muted" />
+                            Connecting to market
                         </span>
-                    </span>
-                    <span className="text-text-muted">
-                        L{" "}
-                        <span className="text-text-primary">
-                            {snapshotReady ? sessionLow.toFixed(4) : "—"}
-                        </span>
-                    </span>
-                    <span className="text-text-muted">
-                        Vol{" "}
-                        <span className="text-text-primary">
-                            {snapshotReady ? sessionVolume.toFixed(2) : "—"}
-                        </span>
-                    </span>
+                    )}
                 </div>
 
-                {/* Right: status */}
+                {/* Right: mute toggle + status */}
                 <div className="flex items-center gap-2">
                     <span className="hidden rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-text-muted sm:inline-block">
                         Sim
                     </span>
+
+                    <button
+                        type="button"
+                        onClick={toggleMute}
+                        aria-label={muted ? "Unmute sounds" : "Mute sounds"}
+                        aria-pressed={muted}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary"
+                    >
+                        {muted ? (
+                            // Speaker with X — muted
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                                <path d="M1.5 3.5H3L5.5 1.5V9.5L3 7.5H1.5V3.5Z" fill="currentColor" />
+                                <path d="M8 3.5L10 5.5M10 3.5L8 5.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                            </svg>
+                        ) : (
+                            // Speaker with wave arc — unmuted
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                                <path d="M1.5 3.5H3L5.5 1.5V9.5L3 7.5H1.5V3.5Z" fill="currentColor" />
+                                <path d="M7.5 3C8.5 4 8.5 7 7.5 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                            </svg>
+                        )}
+                    </button>
+
                     <span
                         role="status"
                         aria-live="polite"

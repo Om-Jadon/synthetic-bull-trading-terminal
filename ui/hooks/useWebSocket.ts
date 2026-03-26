@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { createCandleAggregator } from "@/hooks/useCandles";
+import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 import type { SnapshotMsg, StatsMsg, WSMessage } from "@/types/ws";
 
@@ -94,6 +95,7 @@ export function useWebSocket({
             case "trade":
               store.addTrade(message);
               store.upsertCandle(aggregator.onTrade(message));
+              sounds.tick(message.size);
               break;
             case "stats":
               store.setStats(message);
@@ -102,9 +104,16 @@ export function useWebSocket({
             case "portfolio":
               store.setPortfolio(message);
               break;
-            case "order_update":
+            case "order_update": {
+              // Check before updating — knownOrderIds identifies human orders
+              const isHuman = store.knownOrderIds.has(message.order_id);
               store.onOrderUpdate(message);
+              if (isHuman) {
+                if (message.status === "filled") sounds.orderFill();
+                else if (message.status === "cancelled") sounds.orderCancel();
+              }
               break;
+            }
           }
         }
       });
@@ -136,7 +145,9 @@ export function useWebSocket({
       };
 
       socket.onclose = () => {
-        useTradingStore.getState().setConnectionStatus("closed");
+        const store = useTradingStore.getState();
+        store.setConnectionStatus("closed");
+        store.setSnapshotReady(false);
         if (!cancelled) {
           reconnectRef.current = window.setTimeout(connect, 1000);
         }

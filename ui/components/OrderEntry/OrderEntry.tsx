@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { placeOrder } from "@/lib/api";
+import { cancelOrder, placeOrder } from "@/lib/api";
+import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 import type { OrderRequest } from "@/types/ws";
 
@@ -14,11 +15,15 @@ type Toast = { id: number; message: string; ok: boolean };
 
 let toastSeq = 0;
 
+// Module-level constant — stable reference, no re-creation on render
+const QUICK_SIZES = ["0.50", "1.00", "2.00", "5.00"];
+
 export default function OrderEntry() {
     const trackOrderId = useTradingStore((state) => state.trackOrderId);
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const asks = useTradingStore((state) => state.asks);
     const bids = useTradingStore((state) => state.bids);
+    const openOrders = useTradingStore((state) => state.openOrders);
 
     const [type, setType] = useState<OrderRequest["type"]>("limit");
     const [side, setSide] = useState<OrderRequest["side"]>("buy");
@@ -27,10 +32,19 @@ export default function OrderEntry() {
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [toasts, setToasts] = useState<Toast[]>([]);
-    const quickSizes = ["0.50", "1.00", "2.00", "5.00"];
-    const timerRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+    const [showHint, setShowHint] = useState(false);
+    const [keyFlash, setKeyFlash] = useState<string | null>(null);
 
-    const pushToast = (message: string, ok: boolean) => {
+    const timerRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+    const hintShownRef = useRef(false);
+    const formRef = useRef<HTMLFormElement>(null);
+    const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Always-fresh refs — updated every render, no stale closure risk
+    const openOrdersRef = useRef(openOrders);
+    openOrdersRef.current = openOrders;
+
+    const pushToast = useCallback((message: string, ok: boolean) => {
         const id = ++toastSeq;
         setToasts((prev) => [...prev, { id, message, ok }]);
         const timer = setTimeout(() => {
@@ -38,14 +52,120 @@ export default function OrderEntry() {
             timerRefs.current.delete(id);
         }, 3000);
         timerRefs.current.set(id, timer);
-    };
+    }, []);
+
+    const pushToastRef = useRef(pushToast);
+    pushToastRef.current = pushToast;
+
+    // Brief ring flash on keyboard shortcut press
+    const flash = useCallback((key: string) => {
+        if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+        setKeyFlash(key);
+        flashTimerRef.current = setTimeout(() => setKeyFlash(null), 200);
+    }, []);
 
     useEffect(() => {
         const timers = timerRefs.current;
         return () => {
             timers.forEach((t) => clearTimeout(t));
+            if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
         };
     }, []);
+
+    // Show hotkey hint once, 4 seconds after snapshot arrives
+    useEffect(() => {
+        if (!snapshotReady || hintShownRef.current) return;
+        hintShownRef.current = true;
+        setShowHint(true);
+        const t = setTimeout(() => setShowHint(false), 4000);
+        return () => clearTimeout(t);
+    }, [snapshotReady]);
+
+    // ─── Keyboard shortcuts ───────────────────────────────────────────────────
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            // Never interfere with Cmd/Ctrl shortcuts (Cmd+K etc.)
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+            // Escape: always works — blur focused input, or reset form
+            if (e.key === "Escape") {
+                const active = document.activeElement;
+                if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+                    active.blur();
+                } else {
+                    setPrice("100");
+                    setSize("1");
+                    setErrorMsg(null);
+                }
+                return;
+            }
+
+            // All other shortcuts: only fire when not typing in an input
+            if (
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement
+            ) return;
+
+            const k = e.key.toLowerCase();
+            switch (k) {
+                case "b":
+                    e.preventDefault();
+                    setSide("buy");
+                    flash("buy");
+                    break;
+
+                case "s":
+                    e.preventDefault();
+                    setSide("sell");
+                    flash("sell");
+                    break;
+
+                case "m":
+                    e.preventDefault();
+                    setType("market");
+                    flash("market");
+                    break;
+
+                case "l":
+                    e.preventDefault();
+                    setType("limit");
+                    flash("limit");
+                    break;
+
+                case "1": case "2": case "3": case "4": {
+                    e.preventDefault();
+                    const idx = parseInt(k) - 1;
+                    setSize(QUICK_SIZES[idx]);
+                    flash(`size-${k}`);
+                    break;
+                }
+
+                case "enter":
+                    e.preventDefault();
+                    flash("submit");
+                    formRef.current?.requestSubmit();
+                    break;
+
+                case "c": {
+                    if (!e.shiftKey) break; // plain C — ignore
+                    e.preventDefault();
+                    const orders = [...openOrdersRef.current.values()];
+                    if (orders.length === 0) break;
+                    flash("cancel");
+                    void Promise.all(orders.map((o) => cancelOrder(o.order_id)));
+                    const n = orders.length;
+                    pushToastRef.current(
+                        `Cancelling ${n} order${n !== 1 ? "s" : ""}`,
+                        false,
+                    );
+                    break;
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [flash]);
 
     const submitOrder = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -61,6 +181,7 @@ export default function OrderEntry() {
 
             const response = await placeOrder(payload);
             trackOrderId(response.order_id);
+            sounds.orderSubmit();
             setErrorMsg(null);
             pushToast(`${side.toUpperCase()} accepted`, true);
         } catch (err) {
@@ -71,6 +192,10 @@ export default function OrderEntry() {
             setSubmitting(false);
         }
     };
+
+    // Reusable flash ring class — brief bull-teal ring on keyboard shortcut press
+    const ringClass = (key: string) =>
+        keyFlash === key ? "ring-1 ring-bull" : "";
 
     return (
         <div className="grid h-full grid-rows-[auto_1fr] gap-2">
@@ -83,10 +208,10 @@ export default function OrderEntry() {
                             type="button"
                             onClick={() => setType(item)}
                             aria-pressed={type === item}
-                            className={`order-chip h-11 rounded-[3px] border px-2 text-xs uppercase tracking-[0.08em] ${type === item
+                            className={`order-chip h-11 rounded-[3px] border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${type === item
                                 ? "border-border bg-bg-row text-text-primary"
                                 : "border-border text-text-muted"
-                                }`}
+                                } ${ringClass(item)}`}
                         >
                             {item}
                         </button>
@@ -100,19 +225,19 @@ export default function OrderEntry() {
                             type="button"
                             onClick={() => setSide(item)}
                             aria-pressed={side === item}
-                            className={`order-chip h-11 rounded-[3px] border px-2 text-xs uppercase tracking-[0.08em] ${side === item
+                            className={`order-chip h-11 rounded-[3px] border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${side === item
                                 ? item === "buy"
                                     ? "border-bull bg-bull-surface text-bull"
                                     : "border-bear bg-bear-surface text-bear"
                                 : "border-border text-text-muted"
-                                }`}
+                                } ${ringClass(item)}`}
                         >
                             {item}
                         </button>
                     ))}
                 </div>
 
-                <form className="space-y-2.5" onSubmit={submitOrder}>
+                <form ref={formRef} className="space-y-2.5" onSubmit={submitOrder}>
                     {type === "limit" && (
                         <label className="block text-[13px] text-text-muted">
                             Price
@@ -151,24 +276,50 @@ export default function OrderEntry() {
                     </label>
 
                     <div className="grid grid-cols-4 gap-1">
-                        {quickSizes.map((quick) => (
+                        {QUICK_SIZES.map((quick, i) => (
                             <button
                                 key={quick}
                                 type="button"
                                 onClick={() => setSize(quick)}
                                 aria-label={`Set size to ${quick}`}
-                                className="order-chip h-9 rounded-[3px] border border-border bg-bg-row px-1 font-mono text-[11px] text-text-muted"
+                                className={`order-chip h-9 rounded-[3px] border border-border bg-bg-row px-1 font-mono text-[11px] text-text-muted transition-shadow duration-150 ${ringClass(`size-${i + 1}`)}`}
                             >
                                 {quick}
                             </button>
                         ))}
                     </div>
 
+                    {showHint && (
+                        <div
+                            aria-hidden="true"
+                            className="notice-enter flex items-center justify-center gap-2 font-mono text-[10px] text-text-muted transition-opacity duration-500"
+                        >
+                            <span>
+                                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">⌘K</kbd>
+                            </span>
+                            <span className="text-border">·</span>
+                            <span>
+                                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">B</kbd>
+                                {" "}buy
+                            </span>
+                            <span className="text-border">·</span>
+                            <span>
+                                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">S</kbd>
+                                {" "}sell
+                            </span>
+                            <span className="text-border">·</span>
+                            <span>
+                                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">↵</kbd>
+                                {" "}submit
+                            </span>
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         disabled={submitting || !snapshotReady}
-                        className={`order-submit h-11 w-full rounded-[3px] font-semibold uppercase tracking-[0.08em] text-bg-primary ${side === "buy" ? "bg-bull" : "bg-bear"
-                            } disabled:cursor-not-allowed disabled:opacity-60`}
+                        className={`order-submit h-11 w-full rounded-[3px] font-semibold uppercase tracking-[0.08em] text-bg-primary transition-shadow duration-150 ${side === "buy" ? "bg-bull" : "bg-bear"
+                            } disabled:cursor-not-allowed disabled:opacity-60 ${ringClass("submit")}`}
                     >
                         {submitting ? "Sending" : snapshotReady ? `Place ${side}` : "Waiting"}
                     </button>
