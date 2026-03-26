@@ -8,550 +8,672 @@
 
 ## Executive Summary
 
-**Current Status:** ✅ Solid architectural foundation, 60fps performance, impeccable micro-animations
-**Gap Analysis:** Missing interactive features and advanced capabilities that separate student projects from production desks
-**Target:** Make judges ask "Wait, is this a real trading platform?"
+**Current Status:** ✅ Solid architectural foundation, 60fps performance, impeccable micro-animations, accessibility hardened, bug-free backend
+
+**Gap Analysis:** Missing the visceral, sensory, first-3-seconds impression that separates memorable terminals from functional ones. Judges score what they *feel*, not just what they count.
+
+**Target:** Make judges ask "Wait, is this a real trading platform?" — and then talk about it during deliberation.
 
 **Competition Scoring:**
+
 - Frontend & UX: **50%** ← WHERE THE COMPETITION IS WON
 - Backend & Architecture: 20%
 - Code Quality & Deployment: 20%
 - Presentation: 10%
 - Quant Bots (optional): 5% bonus
 
-**Strategy:** Focus on high-visibility, interactive features that demonstrate production-quality engineering without backend rewrites.
+**Strategy:** Two parallel tracks — (1) functional features that show trading knowledge, (2) sensory/theatrical features that create lasting impressions. Both matter equally.
 
 ---
 
-## TIER S: Critical Missing Features (Must Have)
+## Already Shipped ✅
 
-These are **table stakes** for a professional trading terminal. Judges familiar with Hyperliquid/Binance will notice their absence immediately.
+These were identified as gaps but have since been implemented. Do not re-implement.
 
-### 1. Keyboard-First Workflow (90 minutes) ⚡ HIGHEST ROI
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Market order price preview | ✅ Done | Shows "Est. fill ~$X.XXXX" from live best ask/bid |
+| Connection status badge | ✅ Done | AssetBar dot + `open/connecting/closed` with color |
+| LONG/SHORT/FLAT position label | ✅ Done | Status strip and portfolio widget, derived from holdings sign |
+| Inline order error feedback | ✅ Done | `role="alert"` error below submit button |
+| Accessibility (labels, aria-live, touch targets) | ✅ Done | Full audit pass completed |
+
+---
+
+## TIER S: Critical — Must Have
+
+These features are either table stakes (judges notice their absence) or guaranteed judge reactions (judges remember them). All of Tier S should ship before anything else.
+
+---
+
+### 1. Command Palette — Cmd+K (3 hours) ⚡ HIGHEST SINGLE ROI
+
+**Why it matters:** No other student project will have this. Judges recognize Linear/Vercel/Raycast UX patterns. A command palette signals production-quality engineering thinking more than any other single feature.
+
+**Current state:** ❌ Not implemented
+
+**Target behavior:**
+
+Press `Cmd+K` (or `Ctrl+K`) anywhere in the terminal — an overlay appears:
+
+```
+┌─────────────────────────────────────┐
+│ 🔍  Type a command...               │
+├─────────────────────────────────────┤
+│  buy 2 at market                    │
+│  sell 1.5 at 100.50                 │
+│  cancel all                         │
+│  timeframe 5m                       │
+│  help                               │
+└─────────────────────────────────────┘
+```
+
+Supported commands:
+
+```
+buy <size> [at <price>]    → place buy order (limit if price given, market otherwise)
+sell <size> [at <price>]   → place sell order
+cancel all                 → cancel all open orders
+cancel last                → cancel most recent open order
+timeframe <1s|5s|1m|5m>   → switch chart timeframe
+help                       → show command list
+```
+
+**Implementation:**
+
+- `CommandPalette.tsx` — modal overlay, `fixed inset-0`, backdrop blur, `role="dialog"`
+- Input with live fuzzy matching against command list
+- Parse typed command with simple regex on submit (no NLP needed)
+- Execute via existing store actions and `placeOrder()` / `cancelOrder()` API
+- `useEffect` on `keydown` at root level — open on `Cmd+K` / `Ctrl+K`, close on `Escape`
+- Style: dark panel, monospace input, command suggestions list below
+
+**Demo impact:** Judge presses `Cmd+K`, types "buy 2 at market", hits Enter → order executes. **"How did they build this?"** — guaranteed reaction.
+
+---
+
+### 2. Sound Design (30 minutes) 🔊
+
+**Why it matters:** Bloomberg terminals have sound. Hyperliquid has sound. It makes the market feel *alive* in a way no visual element can. Nobody else will build this. It costs 30 minutes.
+
+**Current state:** ❌ Silent
+
+**Target sounds (Web Audio API — no external files needed):**
+
+| Event | Sound |
+|-------|-------|
+| Trade in tape (small, <5) | Soft tick, low volume |
+| Trade in tape (medium, 5–20) | Slightly louder tick |
+| Trade in tape (large, >20) | Deeper click |
+| Order submitted | Clean UI confirm tone |
+| Order filled | Ascending two-note chime |
+| Order cancelled | Short descending tone |
+
+**Implementation:**
+
+```ts
+// lib/sound.ts — all sounds generated via Web Audio API, no files
+function createTick(ctx: AudioContext, freq = 880, vol = 0.05, dur = 0.03) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+}
+export const sounds = { tick: (vol: number) => ..., fill: () => ..., cancel: () => ... };
+```
+
+- `AudioContext` created lazily on first user interaction (browser autoplay policy)
+- Mute toggle button in AssetBar header — persisted to `localStorage`
+- Call `sounds.tick(sizeNormalized)` in `addTrade()` store action
+
+**Demo impact:** Terminal feels alive. Judges hear the market breathing. They will mention this when describing the demo to others.
+
+---
+
+### 3. Theatrical Boot Sequence (30 minutes) 🎬
+
+**Why it matters:** First impressions are scored before any interaction. The panel stagger is good but lasts 2 seconds. A deliberate boot sequence creates a *moment* judges remember.
+
+**Current state:** ⚠️ Panels stagger in but header immediately shows live data
+
+**Target sequence:**
+
+1. Terminal loads → header shows `CONNECTING TO MARKET...` with pulsing amber dot
+2. WebSocket connects, snapshot arrives → `snapshotReady` flips true
+3. Header transitions: connecting state dissolves, live price/stats slide in with a 200ms fade
+4. Panels stagger in as they do now (already implemented)
+5. Brief status flash: `MARKET OPEN · NEXTBULL · LIVE` for 1.5s then fades
+
+**Implementation:**
+
+- `AssetBar.tsx` — when `!snapshotReady`, replace center stats with `CONNECTING TO MARKET...` and pulsing brand dot
+- On `snapshotReady` flip: CSS transition on the stats row (`opacity`, `translateY(4px) → 0`)
+- `TradingTerminal.tsx` — after panels load, show a 1.5s status overlay using existing `notice-enter` animation
+
+**Demo impact:** The terminal "wakes up" like a real system initializing. Strong theatrical opening before judges interact with anything.
+
+---
+
+### 4. Keyboard-First Workflow (90 minutes) ⚡
 
 **Why it matters:** Professional traders never touch the mouse during live trading. Judges will test this.
 
 **Current state:** ❌ Zero keyboard shortcuts
+
 **Target behavior:**
+
 ```
 B          → Focus buy side
 S          → Focus sell side
 M          → Switch to market order
 L          → Switch to limit order
-1-9        → Quick size presets (1%, 5%, 10%, 25%, 50%, 75%, 100%, custom)
-Enter      → Submit order (with shift modifiers for side)
-Shift+C    → Cancel all orders
-Escape     → Clear/reset form
-Tab        → Cycle through price/size inputs
+1–4        → Quick size presets (maps to: 0.50, 1.00, 2.00, 5.00)
+Enter      → Submit order
+Shift+C    → Cancel all open orders
+Escape     → Clear/reset form, blur inputs
+Cmd+K      → Command palette (see #1)
 ```
 
-**Implementation:**
-- `OrderEntry.tsx` — Add `useEffect` with `keydown` listener
-- Focus management with `useRef` for input fields
-- Visual feedback: show pressed key in corner badge during demo (removable)
-- Toast notification: "Hotkey mode: B=Buy, S=Sell, Enter=Submit"
+> **Sizing note:** Keys `1–4` map to the existing fixed quick-size buttons. Do NOT introduce a portfolio-percentage sizing system via hotkeys — mixing two sizing models creates UX confusion.
 
-**Demo impact:** Judge presses 'B', '5' (50% capital), Enter → order submitted in <1 second. **This alone makes it feel pro.**
+**Implementation:**
+
+- `OrderEntry.tsx` — `useEffect` with `keydown` on `window`, guard against firing when input is focused
+- Focus management with `useRef` for price/size inputs
+
+**Demo impact:** Judge presses `B`, `2`, `Enter` → order submitted in <1 second. Feels pro immediately.
 
 ---
 
-### 2. Chart Timeframe Switcher (60 minutes) 📊
+### 5. Hotkey Onboarding Hint (20 minutes) 💡
+
+**Why it matters:** Keyboard shortcuts that judges don't discover are worth zero.
+
+**Current state:** ❌ No discoverability mechanism
+
+**Target behavior:** On first `snapshotReady`, fade in a hint strip for 4 seconds then fade out:
+
+```
+Cmd+K · B · S · Enter — keyboard trading active
+```
+
+**Implementation:**
+
+- `OrderEntry.tsx` — `useEffect` on `snapshotReady`, show/hide hint div with 4s timer
+- Reuses existing `notice-enter` animation class — no new CSS needed
+- `useRef` flag so it only shows once per session
+
+---
+
+### 6. Chart Timeframe Switcher (60 minutes) 📊
 
 **Why it matters:** Hardcoded 1s candles = demo project. Switchable timeframes = production system.
 
 **Current state:** ❌ Hardcoded `"Candles 1s"` in chart title
+
 **Target behavior:**
+
 ```
 [1s] [5s] [15s] [30s] [1m] [5m]
 ```
-Click switches candle aggregation, smooth transition, state persists in localStorage.
 
 **Implementation:**
-- `CandlestickChart.tsx` — Add timeframe selector UI above chart
-- `useTradingStore.ts` — Add candle aggregation logic (group trades by timeframe)
-- TradingView API: `series.setData()` with new timeframe data
-- Chart updates via `applyOptions({ timeScale: { timeVisible: true/false } })`
 
-**Data strategy:**
-- Frontend aggregation from 1s base candles (no backend changes)
-- Store last 1000 candles in Zustand
-- Aggregate on-demand when timeframe switches
-
-**Demo impact:** Judge clicks "5m" → chart redraws to 5-minute candles. Shows you understand real charting infrastructure.
+- `CandlestickChart.tsx` — Add timeframe selector row above chart title
+- `tradingStore.ts` — Add `chartTimeframe: number` (seconds) state
+- Aggregate base 1s candles from store by timeframe bucket on-demand — no backend changes
+- Call `series.setData(aggregatedCandles)` on timeframe change
 
 ---
 
-### 3. Fill Markers on Chart (45 minutes) 🎯
+### 7. Fill Markers on Chart (45 minutes) 🎯
 
-**Why it matters:** **Visual feedback loop** — the most satisfying part of trading UIs. Without this = feels disconnected.
+**Why it matters:** Visual feedback loop — the most satisfying part of trading UIs.
 
 **Current state:** ❌ Orders execute but leave no trace on chart
+
+**Target behavior:** Green ▲ for buy fills, red ▼ for sell fills, positioned at execution price.
+
+**Implementation:**
+
+- `tradingStore.ts` — Add `fills: FillMarker[]` slice; push on `order_update` with `status === "filled"`
+- `CandlestickChart.tsx` — Call `candleSeriesRef.current.setMarkers(fills)` when fills change
+
+> **v5 API note:** Use `series.setMarkers(markers: SeriesMarker[])` — NOT `createPriceLine()`. The latter draws a horizontal line across the whole chart. Shape: `"arrowUp"` / `"arrowDown"`.
+
+---
+
+### 8. Enhanced Trade Tape with Size Emphasis (75 minutes) 📈
+
+**Why it matters:** All trades looking equal weight misses a core trading insight — size matters.
+
+**Current state:** ⚠️ Basic tape, all trades look equal
+
+**Target size buckets:**
+
+- Small (<5): regular weight
+- Medium (5–20): `font-semibold`
+- Large (20–50): `font-bold` + brighter text
+- Block (>50): `font-bold` + thin amber left-border accent + subtle highlight
+
+**Hover:** Pause auto-scroll on `mouseenter` container, resume on `mouseleave`.
+
+**Implementation:** `TradesTable.tsx` — add size classification to `formattedRows` memo; CSS classes `trade-sm` through `trade-block` in `globals.css`.
+
+---
+
+### 9. Session Statistics + VWAP in AssetBar (30 minutes) 📊
+
+**Why it matters:** VWAP is the standard institutional metric. Every professional terminal shows it.
+
+**Current state:** ⚠️ H, L, Vol displayed; VWAP and trade count missing
+
+**Target:**
+
+```
+H 101.20 | L 99.80 | VWAP 100.22 | Vol 4,521.00 | Trades 1,245
+```
+
+**Implementation:**
+
+- `tradingStore.ts` — Add `vwapSumPV`, `vwapSumV`, `tradeCount`; increment in `addTrade()`
+- `AssetBar.tsx` — Derive `vwap = vwapSumPV / vwapSumV` in selector
+
+> **Critical:** Do NOT compute VWAP from `state.trades` array — capped at 50. VWAP requires a running accumulator from session start.
+
+---
+
+## TIER A: High-Impact Polish — Should Have
+
+---
+
+### 10. Order Book Pressure Animation (1 hour) 💥
+
+**Why it matters:** The difference between a static table and a living order book. Makes the market feel like it's breathing.
+
+**Current state:** ❌ Price levels appear/disappear silently
+
 **Target behavior:**
-- Green arrow ▲ for buy fills (positioned at execution price)
-- Red arrow ▼ for sell fills
-- Hover shows: "Buy 10.5 @ $100.25 | 14:32:18"
-- Fades out after 30 seconds (optional: keep all fills)
+
+- New price levels entering the book: slide in from the right with 80ms `translateX(8px) → 0` + `opacity 0 → 1`
+- Price levels with increasing size: brief brightness flash on the depth bar
+- Price levels disappearing: `opacity 1 → 0` over 100ms before DOM removal
 
 **Implementation:**
-- TradingView `createPriceLine()` or marker API
-- `OrderEntry.tsx` — On order_update with status=filled, push to chart
-- Store recent fills in Zustand slice: `fills: FillMarker[]`
-- Chart subscribes to fills, renders markers with fade-out animation
 
-**Data source:** WebSocket `order_update` messages with `status: "filled"`
+- `OrderRow.tsx` — Wrap in a keyed container; use CSS animation on mount
+- In `globals.css`: `.book-row-enter { animation: slide-in 80ms ... }` (reuse existing `slide-in` keyframe)
+- Track previous bids/asks in store to detect new/removed levels
 
-**Demo impact:** Judge places buy order → green arrow appears on chart at fill price. **Makes the system feel responsive and complete.**
+**Demo impact:** The order book breathes with market activity. Judges feel the market pressure without being told about it.
 
 ---
 
-### 4. Enhanced Trade Tape with Size Emphasis (75 minutes) 📈
+### 11. Real-Time Equity Curve (45 minutes) 📈
 
-**Why it matters:** Current tape is "price, size, time" with color. Professional tapes have **size stratification** and **visual hierarchy**.
+**Why it matters:** The "are you winning?" visual that every professional terminal has. Currently the portfolio shows a number — this shows the *story*.
 
-**Current state:** ✅ Basic tape, but all trades look same importance
-**Target upgrade:**
-- **Size buckets:**
-  - Small (<10): regular font weight
-  - Medium (10-50): font-weight: 600
-  - Large (50-200): font-weight: 700 + brightness boost
-  - Block (>200): font-weight: 800 + amber accent border
+**Current state:** ❌ No historical equity visualization
 
-- **Side emphasis:**
-  - Buy: green text for price
-  - Sell: red text for price
-  - Bold the size column for >50 size trades
-
-- **Hover interaction:**
-  - Pause auto-scroll when hovering over tape
-  - Show expanded info: "Aggressive buy | 15.3 @ 100.45 | 14:23:18.432"
-
-**Implementation:**
-- `TradesTable.tsx` — Add size classification logic
-- CSS classes: `trade-sm`, `trade-md`, `trade-lg`, `trade-block`
-- Add `tabIndex={0}` for hover detection
-- OnMouseEnter/Leave: toggle scroll pause
-
-**Visual example:**
-```
-┌─────────────────────┐
-│ Price    Size  Time │
-├─────────────────────┤
-│ 100.45   2.1   14:23│  ← Small (regular)
-│ 100.46  18.5   14:23│  ← Medium (bold)
-│ 100.47  92.3   14:24│  ← Large (bold + bright)
-│ 100.48 ███   14:24│  ← Block (amber border, maxed emphasis)
-```
-
-**Demo impact:** Large orders stand out visually. Judges can scan for "interesting" activity. Shows attention to information hierarchy.
-
----
-
-### 5. Session Statistics Strip in AssetBar (30 minutes) 📊
-
-**Why it matters:** Current AssetBar shows H/L/Vol but lacks **session context** and **VWAP**.
-
-**Current state:** ✅ High, Low, Volume displayed
-**Target upgrade:**
-- Add **VWAP** (Volume-Weighted Average Price) badge
-- Add **Session Return** ($X, +Y.YY%) since session start
-- Add **Trade Count** (# of trades in session)
-
-**Implementation:**
-- Backend already sends `session_volume`, `session_high`, `session_low`, `session_open`
-- Calculate VWAP: `sum(price * size) / sum(size)` from trade history
-- `AssetBar.tsx` — Add computed VWAP from `useTradingStore` candle/trade data
-- Show as badge: `VWAP $100.22`
-
-**Layout addition:**
-```
-NEXTBULL | BULL/USDC | $100.33▲ +1.33% | H 101.20 | L 99.80 | VWAP 100.22 | Vol 4,521 | Trades 1,245
-```
-
-**Demo impact:** Judges see you're tracking sophisticated session metrics. VWAP is a standard professional metric.
-
----
-
-## TIER A: High-Impact Polish (Should Have)
-
-These features elevate the terminal from "good" to "production-grade" but aren't dealbreakers.
-
-### 6. Order Slippage Preview for Market Orders (45 minutes) 💸
-
-**Why it matters:** Shows you understand **execution quality** — a core concern for real traders.
-
-**Current state:** Market orders submit blindly
 **Target behavior:**
-- When user selects "Market" and enters size:
-  - Calculate expected fill based on current order book depth
-  - Show estimated average price and slippage vs last price
-  - Display as: "Est. fill: $100.12 (0.08% slippage) across 3 levels"
+
+- Small line chart below the portfolio widget showing equity over the session
+- Starts flat at $100,000. Curves up or down as fills happen
+- Thin line, bull-colored when above start, bear-colored when below
+- No axes, no labels — just the curve itself
 
 **Implementation:**
-- `OrderEntry.tsx` — Read current `bids`/`asks` from Zustand
-- Calculate: walk through order book levels, sum up volume until size filled
-- Display below size input in muted text
-- Update in real-time as size changes (debounced 150ms)
 
-**Calculation logic:**
+- `tradingStore.ts` — Add `equityHistory: { time: number, value: number }[]`; push on each `portfolio` update
+- New `EquityCurve.tsx` — Use LightWeight Charts `LineSeries` on a tiny `height: 60px` chart, `autoSize: true`
+- No grid, no crosshair, no time scale — purely visual
+- Add below `PortfolioWidget` in the right column grid
+
+**Demo impact:** Judges see their P&L journey as a shape, not just a number. Immediately more compelling than a static value.
+
+---
+
+### 12. Buy/Sell Pressure Gauge (30 minutes) ⚖️
+
+**Why it matters:** Shows market microstructure thinking. Judges see you understand momentum, not just price.
+
+**Current state:** ❌ No direction bias indicator
+
+**Target behavior:** A horizontal bar near the spread row showing recent buy vs sell volume ratio:
+
+```
+◄══════════■══════►
+  Buy  63%    Sell 37%
+```
+
+Updates every second from last 50 trades. Animates smoothly as ratio shifts.
+
+**Implementation:**
+
+- `tradingStore.ts` — Derive buy/sell ratio from `state.trades` in a selector
+- `SpreadRow.tsx` or a new `PressureBar.tsx` below spread — CSS `scaleX` transition on the indicator bar
+- Reuses `--color-bull` / `--color-bear` tokens — no new colors needed
+
+---
+
+### 13. Chart Given Room to Breathe (20 minutes) 🖼️
+
+**Why it matters:** The chart is the hero of a trading terminal. Currently `clamp(240px, 42vh, 360px)` — too short. It feels cramped.
+
+**Current state:** ⚠️ Chart height capped at 360px
+
+**Target:** Push to `clamp(300px, 52vh, 480px)`. The chart should dominate the center column.
+
+**Implementation:** One-line change in `CandlestickChart.tsx` height clamp. Test that order book and status strip still fit without scrolling.
+
+---
+
+### 14. Tools Sidebar — Real Tools (2 hours) 🛠️
+
+**Why it matters:** Currently displays vertical "TOOLS" text with no function. Dead space that reads as a placeholder to any judge who looks at it.
+
+**Current state:** ❌ Decorative text only
+
+**Target tools (3 real, minimal):**
+
+```
+━   Horizontal line (draw support/resistance on chart)
+✕   Clear all drawings
+⛶   Toggle fullscreen chart mode
+```
+
+**Implementation:**
+
+- `ToolRail.tsx` — Replace text with 3 icon buttons, `flex-col gap-3`, tooltip on hover (`aria-label`)
+- Drawing: LightWeight Charts `createPriceLine({ price, color, lineWidth })` on click-drag on chart
+- Fullscreen: toggle a CSS class on the chart container that expands it via absolute positioning
+- `tradingStore.ts` — Add `activeTool: "line" | "none"`, `drawings: PriceLine[]`
+
+**Demo impact:** Turns 40px of dead space into a real feature. Judges who look at the sidebar see tools, not placeholder text.
+
+---
+
+### 15. Full Slippage Preview for Market Orders (45 minutes) 💸
+
+**Why it matters:** Shows you understand execution quality — walk the book, not just best price.
+
+**Current state:** ⚠️ Partial — shows best ask/bid only, no slippage calculation
+
+**Target:** "Est. fill: $100.12 avg (0.08% slippage) across 3 levels"
+
+**Implementation:** Walk order book levels for given size. Replace current simple preview in `OrderEntry.tsx`.
+
 ```ts
-function estimateMarketFill(side: 'buy' | 'sell', size: number, book: OrderBook) {
-    const levels = side === 'buy' ? book.asks : book.bids;
-    let remaining = size;
-    let totalCost = 0;
-    let levelsUsed = 0;
-
+function estimateMarketFill(side: "buy" | "sell", size: number, asks: [number,number][], bids: [number,number][], lastPrice: number) {
+    const levels = side === "buy" ? asks : bids;
+    let remaining = size, totalCost = 0, levelsUsed = 0;
     for (const [price, volume] of levels) {
-        const fillSize = Math.min(remaining, volume);
-        totalCost += price * fillSize;
-        remaining -= fillSize;
-        levelsUsed++;
+        const fill = Math.min(remaining, volume);
+        totalCost += price * fill; remaining -= fill; levelsUsed++;
         if (remaining <= 0) break;
     }
-
-    const avgPrice = totalCost / (size - remaining);
+    const filled = size - remaining;
+    if (filled === 0) return null;
+    const avgPrice = totalCost / filled;
     const slippage = Math.abs(avgPrice - lastPrice) / lastPrice * 100;
-    return { avgPrice, slippage, levelsUsed, wouldFillFully: remaining === 0 };
+    return { avgPrice, slippage, levelsUsed, partial: remaining > 0 };
 }
 ```
 
-**Demo impact:** Shows sophisticated understanding of market microstructure. Judges will notice this attention to detail.
-
 ---
 
-### 7. Trade History Panel with Performance Stats (120 minutes) 📊
+### 16. Order Size as % of Equity (30 minutes) 💰
 
-**Why it matters:** Current portfolio shows live state. Missing: **historical context** and **performance analytics**.
+**Why it matters:** Real traders think in risk units. Shows you understand position sizing.
 
-**Current state:** ❌ No trade history or performance breakdown
-**Target component:** New `TradeHistory.tsx` panel showing:
+**Current state:** ❌ No capital context on order form
 
-**Layout:**
-```
-┌─────────────────────────────────────────────┐
-│ Trade History                     [Export]  │
-├─────────────────────────────────────────────┤
-│ Time      Side  Size   Price    P&L         │
-│ 14:23:18  Buy   10.5   100.25   —           │
-│ 14:24:32  Sell  10.5   100.67   +$4.41      │
-│ 14:25:01  Buy   5.0    100.45   —           │
-├─────────────────────────────────────────────┤
-│ Session Stats                               │
-│ Total Trades: 12                            │
-│ Win Rate: 66.7% (4W / 2L)                   │
-│ Avg Win: +$12.34  Avg Loss: -$5.12          │
-│ Largest Win: +$28.90                        │
-│ Best Trade: Sell 50 @ 101.20 → +$28.90     │
-└─────────────────────────────────────────────┘
-```
-
-**Data source:**
-- Subscribe to `order_update` with `status: "filled"`
-- Store fills in Zustand: `tradeHistory: Fill[]`
-- Match buy/sell pairs to calculate realized P&L per trade
-
-**Implementation:**
-- New component in `components/Portfolio/TradeHistory.tsx`
-- Add to TradingTerminal layout (optional collapsible panel or modal)
-- Export button: `JSON.stringify(tradeHistory)` → download
-
-**Demo impact:** Shows you understand traders need performance analytics, not just live P&L. Demonstrates data persistence and state management.
-
----
-
-### 8. Bracket Order Support (TP/SL) (90 minutes) 🎯
-
-**Why it matters:** Risk management primitive. Shows you understand real trading workflows.
-
-**Current state:** ❌ Single orders only
-**Target behavior:**
-- Checkbox: "Bracket Order (TP/SL)"
-- When enabled, show two additional fields:
-  - Take Profit: +2% (target exit for profit)
-  - Stop Loss: -1% (exit to cut losses)
-- Submit sends primary order; on fill, auto-place TP and SL orders
-
-**Implementation:**
-- `OrderEntry.tsx` — Add bracket toggle + TP/SL inputs
-- On primary order fill (`order_update` status=filled), calculate TP/SL prices:
-  ```ts
-  if (bracketEnabled && primaryFilled) {
-      const tpPrice = fillPrice * (1 + tpPercent/100);
-      const slPrice = fillPrice * (1 - slPercent/100);
-      submitOrder({ type: 'limit', side: oppositeSide, price: tpPrice, size });
-      submitOrder({ type: 'limit', side: oppositeSide, price: slPrice, size });
-  }
-  ```
-- Mark orders as "bracket pair" for UI display/cancel coordination
-
-**Demo impact:** Advanced order type = professional terminal. Judges can test risk management workflow.
-
----
-
-### 9. Better Empty/Loading/Error States (45 minutes) ✨
-
-**Why it matters:** **Polish indicator.** Generic "Loading..." vs tailored system states.
-
-**Current gaps:**
-- ❌ No WebSocket disconnection recovery UI
-- ❌ No "waiting for first trade" empty state with illustration
-- ❌ No latency/health indicator
-
-**Target upgrades:**
-
-**AssetBar Health Badge:**
-```tsx
-{wsState === 'connected'
-    ? <span className="badge-green">● Live</span>
-    : wsState === 'connecting'
-    ? <span className="badge-amber">● Connecting...</span>
-    : <span className="badge-red">● Disconnected [Retry]</span>
-}
-```
-
-**Chart Empty State:**
-```tsx
-{candles.length === 0 && (
-    <div className="chart-empty-state">
-        <svg><!-- Candlestick icon --></svg>
-        <p>Waiting for market data...</p>
-        <span className="muted">Candles will appear once trades start flowing</span>
-    </div>
-)}
-```
-
-**Order Book Loading Skeleton:**
-- Replace "Connecting" text with animated skeleton rows (10 rows of shimmering bars)
-- Smooth fade-in when data arrives
-
-**Implementation:**
-- `useWebSocket.ts` — Expose `connectionState: 'connecting' | 'connected' | 'disconnected'`
-- Add empty state components to Chart, OrderBook, TradesTable
-- CSS: `@keyframes shimmer` for skeleton loading
-
-**Demo impact:** Shows obsessive attention to UX detail. Judges appreciate polish.
-
----
-
-## TIER B: Advanced Capabilities (Nice to Have)
-
-These features demonstrate technical sophistication but aren't demo-critical. Implement if time allows after Tier S+A.
-
-### 10. Depth Curve Visualization (90 minutes) 📉
-
-**Current:** Order book shows bid/ask ladder with depth bars
-**Upgrade:** Add cumulative depth curve mini-chart beside ladder
-
-Shows liquidity distribution at a glance. Useful for identifying support/resistance.
-
-**ROI:** Medium — advanced traders appreciate it, but not critical for demo.
-
----
-
-### 11. Session VWAP Overlay on Chart (60 minutes) 📊
-
-**Current:** Chart shows candles + volume
-**Upgrade:** Add VWAP line overlay (calculated from trade history)
-
-**ROI:** Medium — shows technical analysis sophistication, but judges may not notice.
-
----
-
-### 12. Order Book Imbalance Indicator (45 minutes) ⚖️
-
-**Current:** Order book shows static bid/ask levels
-**Upgrade:** Calculate bid/ask imbalance ratio, show as visual gauge near spread
+**Target:** Below the size input, in muted mono text:
 
 ```
-◄═════■══════►
-Bid Pressure   Ask Pressure
+~4.2% of capital  ·  $420.00 notional
 ```
 
-**ROI:** Medium — interesting for quants, but subtle in demo context.
+**Implementation:** `OrderEntry.tsx` — derive from `portfolio.equity` and `price * size`. Pure display, no state needed.
 
 ---
 
-### 13. Keyboard Shortcuts Help Modal (30 minutes) ❓
+### 17. P&L Per Round-Trip — Recent Fills (45 minutes) 📊
 
-**Prerequisite:** Feature #1 (keyboard shortcuts) must exist
-**Upgrade:** Press '?' to show help overlay with all hotkeys
+**Why it matters:** Surfaces existing data in a compelling way. Judges see actual trading outcomes.
 
-**ROI:** Low — self-documenting feature, but judges won't discover it unless prompted.
+**Current state:** ❌ `realized_pnl` is a single running total with no per-trade breakdown
+
+**Target:**
+
+```
+┌────────────────────────────┐
+│ Recent Fills               │
+├────────────────────────────┤
+│ ▲ Buy  1.00 @ 100.25  14:32│
+│ ▼ Sell 1.00 @ 100.67  14:33│  +$0.42
+│ ▲ Buy  2.00 @ 100.45  14:35│
+└────────────────────────────┘
+```
+
+**Implementation:** `RecentFills.tsx` in `components/Portfolio/`. Use `orderHistory` filtered for `status === "filled"`. Match consecutive buy/sell for P&L per close.
 
 ---
 
-## TIER C: Over-Engineering (Avoid Unless Bored)
+### 18. Better Empty/Loading States (45 minutes) ✨
 
-These were in the original proposal but have **low demo ROI** or require **risky backend changes**.
+**Current state:** ⚠️ Partial — connecting overlays exist, but no skeletons or retry UX
 
-### ❌ Market Regime Controls
-**Why skip:** Requires backend parameter exposure, adds complexity, low visibility during 15min demo
+**Remaining gaps:**
 
-### ❌ Replay Mode
-**Why skip:** Requires recording infrastructure, backend changes, not interactive enough for judges
+- Order book loading skeleton (shimmer rows instead of "Connecting" text)
+- Retry button when `connectionStatus === "closed"`
+- Better empty copy in trade tape
 
-### ❌ Deterministic Seed Mode
-**Why skip:** Backend feature, zero UX impact, judges won't notice
+**Implementation:** `@keyframes shimmer` in globals.css; retry calls existing reconnect logic in `useWebSocket.ts`.
 
-### ❌ Observability Stream (queue depth, dropped messages)
-**Why skip:** Developer tooling, not user-facing, judges don't care about internal metrics
+---
 
-### ❌ Synthetic Event Engine (volatility shocks, liquidity droughts)
-**Why skip:** Backend-heavy, complexity risk, judges want stable demo not chaos mode
+## TIER B: Advanced Capabilities — Nice to Have
+
+Implement only if Sprint 1 + Sprint 2 are complete with time remaining.
+
+### 19. Trade History Panel with Performance Stats (120 minutes)
+
+Full session history with win rate, avg win/loss, best trade. New `TradeHistory.tsx` component.
+
+> Note: Implement #17 (Recent Fills) first — same data model, 25% of the time, 80% of the impact.
+
+### 20. Depth Curve Visualization (90 minutes)
+
+Cumulative depth curve beside the order book ladder. Shows liquidity distribution at a glance.
+
+### 21. Session VWAP Overlay on Chart (60 minutes)
+
+VWAP `LineSeries` on pane 0 alongside candles. Requires #9 (VWAP accumulator in store) first.
+
+### 22. Keyboard Shortcuts Help Modal (30 minutes)
+
+Press `?` to show all hotkeys. The onboarding hint (#5) handles discovery; this is supplementary.
+
+---
+
+## TIER C: Skip
+
+| Feature | Why |
+|---------|-----|
+| Bracket orders (TP/SL) | Edge cases brutal, demo failure risk high |
+| Market regime controls | Backend-heavy, low visibility |
+| Replay mode | Requires recording infrastructure |
+| Deterministic seed | Backend only, zero UX impact |
+| Observability stream | Dev tooling, judges ignore |
+| Synthetic event engine | Chaos mode = demo risk |
+| Dark/light mode toggle | Destroys brand, dark is the identity |
+| More chart indicators (RSI, MACD) | Too complex, judges won't have time |
 
 ---
 
 ## Implementation Priority Roadmap
 
-### Sprint 1: Critical Missing Features (Total: 5 hours)
-**Target:** Make it feel like a real trading desk
+### Sprint 1 — Sensory + Theatrical (~5 hours)
+**Target:** Judges are stopped in their tracks within 60 seconds
 
-| Feature | Time | Tier |
-|---------|------|------|
-| Keyboard shortcuts | 90 min | S |
-| Chart timeframe switcher | 60 min | S |
-| Fill markers on chart | 45 min | S |
-| Enhanced trade tape | 75 min | S |
-| Session stats in AssetBar | 30 min | S |
+| Feature | Time |
+|---------|------|
+| Command palette Cmd+K | 3h |
+| Sound design | 30m |
+| Boot sequence theater | 30m |
+| Hotkey onboarding hint | 20m |
+| Keyboard shortcuts | 90m |
 
-**Outcome:** Judges can use keyboard, switch timeframes, see fill feedback → **"This feels pro"**
-
----
-
-### Sprint 2: High-Impact Polish (Total: 5 hours)
-**Target:** Production-grade attention to detail
-
-| Feature | Time | Tier |
-|---------|------|------|
-| Market order slippage preview | 45 min | A |
-| Trade history panel | 120 min | A |
-| Bracket orders (TP/SL) | 90 min | A |
-| Better empty/loading states | 45 min | A |
-
-**Outcome:** Judges test risk management, see performance stats → **"This team knows trading"**
+**Outcome:** Judge opens terminal → dramatic boot → hears market → presses Cmd+K → executes trade with voice command. **No other team will do any of this.**
 
 ---
 
-### Sprint 3: Advanced Capabilities (Total: 3 hours) *(Optional)*
-**Target:** Technical sophistication flex
+### Sprint 2 — Trading Intelligence (~5 hours)
+**Target:** Judges recognize production trading knowledge
 
-| Feature | Time | Tier |
-|---------|------|------|
-| Depth curve visualization | 90 min | B |
-| VWAP chart overlay | 60 min | B |
-| Imbalance indicator | 30 min | B |
+| Feature | Time |
+|---------|------|
+| Chart timeframe switcher | 60m |
+| Fill markers on chart | 45m |
+| Enhanced trade tape | 75m |
+| Session stats + VWAP | 30m |
+| Chart height increase | 20m |
 
-**Outcome:** Judges notice advanced features → **"Wait, they implemented THAT?"**
+**Outcome:** Judges switch timeframes, see fills marked, see VWAP, see size-weighted tape. **"This team understands trading."**
 
 ---
 
-## Validation Checklist
+### Sprint 3 — Living Market (~3.5 hours)
+**Target:** Terminal feels alive, not static
 
-Before demo, verify judges can perform these actions smoothly:
+| Feature | Time |
+|---------|------|
+| Order book pressure animation | 1h |
+| Real-time equity curve | 45m |
+| Buy/sell pressure gauge | 30m |
+| Tools sidebar real tools | 2h |
 
-### 60-Second Judge Test Flow
+**Outcome:** Book breathes, equity curves, sidebar has tools. **Every part of the terminal has purpose.**
+
+---
+
+### Sprint 4 — Production Polish (~3 hours)
+**Target:** No rough edges for the judge walkthrough
+
+| Feature | Time |
+|---------|------|
+| Full slippage preview | 45m |
+| Order size as % of equity | 30m |
+| P&L per round-trip | 45m |
+| Better empty/loading states | 45m |
+
+**Outcome:** Every interaction has context. Nothing is left unpolished.
+
+---
+
+## 60-Second Judge Test Flow
+
 ```
-1. Open terminal → panels load with stagger animation ✓
-2. Press 'B' → buy side focuses ✓
-3. Press '5' → 50% size selected ✓
-4. Press Enter → order submits, toast confirms ✓
-5. Green arrow appears on chart at fill price ✓
-6. Click [5m] timeframe → chart switches to 5-min candles ✓
-7. Hover over large trade in tape → auto-scroll pauses ✓
-8. Click "Market" → slippage preview shows "Est. 0.12% across 2 levels" ✓
-9. Check portfolio → equity pulsed, realized P&L updated ✓
-10. Open trade history → see fill logged with timestamp + P&L ✓
+0s   Terminal opens → "CONNECTING TO MARKET..." shows with pulsing dot
+3s   WebSocket connects → live price snaps in, panels stagger
+5s   Market sounds begin — soft ticks from trade tape
+8s   Hotkey hint fades in: "Cmd+K · B · S · Enter — keyboard trading active"
+15s  Judge presses Cmd+K → command palette opens
+18s  Types "buy 2 at market" → Enter → order executes
+20s  Confirm tone plays. Green ▲ appears on chart at fill price
+22s  Portfolio equity pulses. Equity curve updates
+25s  Judge clicks [5m] → chart redraws to 5-minute candles
+30s  Judge hovers large trade in tape → scroll pauses
+35s  Judge sees VWAP in header: "VWAP 100.22"
+40s  Judge clicks market order → slippage preview: "0.08% across 2 levels"
+45s  Judge sees buy/sell pressure gauge: "Buy 63%"
+50s  Judge clicks horizontal line tool → draws support level on chart
+60s  Judge checks trade history → fill logged with P&L
 ```
 
-**If all 10 pass:** You've built something that stops judges in their tracks. **50% score secured.**
+**If all pass:** 50% score secured. Judges will be talking about this during deliberation.
 
 ---
 
 ## Technical Notes
 
 ### Performance Budget
-- Target: 60fps under 100 msgs/sec (already achieved with RAF batching ✓)
-- New features must not add state updates in hot path
-- Use DOM refs for high-frequency updates (price ticker pattern)
-- Chart renders via TradingView canvas (no React re-renders)
 
-### Backend Changes Required
-- **ZERO** for Sprint 1 (all frontend aggregation/computation)
-- **ZERO** for Sprint 2 (uses existing WebSocket messages)
-- **ZERO** for Sprint 3 (all frontend visualization)
+- 60fps under 100 msgs/sec — already achieved ✓
+- Sound: `AudioContext` created lazily, reuse single context across all sounds
+- Command palette: renders only when open (`display: none` otherwise, not unmounted)
+- Order book animation: CSS-only transitions, no JS animation loops
+- Equity curve: LightWeight Charts canvas, no React re-renders
+- All new features must follow the DOM-ref-for-hot-path pattern established by the price ticker
 
-This is intentional — backend is stable, avoid breaking changes before competition.
+### Zero Backend Changes Required
 
-### State Management Strategy
-- Zustand external store already setup ✓
-- Add new slices: `fills`, `tradeHistory`, `chartTimeframe`, `keyboardMode`
-- Keep separation: market data vs user actions vs UI preferences
+All features in Sprints 1–4 use existing WebSocket messages and REST endpoints. Backend is stable — do not touch it before the competition.
 
----
+### LightWeight Charts v5 API Notes
 
-## Why This Beats the Original Proposal
+- Fill markers: `series.setMarkers(markers: SeriesMarker[])` — NOT `createPriceLine()`
+- VWAP overlay: `LineSeries` on pane 0 alongside the candlestick series
+- Equity curve: separate `createChart()` instance on a 60px container
+- Timeframe switch: `series.setData(aggregatedCandles)` — no chart recreation needed
 
-| Original | Issue | This Version |
-|----------|-------|--------------|
-| "Market regime controls" | Backend-heavy, low visibility | **Keyboard hotkeys** — instant wow |
-| "Replay mode" | Complex, requires recording | **Fill markers** — immediate feedback |
-| "Deterministic seed" | Backend, zero UX | **Slippage preview** — shows execution IQ |
-| "Observability stream" | Dev tooling, judges ignore | **Trade history** — traders need this |
-| "Synthetic events" | Chaos mode, demo risk | **Better empty states** — attention to detail |
+### Sound — Browser Autoplay Policy
 
-**Strategic shift:**
-- From: Backend technical features (20% weight)
-- To: Interactive UX features (50% weight) ← **WHERE COMPETITIONS ARE WON**
+`AudioContext` must be created after a user gesture. Create it lazily on first click/keydown anywhere in the app. Store the instance in a module-level variable so it's shared across all sound calls.
 
 ---
 
-## Competitive Analysis: What Hyperliquid Has That We're Adding
+## Competitive Analysis
 
-| Feature | Hyperliquid | NEXTBULL (Current) | After Sprint 1 | After Sprint 2 |
-|---------|-------------|-------------------|----------------|----------------|
-| Keyboard shortcuts | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes |
-| Timeframe switcher | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes |
-| Fill markers | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes |
-| Size-emphasized tape | ✅ Yes | ⚠️ Basic | ✅ Yes | ✅ Yes |
-| VWAP | ✅ Yes | ⚠️ Partial | ✅ Yes | ✅ Yes |
-| Slippage preview | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
-| Trade history | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
-| Bracket orders | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| Feature | Hyperliquid | NEXTBULL Now | After S1+S2 | After S3+S4 |
+|---------|-------------|--------------|-------------|-------------|
+| Command palette | ❌ | ❌ | ✅ | ✅ |
+| Sound design | ✅ | ❌ | ✅ | ✅ |
+| Boot sequence | ✅ | ⚠️ | ✅ | ✅ |
+| Keyboard shortcuts | ✅ | ❌ | ✅ | ✅ |
+| Timeframe switcher | ✅ | ❌ | ✅ | ✅ |
+| Fill markers | ✅ | ❌ | ✅ | ✅ |
+| Size-emphasized tape | ✅ | ⚠️ | ✅ | ✅ |
+| VWAP | ✅ | ❌ | ✅ | ✅ |
+| Market price preview | ✅ | ✅ | ✅ | ✅ |
+| Full slippage preview | ✅ | ❌ | ❌ | ✅ |
+| Position sizing context | ✅ | ❌ | ❌ | ✅ |
+| Equity curve | ✅ | ❌ | ❌ | ✅ |
+| Living order book | ✅ | ❌ | ❌ | ✅ |
+| Real tools sidebar | ✅ | ❌ | ❌ | ✅ |
+| Buy/sell pressure | ✅ | ❌ | ❌ | ✅ |
 
-**After Sprint 2:** Feature parity with Hyperliquid on critical UX points. 🎯
+**After Sprint 1+2:** Feature parity on what judges interact with in the first 60 seconds.
+**After Sprint 3+4:** Full production parity on UX depth and visual sophistication.
 
 ---
 
-## Success Metrics
+## Scoring Projection
 
-### Judge Reaction Targets
-- **0-30 sec:** "Whoa, this looks professional" ← Stagger animation + clean layout ✓
-- **30-60 sec:** "Wait, I can use keyboard shortcuts?" ← Feature #1
-- **1-2 min:** "The chart has multiple timeframes AND shows my fills?" ← Features #2, #3
-- **2-5 min:** "Ok, this team actually understands trading" ← Slippage, history, brackets
-- **5-10 min:** "Is this a real product?" ← Polish, empty states, performance stats
-
-### Scoring Projection
 **Frontend & UX (50% = 50 points):**
-- Current (baseline): 35/50 (solid but missing key features)
-- After Sprint 1: 43/50 (keyboard + timeframes + fills)
-- After Sprint 2: 48/50 (production-grade polish)
 
-**Target:** 48/50 on frontend = **96% of available frontend points** = **competitive edge secured**
+- Current baseline: 37/50
+- After Sprint 1: 43/50 — sound + command palette alone justify this jump
+- After Sprint 2: 46/50 — trading intelligence features
+- After Sprint 3+4: 49/50 — living market + no rough edges
+
+**Target: 49/50 on frontend = competition-winning score.**
 
 ---
 
 ## Final Recommendation
 
-**Implement Sprint 1 religiously.** These 5 features take 5 hours total but deliver 80% of the wow factor.
+**Sprint 1 is non-negotiable.** Command palette + sound + boot sequence is the combination that creates a lasting impression. These three features take ~4 hours combined and they are the things judges will describe to each other after the demo. No team will build all three.
 
-**Implement Sprint 2 if time allows.** These 4 features take 5 hours but show you're not just copying — you understand trading.
+**Sprint 2 shows you know trading.** Without VWAP, fill markers, and timeframes, the terminal is technically impressive but domain-shallow. Sprint 2 fixes that.
 
-**Skip Sprint 3 unless you're ahead of schedule.** Advanced features are nice but not demo-critical.
+**Sprint 3 makes it feel alive.** The equity curve, pressure gauge, and book animation transform a functional terminal into one that feels like a real market.
 
-**Total time investment:** 10 hours for dramatic competition impact on 50% of total score.
+**Sprint 4 removes all excuses.** No rough edge, no missing context, no moment where a judge thinks "almost."
 
-**ROI:** 10 hours → 13-point improvement on 50-point category = **1.3 points per hour** (best ROI in the entire project)
-
----
-
-**Next Step:** Choose Sprint 1 or Sprint 1+2, create implementation plan, execute with impeccable standards.
+**Total: ~17 hours of focused work for a terminal that wins the competition.**
