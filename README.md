@@ -114,4 +114,4 @@ cp .env.example .env
 | `GBM_S0`       | `100.0` | Starting price for BULL/USDC    |
 | `GBM_MU`       | `0.0`   | GBM drift                       |
 | `GBM_SIGMA`    | `0.02`  | GBM volatility                  |
-| `GBM_TICK_MS`  | `10`    | Market generator tick rate (ms) |
+| `GBM_TICK_MS`  | `50`    | Market generator tick rate (ms) |
