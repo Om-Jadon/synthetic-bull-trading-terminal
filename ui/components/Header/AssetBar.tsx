@@ -133,13 +133,20 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         </span>
                     )}
 
-                    {/* Mute toggle */}
+                    {/* Persistent ⌘K command palette indicator */}
+                    <span
+                        className="hidden items-center gap-1 rounded-xs border border-border bg-bg-row px-1.5 py-0.5 font-mono text-[10px] text-text-muted sm:inline-flex"
+                        title="Open command palette"
+                        aria-hidden="true"
+                    >
+                        <kbd className="text-[9px] font-medium">⌘K</kbd>
+                    </span>
                     <button
                         type="button"
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="relative inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary after:absolute after:-inset-3 sm:after:hidden"
+                        className="relative inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary after:absolute after:-inset-3 md:after:hidden"
                     >
                         {muted ? (
                             <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">

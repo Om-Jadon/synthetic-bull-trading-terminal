@@ -24,7 +24,22 @@ export default function OpenOrders() {
                 {!snapshotReady ? (
                     <div role="status" aria-live="polite" className="text-xs uppercase tracking-[0.12em] text-text-muted">Connecting</div>
                 ) : orders.length === 0 ? (
-                    <div className="text-xs text-text-muted">No resting orders</div>
+                    <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+                        <p className="font-mono text-[11px] text-text-muted">No open orders</p>
+                        <p className="font-mono text-[10px] text-text-muted/60 leading-relaxed">
+                            Use <span className="text-text-muted">Order Entry</span> above to place a trade
+                        </p>
+                        <div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-text-muted/50">
+                            <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">B</kbd>
+                            <span>buy</span>
+                            <span className="text-border">·</span>
+                            <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">S</kbd>
+                            <span>sell</span>
+                            <span className="text-border">·</span>
+                            <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">↵</kbd>
+                            <span>submit</span>
+                        </div>
+                    </div>
                 ) : (
                     orders.map((order) => (
                         <div key={order.order_id} className="order-chip mb-1.5 grid grid-cols-[1fr_auto] items-center gap-2 rounded-xs border border-border bg-bg-row p-2">

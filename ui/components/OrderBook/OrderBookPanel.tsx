@@ -108,14 +108,9 @@ export default function OrderBookPanel() {
             timers.set(key, timer);
         }
     }, [renderAskRows, renderBidRows]);
-
     return (
         <section className="panel relative flex h-full min-h-0 flex-col">
-            <div className="flex h-8 items-center border-b border-border px-2">
-                <div className="panel-title border-0 p-0">Order Book</div>
-            </div>
-
-            <div className="grid h-full min-h-0 grid-rows-[auto_1fr]">
+        <div className="grid h-full min-h-0 grid-rows-[auto_1fr]">
                 <div className="grid h-6 grid-cols-3 items-center border-b border-border/70 px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
                     <span>Price</span>
                     <span className="text-right">Size</span>

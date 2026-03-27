@@ -98,7 +98,7 @@ export default function TradingTerminal() {
         return () => { clearTimeout(t1); clearTimeout(t2); };
     }, [snapshotReady]);
 
-    const positionLabel = (h: number) => (h > 0 ? "LONG" : h < 0 ? "SHORT" : "FLAT");
+    const positionLabel = (h: number) => (h > 0 ? "Long" : h < 0 ? "Short" : "Position");
 
     const bookColumnWidth =
         mode === "large"
@@ -156,37 +156,38 @@ export default function TradingTerminal() {
                     </div>
                 ) : (
                     <main
-                        className="relative z-10 flex min-h-0 h-full flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2 sm:p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_var(--book-col)_var(--order-col)] lg:gap-2.5 lg:overflow-hidden lg:p-3"
+                        className="relative z-10 flex min-h-0 h-full flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2 sm:p-3 md:grid md:grid-cols-[minmax(0,1fr)_clamp(280px,38vw,380px)] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_var(--book-col)_var(--order-col)] lg:grid-rows-1 lg:gap-2.5 lg:overflow-hidden lg:p-3"
                         style={{ "--book-col": bookColumnWidth, "--order-col": orderColumnWidth } as CSSProperties}
                         role="main"
                     >
                 {/* Chart + status strip */}
-                        <section className="terminal-panel panel-delay-2 grid min-h-96 min-w-0 grid-rows-[1fr_auto] gap-2 lg:col-span-1">
+                        <section className="terminal-panel panel-delay-2 grid min-h-96 min-w-0 grid-rows-[1fr_auto] lg:col-span-1">
                             <CandlestickChart
                                 onPaletteOpen={() => setPaletteOpen(true)}
                                 onFullscreenToggle={handleFullscreenToggle}
                             />
                     {/* Bottom status strip — compact session snapshot */}
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border border-border bg-bg-panel px-3 py-1.5 font-mono text-[11px]">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-bg-panel px-3 py-1.5 font-mono text-[12px]">
                                 <span className="text-text-muted">
                                     Cash{" "}
-                                    <span className="text-text-primary">
+                                    <span className="font-medium text-text-primary">
                                         {portfolio ? portfolio.cash.toFixed(2) : "—"}
                                     </span>
                                 </span>
                                 <span className="text-text-muted">
                                     {portfolio ? positionLabel(portfolio.holdings) : "POS"}{" "}
-                                    <span className="text-text-primary">
+                                    <span className="font-medium text-text-primary">
                                         {portfolio ? portfolio.holdings.toFixed(4) : "—"}
                                     </span>
                                 </span>
                                 <span className="text-text-muted">
                                     P&L{" "}
-                                    <span className={pnl === null ? "text-text-primary" : pnl >= 0 ? "text-bull" : "text-bear"}>
+                                    <span className={`font-medium ${pnl === null ? "text-text-primary" : pnl >= 0 ? "text-bull" : "text-bear"}`}>
                                         {pnl === null ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
                                     </span>
                                 </span>
                             </div>
+
                         </section>
 
                 {/* Order book + trade tape */}
@@ -195,9 +196,11 @@ export default function TradingTerminal() {
                         </section>
 
                 {/* Order entry + workbench */}
-                        <section className="terminal-panel panel-delay-4 grid min-h-96 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2">
+                        <section className="terminal-panel panel-delay-4 grid min-h-96 min-w-0 grid-rows-[auto_minmax(0,1fr)]">
                             <OrderEntry />
-                            <Workbench />
+                            <div className="border-t border-border min-h-0">
+                                <Workbench />
+                            </div>
                         </section>
                     </main>
                 )}

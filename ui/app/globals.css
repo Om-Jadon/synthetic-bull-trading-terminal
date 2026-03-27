@@ -26,7 +26,7 @@
   --color-text-muted: oklch(54% 0.01 50);
 
   /* ── Structure ── */
-  --color-border: oklch(20% 0.012 40);
+  --color-border: oklch(18% 0.012 40);
   --color-spread: oklch(26% 0.01 40);
   --color-neutral-hover: oklch(20% 0.01 40);
   --color-hover-overlay: oklch(100% 0 0 / 0.04);

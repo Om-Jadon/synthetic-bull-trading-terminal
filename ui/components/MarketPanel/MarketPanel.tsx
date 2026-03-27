@@ -110,8 +110,8 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
     if (mode === "tab") {
         return (
             <section className="panel relative grid h-full min-h-0 grid-rows-[40px_1fr]">
-                <div className="flex h-10 items-center justify-between border-b border-border px-2">
-                    <div className="grid grid-cols-2 gap-1" role="tablist" aria-label="Order book and trades view">
+                <div className="flex h-10 items-center justify-between gap-2 border-b border-border px-2">
+                    <div className="grid flex-1 grid-cols-2 gap-1" role="tablist" aria-label="Order book and trades view">
                         <button
                             id="market-tab-book"
                             type="button"

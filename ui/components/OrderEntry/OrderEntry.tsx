@@ -324,24 +324,9 @@ export default function OrderEntry() {
           ))}
         </div>
 
-        <div className="mb-2 grid grid-cols-2 gap-1">
-          <button
-            type="button"
-            disabled
-            title="Not supported in simulation"
-            className="h-6 cursor-not-allowed rounded-xs border border-border bg-bg-panel text-[10px] uppercase tracking-[0.04em] text-text-muted opacity-40 transition-colors"
-          >
-            Post Only
-          </button>
-          <button
-            type="button"
-            disabled
-            title="Not supported in simulation"
-            className="h-6 cursor-not-allowed rounded-xs border border-border bg-bg-panel text-[10px] uppercase tracking-[0.04em] text-text-muted opacity-40 transition-colors"
-          >
-            Reduce Only
-          </button>
-        </div>
+        <p className="mb-2 text-center font-mono text-[10px] text-text-muted/50 tracking-[0.04em]">
+            Post Only · Reduce Only — not available in simulation
+          </p>
 
         <form ref={formRef} className="space-y-2.5" onSubmit={submitOrder}>
           {type === "limit" && (

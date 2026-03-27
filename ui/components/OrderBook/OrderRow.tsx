@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 
 type OrderRowProps = {
     price: number;
@@ -12,7 +12,7 @@ type OrderRowProps = {
     isBest?: boolean;
 };
 
-export default function OrderRow({ price, size, totalSize, side, depthPct, exiting = false, isBest = false }: OrderRowProps) {
+function OrderRow({ price, size, totalSize, side, depthPct, exiting = false, isBest = false }: OrderRowProps) {
     const priceClass = side === "bid" ? "text-bull" : "text-bear";
     const prevSizeRef = useRef(size);
     const depthRef = useRef<HTMLDivElement | null>(null);
@@ -54,3 +54,5 @@ export default function OrderRow({ price, size, totalSize, side, depthPct, exiti
         </div>
     );
 }
+
+export default memo(OrderRow);
