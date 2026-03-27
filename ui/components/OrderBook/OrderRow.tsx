@@ -9,9 +9,10 @@ type OrderRowProps = {
     side: "bid" | "ask";
     depthPct: number;
     exiting?: boolean;
+    isBest?: boolean;
 };
 
-export default function OrderRow({ price, size, totalSize, side, depthPct, exiting = false }: OrderRowProps) {
+export default function OrderRow({ price, size, totalSize, side, depthPct, exiting = false, isBest = false }: OrderRowProps) {
     const priceClass = side === "bid" ? "text-bull" : "text-bear";
     const prevSizeRef = useRef(size);
     const depthRef = useRef<HTMLDivElement | null>(null);
@@ -22,13 +23,16 @@ export default function OrderRow({ price, size, totalSize, side, depthPct, exiti
         prevSizeRef.current = size;
         if (size <= prev) return;
 
-        depthRef.current.classList.remove("depth-flash");
-        void depthRef.current.offsetWidth;
-        depthRef.current.classList.add("depth-flash");
+        const node = depthRef.current;
+        node.classList.remove("depth-flash");
+        const raf = window.requestAnimationFrame(() => {
+            node.classList.add("depth-flash");
+        });
+        return () => window.cancelAnimationFrame(raf);
     }, [size]);
 
     return (
-        <div className={`book-row relative grid h-[18px] grid-cols-3 items-center px-2 font-mono text-[11px] ${exiting ? "book-row-exit" : "book-row-enter"}`}>
+        <div className={`book-row relative grid h-[18px] grid-cols-3 items-center px-2 font-mono text-[11px] ${exiting ? "book-row-exit" : "book-row-enter"} ${isBest ? "font-medium" : ""}`}>
             <div
                 ref={depthRef}
                 data-depth-bar
@@ -44,7 +48,7 @@ export default function OrderRow({ price, size, totalSize, side, depthPct, exiti
                     transitionTimingFunction: "cubic-bezier(0.25, 0, 0.1, 1)",
                 }}
             />
-            <span className={`${priceClass} relative z-10`}>{price.toFixed(4)}</span>
+            <span className={`${priceClass} relative z-10 ${isBest ? "!font-semibold" : ""}`}>{price.toFixed(4)}</span>
             <span className="relative z-10 text-right text-text-primary">{size.toFixed(2)}</span>
             <span className="relative z-10 text-right text-text-muted">{totalSize.toFixed(2)}</span>
         </div>

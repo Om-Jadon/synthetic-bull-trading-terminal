@@ -537,22 +537,22 @@ Fullscreen overlay (rendered in `TradingTerminal.tsx` when `chartFullscreen === 
 
 Run calibration and visual-polish passes first — they are zero-risk and immediately improve perceived quality. Tackle structural changes after the baseline is sharp.
 
-1. Remove ToolRail + chart header redesign + cinematic fullscreen overlay (G) — high visual impact, cleans up layout immediately.
-2. Spread bar EMA stabilization (E) — one-line fix, high visible impact.
-3. Timeframe control visibility upgrade (F) — already handled inside (G), verify sizing.
-4. Compact control sizing pass (Calibration 3) — frees vertical space in OrderEntry.
-5. Chart volume opacity pass (Calibration 4) — three number changes.
-6. Typography tracking pass (Calibration 2 / High-ROI 7) — one class change.
-7. Order book best bid/ask emphasis + depth contrast (High-ROI 3) — low risk, strong visual signal.
-8. Darker border calibration (Calibration 1) — one CSS variable.
-9. Chart professional cues: watermark + VWAP overlay (High-ROI 5).
-10. Order entry fee estimate + post-only placeholders (High-ROI 4).
-11. Order book large-mode equal split + width increase (B) — two-line change.
-12. Order book kebab menu (A) — medium complexity, requires dropdown + keyboard handling.
-13. Panel chrome reduction (High-ROI 2) — targeted border removals.
-14. Bottom tabbed workbench (C) — largest structural change, do last.
-15. Header two-tier redesign (High-ROI 1) — depends on workbench being done (stats move to Tier 2).
-16. Trust diagnostics strip (High-ROI 6) — requires hook and store changes, do after layout stabilizes.
+- [x] 1. Remove ToolRail + chart header redesign + cinematic fullscreen overlay (G)
+- [x] 2. Spread bar EMA stabilization (E)
+- [x] 3. Timeframe control visibility upgrade (F)
+- [x] 4. Compact control sizing pass (Calibration 3)
+- [x] 5. Chart volume opacity pass (Calibration 4)
+- [x] 6. Typography tracking pass (Calibration 2 / High-ROI 7)
+- [x] 7. Order book best bid/ask emphasis + depth contrast (High-ROI 3)
+- [x] 8. Darker border calibration (Calibration 1)
+- [x] 9. Chart professional cues: watermark + VWAP overlay (High-ROI 5)
+- [x] 10. Order entry fee estimate + post-only placeholders (High-ROI 4)
+- [x] 11. Order book large-mode equal split + width increase (B)
+- [x] 12. Order book kebab menu (A)
+- [x] 13. Panel chrome reduction (High-ROI 2)
+- [x] 14. Bottom tabbed workbench (C)
+- [ ] 15. Header two-tier redesign (High-ROI 1)
+- [ ] 16. Trust diagnostics strip (High-ROI 6)
 
 ---
 

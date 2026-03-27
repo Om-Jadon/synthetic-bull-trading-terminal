@@ -19,9 +19,8 @@ export default function OpenOrders() {
     };
 
     return (
-        <section className="panel h-full">
-            <div className="panel-title">Open Orders</div>
-            <div className="panel-scroller h-[calc(100%-28px)] overflow-auto px-2 py-2">
+        <section className="flex h-full min-h-0 flex-col">
+            <div className="panel-scroller min-h-0 flex-1 overflow-auto px-2 py-2">
                 {!snapshotReady ? (
                     <div role="status" aria-live="polite" className="text-xs uppercase tracking-[0.12em] text-text-muted">Connecting</div>
                 ) : orders.length === 0 ? (

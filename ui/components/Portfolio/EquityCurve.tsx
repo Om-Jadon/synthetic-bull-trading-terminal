@@ -11,10 +11,11 @@ import {
 
 import { useTradingStore } from "@/store/tradingStore";
 
-function readColorVar(name: string, fallback: string): string {
-    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return value || fallback;
-}
+const C = {
+    textMuted: "#746d6a",  // oklch(54% 0.01 50)
+    bull: "#11b34a",       // oklch(67% 0.19 148)
+    bear: "#df202e",       // oklch(58% 0.22 25)
+} as const;
 
 export default function EquityCurve() {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -28,7 +29,7 @@ export default function EquityCurve() {
         const chart = createChart(container, {
             layout: {
                 background: { type: ColorType.Solid, color: "transparent" },
-                textColor: readColorVar("--color-text-muted", "#8791a3"),
+                textColor: C.textMuted,
                 fontFamily: "var(--font-jetbrains)",
             },
             rightPriceScale: {
@@ -55,7 +56,7 @@ export default function EquityCurve() {
         });
 
         const lineSeries = chart.addSeries(LineSeries, {
-            color: readColorVar("--color-bull", "#26a69a"),
+            color: C.bull,
             lineWidth: 2,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -71,9 +72,6 @@ export default function EquityCurve() {
     }, []);
 
     useEffect(() => {
-        const bull = readColorVar("--color-bull", "#26a69a");
-        const bear = readColorVar("--color-bear", "#ef5350");
-
         const renderHistory = (history: Array<{ time: UTCTimestamp; value: number }>) => {
             const lineSeries = lineSeriesRef.current;
             if (!lineSeries) return;
@@ -85,7 +83,7 @@ export default function EquityCurve() {
 
             const first = history[0].value;
             const last = history[history.length - 1].value;
-            lineSeries.applyOptions({ color: last >= first ? bull : bear });
+            lineSeries.applyOptions({ color: last >= first ? C.bull : C.bear });
 
             lineSeries.setData(
                 history.map((point) => ({

@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 import CandlestickChart from "@/components/Chart/CandlestickChart";
 import CommandPalette from "@/components/CommandPalette/CommandPalette";
 import AssetBar from "@/components/Header/AssetBar";
+import MarketPanel, { type BookMode } from "@/components/MarketPanel/MarketPanel";
 import * as sounds from "@/lib/sound";
-import OrderBook, { type BookMode } from "@/components/OrderBook/OrderBook";
 import OrderEntry from "@/components/OrderEntry/OrderEntry";
-import EquityCurve from "@/components/Portfolio/EquityCurve";
-import PortfolioWidget from "@/components/Portfolio/PortfolioWidget";
-import ToolRail from "@/components/ToolRail/ToolRail";
+import Workbench from "@/components/Workbench/Workbench";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useTradingStore } from "@/store/tradingStore";
 
@@ -20,6 +18,7 @@ export default function TradingTerminal() {
     const priceRef = useRef<HTMLSpanElement | null>(null);
     const priceFlashRef = useRef<HTMLDivElement | null>(null);
     const directionRef = useRef<HTMLSpanElement | null>(null);
+    const fullscreenHostRef = useRef<HTMLDivElement | null>(null);
 
     useWebSocket({ priceRef, priceFlashRef, directionRef });
 
@@ -56,6 +55,39 @@ export default function TradingTerminal() {
     const chartFullscreen = useTradingStore((state) => state.chartFullscreen);
     const pnl = portfolio ? portfolio.unrealized_pnl + portfolio.realized_pnl : null;
 
+    const vwapNumerator = useTradingStore((state) => state.vwapNumerator);
+    const vwapDenominator = useTradingStore((state) => state.vwapDenominator);
+    const sessionHigh = useTradingStore((state) => state.sessionHigh);
+    const sessionLow = useTradingStore((state) => state.sessionLow);
+    const tradeCount = useTradingStore((state) => state.tradeCount);
+    const vwap = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : null;
+    const displaySessionHigh = snapshotReady ? sessionHigh.toFixed(4) : "—";
+    const displaySessionLow = snapshotReady ? sessionLow.toFixed(4) : "—";
+    const displayTradeCount = snapshotReady ? tradeCount.toLocaleString() : "—";
+
+    useEffect(() => {
+        const handler = () => {
+            const isNativeFullscreen = document.fullscreenElement === fullscreenHostRef.current;
+            const store = useTradingStore.getState();
+            if (isNativeFullscreen !== store.chartFullscreen) {
+                store.toggleChartFullscreen();
+            }
+        };
+        document.addEventListener("fullscreenchange", handler);
+        return () => document.removeEventListener("fullscreenchange", handler);
+    }, []);
+
+    const handleFullscreenToggle = () => {
+        const host = fullscreenHostRef.current;
+        if (!host) return;
+
+        if (document.fullscreenElement === host) {
+            document.exitFullscreen?.().catch(() => {});
+        } else {
+            host.requestFullscreen?.().catch(() => {});
+        }
+    };
+
     // "MARKET OPEN" flash — shows once per connect, fades after 1.8s
     const [marketFlash, setMarketFlash] = useState<"hidden" | "visible" | "fading">("hidden");
     useEffect(() => {
@@ -68,12 +100,13 @@ export default function TradingTerminal() {
 
     const positionLabel = (h: number) => (h > 0 ? "LONG" : h < 0 ? "SHORT" : "FLAT");
 
-    const bookWidth =
+    const bookColumnWidth =
         mode === "large"
-            ? "lg:w-[clamp(400px,38vw,520px)]"
+            ? "clamp(480px,52vw,720px)"
             : mode === "stacked"
-                ? "lg:w-[clamp(300px,30vw,400px)]"
-                : "lg:w-[clamp(260px,26vw,340px)]";
+                ? "clamp(300px,30vw,420px)"
+                : "clamp(260px,26vw,340px)";
+    const orderColumnWidth = "clamp(240px,22vw,300px)";
 
     return (
         <div
@@ -98,53 +131,77 @@ export default function TradingTerminal() {
 
             <AssetBar priceRef={priceRef} priceFlashRef={priceFlashRef} directionRef={directionRef} />
 
-            <main
-                className={`relative z-10 grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-x-hidden overflow-y-auto p-2 sm:p-3 lg:gap-2.5 lg:overflow-hidden lg:p-3 ${chartFullscreen
-                    ? "lg:grid-cols-[40px_minmax(0,1fr)]"
-                    : "lg:grid-cols-[40px_minmax(0,1fr)_auto_280px]"
-                    }`}
-                role="main"
-            >
-                <ToolRail />
-
-                {/* Chart + status strip */}
-                <section className={`terminal-panel panel-delay-2 grid min-h-96 grid-rows-[1fr_auto] gap-2 ${chartFullscreen ? "lg:col-span-1" : ""}`}>
-                    <CandlestickChart />
-                    {/* Bottom status strip — compact session snapshot */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border border-border bg-bg-panel px-3 py-1.5 font-mono text-[11px]">
-                        <span className="text-text-muted">
-                            Cash{" "}
-                            <span className="text-text-primary">
-                                {portfolio ? portfolio.cash.toFixed(2) : "—"}
-                            </span>
-                        </span>
-                        <span className="text-text-muted">
-                            {portfolio ? positionLabel(portfolio.holdings) : "POS"}{" "}
-                            <span className="text-text-primary">
-                                {portfolio ? portfolio.holdings.toFixed(4) : "—"}
-                            </span>
-                        </span>
-                        <span className="text-text-muted">
-                            P&L{" "}
-                            <span className={pnl === null ? "text-text-primary" : pnl >= 0 ? "text-bull" : "text-bear"}>
-                                {pnl === null ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
-                            </span>
-                        </span>
+            <div ref={fullscreenHostRef} className="min-h-0 flex-1">
+                {chartFullscreen ? (
+                    <div className="relative h-full">
+                        <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
+                            H <span className="text-text-primary">{displaySessionHigh}</span>
+                            <span className="mx-2 text-border">|</span>
+                            L <span className="text-text-primary">{displaySessionLow}</span>
+                            <span className="mx-2 text-border">|</span>
+                            VWAP <span className="text-text-primary">{vwap === null ? "—" : vwap.toFixed(4)}</span>
+                            <span className="mx-2 text-border">|</span>
+                            Trades <span className="text-text-primary">{displayTradeCount}</span>
+                        </div>
+                        <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
+                            Esc to Exit Fullscreen
+                        </div>
+                        <p className="sr-only" aria-live="polite">
+                            Fullscreen chart stats. Session high {displaySessionHigh}, session low {displaySessionLow}, vwap {vwap === null ? "unavailable" : vwap.toFixed(4)}, trades {displayTradeCount}.
+                        </p>
+                        <CandlestickChart
+                            onPaletteOpen={() => setPaletteOpen(true)}
+                            onFullscreenToggle={handleFullscreenToggle}
+                        />
                     </div>
-                </section>
+                ) : (
+                    <main
+                        className="relative z-10 flex min-h-0 h-full flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2 sm:p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_var(--book-col)_var(--order-col)] lg:gap-2.5 lg:overflow-hidden lg:p-3"
+                        style={{ "--book-col": bookColumnWidth, "--order-col": orderColumnWidth } as CSSProperties}
+                        role="main"
+                    >
+                {/* Chart + status strip */}
+                        <section className="terminal-panel panel-delay-2 grid min-h-96 min-w-0 grid-rows-[1fr_auto] gap-2 lg:col-span-1">
+                            <CandlestickChart
+                                onPaletteOpen={() => setPaletteOpen(true)}
+                                onFullscreenToggle={handleFullscreenToggle}
+                            />
+                    {/* Bottom status strip — compact session snapshot */}
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border border-border bg-bg-panel px-3 py-1.5 font-mono text-[11px]">
+                                <span className="text-text-muted">
+                                    Cash{" "}
+                                    <span className="text-text-primary">
+                                        {portfolio ? portfolio.cash.toFixed(2) : "—"}
+                                    </span>
+                                </span>
+                                <span className="text-text-muted">
+                                    {portfolio ? positionLabel(portfolio.holdings) : "POS"}{" "}
+                                    <span className="text-text-primary">
+                                        {portfolio ? portfolio.holdings.toFixed(4) : "—"}
+                                    </span>
+                                </span>
+                                <span className="text-text-muted">
+                                    P&L{" "}
+                                    <span className={pnl === null ? "text-text-primary" : pnl >= 0 ? "text-bull" : "text-bear"}>
+                                        {pnl === null ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
+                                    </span>
+                                </span>
+                            </div>
+                        </section>
 
                 {/* Order book + trade tape */}
-                <section className={`terminal-panel panel-delay-3 ${bookWidth} min-h-96 ${chartFullscreen ? "hidden" : ""}`}>
-                    <OrderBook mode={mode} onModeChange={setMode} />
-                </section>
+                        <section className="terminal-panel panel-delay-3 min-h-96 min-w-0 lg:min-h-0">
+                            <MarketPanel mode={mode} onModeChange={setMode} />
+                        </section>
 
-                {/* Order entry + portfolio */}
-                <section className={`terminal-panel panel-delay-4 grid min-h-96 grid-rows-[minmax(0,1fr)_clamp(170px,22vh,250px)_100px] gap-2 ${chartFullscreen ? "hidden" : ""}`}>
-                    <OrderEntry />
-                    <PortfolioWidget />
-                    <EquityCurve />
-                </section>
-            </main>
+                {/* Order entry + workbench */}
+                        <section className="terminal-panel panel-delay-4 grid min-h-96 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2">
+                            <OrderEntry />
+                            <Workbench />
+                        </section>
+                    </main>
+                )}
+            </div>
         </div>
     );
 }

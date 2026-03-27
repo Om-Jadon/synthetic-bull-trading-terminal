@@ -54,7 +54,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         <span>SYNTHETIC-BULL</span>
                     </div>
 
-                    <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-text-muted">
+                    <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
                         BULL/USDC
                     </span>
 
@@ -119,7 +119,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary"
+                        className="relative inline-flex h-6 w-6 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary after:absolute after:-inset-3 sm:after:hidden"
                     >
                         {muted ? (
                             // Speaker with X — muted

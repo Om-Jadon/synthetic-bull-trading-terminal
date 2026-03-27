@@ -57,7 +57,7 @@ function estimateMarketFill(
   return { avgPrice, slippage, levelsUsed, partial: remaining > 0 };
 }
 
-import OpenOrders from "./OpenOrders";
+
 
 type Toast = { id: number; message: string; ok: boolean };
 
@@ -277,7 +277,7 @@ export default function OrderEntry() {
       : null;
 
   return (
-    <div className="grid h-full grid-rows-[auto_1fr] gap-2">
+    <>
       <section className="panel px-2 py-2">
         <div className="panel-title mb-2 border-0 p-0">Order Entry</div>
         <div
@@ -291,11 +291,10 @@ export default function OrderEntry() {
               type="button"
               onClick={() => setType(item)}
               aria-pressed={type === item}
-              className={`order-chip h-11 rounded-xs border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${
-                type === item
+              className={`order-chip h-8 rounded-xs border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${type === item
                   ? "border-border bg-bg-row text-text-primary"
                   : "border-border text-text-muted"
-              } ${ringClass(item)}`}
+                } ${ringClass(item)}`}
             >
               {item}
             </button>
@@ -313,17 +312,35 @@ export default function OrderEntry() {
               type="button"
               onClick={() => setSide(item)}
               aria-pressed={side === item}
-              className={`order-chip h-11 rounded-xs border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${
-                side === item
+              className={`order-chip h-8 rounded-xs border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${side === item
                   ? item === "buy"
                     ? "border-bull bg-bull-surface text-bull"
                     : "border-bear bg-bear-surface text-bear"
                   : "border-border text-text-muted"
-              } ${ringClass(item)}`}
+                } ${ringClass(item)}`}
             >
               {item}
             </button>
           ))}
+        </div>
+
+        <div className="mb-2 grid grid-cols-2 gap-1">
+          <button
+            type="button"
+            disabled
+            title="Not supported in simulation"
+            className="h-6 cursor-not-allowed rounded-xs border border-border bg-bg-panel text-[10px] uppercase tracking-[0.04em] text-text-muted opacity-40 transition-colors"
+          >
+            Post Only
+          </button>
+          <button
+            type="button"
+            disabled
+            title="Not supported in simulation"
+            className="h-6 cursor-not-allowed rounded-xs border border-border bg-bg-panel text-[10px] uppercase tracking-[0.04em] text-text-muted opacity-40 transition-colors"
+          >
+            Reduce Only
+          </button>
         </div>
 
         <form ref={formRef} className="space-y-2.5" onSubmit={submitOrder}>
@@ -336,7 +353,7 @@ export default function OrderEntry() {
                 type="number"
                 step="0.0001"
                 min="0"
-                className="mt-1 h-10 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-[13px] text-text-primary"
+                className="mt-1 h-9 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-[13px] text-text-primary"
               />
             </label>
           )}
@@ -362,13 +379,13 @@ export default function OrderEntry() {
               type="number"
               step="0.01"
               min="0"
-              className="mt-1 h-10 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-[13px] text-text-primary"
+              className="mt-1 h-9 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-[13px] text-text-primary"
             />
           </label>
 
           <div className="font-mono text-[10px] text-text-muted">
             {equityPct !== null && notional > 0
-              ? `~${equityPct.toFixed(1)}% of capital  ·  $${moneyFormatter.format(notional)} notional`
+              ? `~${equityPct.toFixed(1)}% of capital  ·  $${moneyFormatter.format(notional)} notional  ·  Fee ~$${(notional * 0.001).toFixed(2)}`
               : "—"}
           </div>
 
@@ -379,7 +396,7 @@ export default function OrderEntry() {
                 type="button"
                 onClick={() => setSize(quick)}
                 aria-label={`Set size to ${quick}`}
-                className={`order-chip h-9 rounded-xs border border-border bg-bg-row px-1 font-mono text-[11px] text-text-muted transition-shadow duration-150 ${ringClass(`size-${i + 1}`)}`}
+                className={`order-chip relative h-7 rounded-xs border border-border bg-bg-row px-1 font-mono text-[11px] text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:-inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
               >
                 {quick}
               </button>
@@ -423,9 +440,8 @@ export default function OrderEntry() {
           <button
             type="submit"
             disabled={submitting || !snapshotReady}
-            className={`order-submit h-11 w-full rounded-xs font-semibold uppercase tracking-[0.08em] text-bg-primary transition-shadow duration-150 ${
-              side === "buy" ? "bg-bull" : "bg-bear"
-            } disabled:cursor-not-allowed disabled:opacity-60 ${ringClass("submit")}`}
+            className={`order-submit h-11 w-full rounded-xs font-semibold uppercase tracking-[0.08em] text-bg-primary transition-shadow duration-150 ${side === "buy" ? "bg-bull" : "bg-bear"
+              } disabled:cursor-not-allowed disabled:opacity-60 ${ringClass("submit")}`}
           >
             {submitting
               ? "Sending"
@@ -452,7 +468,6 @@ export default function OrderEntry() {
         )}
       </section>
 
-      <OpenOrders />
 
       {/* Bottom-right toast portal */}
       <div
@@ -463,16 +478,15 @@ export default function OrderEntry() {
           <div
             key={toast.id}
             role="status"
-            className={`notice-enter pointer-events-auto rounded-xs border px-3 py-2 font-mono text-[12px] ${
-              toast.ok
+            className={`notice-enter pointer-events-auto rounded-xs border px-3 py-2 font-mono text-[12px] ${toast.ok
                 ? "border-bull/40 bg-bull-surface text-bull"
                 : "border-bear/40 bg-bear-surface text-bear"
-            }`}
+              }`}
           >
             {toast.message}
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 }

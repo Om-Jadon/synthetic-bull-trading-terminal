@@ -41,18 +41,18 @@ const COMMAND_DEFS: CommandDef[] = [
 
 type ParsedOrder =
   | {
-      kind: "order";
-      side: "buy" | "sell";
-      orderType: "market";
-      size: number;
-    }
+    kind: "order";
+    side: "buy" | "sell";
+    orderType: "market";
+    size: number;
+  }
   | {
-      kind: "order";
-      side: "buy" | "sell";
-      orderType: "limit";
-      size: number;
-      price: number;
-    };
+    kind: "order";
+    side: "buy" | "sell";
+    orderType: "limit";
+    size: number;
+    price: number;
+  };
 
 type ParsedCommand =
   | ParsedOrder
@@ -168,6 +168,18 @@ export default function CommandPalette({ open, onClose }: Props) {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
 
     requestAnimationFrame(() => inputRef.current?.focus());
+
+    const trapFocus = (e: KeyboardEvent) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", trapFocus, true);
+
+    return () => {
+      document.removeEventListener("keydown", trapFocus, true);
+    };
   }, [open]);
 
   // Clamp selected index when suggestion list length changes
@@ -256,11 +268,11 @@ export default function CommandPalette({ open, onClose }: Props) {
       const payload: OrderRequest =
         parsed.orderType === "limit"
           ? {
-              type: "limit",
-              side: parsed.side,
-              size: parsed.size,
-              price: parsed.price,
-            }
+            type: "limit",
+            side: parsed.side,
+            size: parsed.size,
+            price: parsed.price,
+          }
           : { type: "market", side: parsed.side, size: parsed.size };
 
       const resp = await placeOrder(payload);
@@ -367,7 +379,7 @@ export default function CommandPalette({ open, onClose }: Props) {
         aria-modal="true"
         aria-label="Command palette"
         className="palette-enter fixed left-1/2 top-12 z-50 w-120 max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-xs border border-border bg-bg-panel"
-        style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.72)" }}
+        style={{ boxShadow: "var(--shadow-overlay)" }}
       >
         {/* ── Input row ── */}
         <div className="flex items-center gap-2.5 border-b border-border px-3 py-2.5">
@@ -397,6 +409,7 @@ export default function CommandPalette({ open, onClose }: Props) {
 
           <input
             ref={inputRef}
+            id="command-palette-input"
             role="combobox"
             type="text"
             value={query}
@@ -418,6 +431,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                 ? `palette-item-${selectedIdx}`
                 : undefined
             }
+            aria-label="Trading command input"
             className="min-w-0 flex-1 bg-transparent font-mono text-[13px] text-text-primary placeholder:text-text-muted/50 focus:outline-none"
           />
 
@@ -436,9 +450,8 @@ export default function CommandPalette({ open, onClose }: Props) {
         {feedback && (
           <div
             role="alert"
-            className={`border-b border-border px-3 py-2 font-mono text-[11px] ${
-              feedback.ok ? "text-bull" : "text-bear"
-            }`}
+            className={`border-b border-border px-3 py-2 font-mono text-[11px] ${feedback.ok ? "text-bull" : "text-bear"
+              }`}
           >
             {feedback.message}
           </div>
@@ -524,11 +537,10 @@ export default function CommandPalette({ open, onClose }: Props) {
                     }
                     inputRef.current?.focus();
                   }}
-                  className={`flex cursor-pointer select-none items-center justify-between px-3 py-2 transition-colors duration-75 ${
-                    i === selectedIdx
-                      ? "border-l-2 border-bull bg-neutral-hover"
-                      : "border-l-2 border-transparent hover:bg-hover-overlay"
-                  }`}
+                  className={`flex cursor-pointer select-none items-center justify-between px-3 py-2 transition-colors duration-75 ${i === selectedIdx
+                    ? "border-l-2 border-bull bg-neutral-hover"
+                    : "border-l-2 border-transparent hover:bg-hover-overlay"
+                    }`}
                 >
                   <span className="font-mono text-[12px] text-text-primary">
                     {cmd.syntax}

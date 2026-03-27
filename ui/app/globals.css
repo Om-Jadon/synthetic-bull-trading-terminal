@@ -1,45 +1,68 @@
 @import "tailwindcss";
 
 @theme {
-    --color-bg-primary: #0b0e11;
-    --color-top-fade: #0b0e11b4;
-    --color-bg-panel: #11141a;
-    --color-bg-row: #15181f;
-    --color-spread-bg: #15181f;
-    --color-bull: #26a69a;
-    --color-bear: #ef5350;
-    --color-bull-surface: #0f1f1d;
-    --color-bear-surface: #241516;
-    --color-bull-flash: #26a69a22;
-    --color-bear-flash: #ef535022;
-    --color-bull-depth: #26a69a26;
-    --color-bear-depth: #ef535026;
-    --color-brand: oklch(75% 0.13 68);
-    --color-text-primary: #e0e0e0;
-    --color-text-muted: #8791a3;
-    --color-border: #222630;
-    --color-spread: #2a2d3e;
-    --color-neutral-hover: #252b39;
-    --color-hover-overlay: #ffffff08;
-    --color-chart-bg: #131722;
-    --color-chart-grid: #1e222d;
-    --color-chart-crosshair: #2a2d3e;
-    --color-focus-ring: oklch(75% 0.1 270);
-    --color-focus-ring-shadow: oklch(75% 0.1 270 / 0.33);
-    --font-sans: var(--font-jakarta);
-    --font-mono: var(--font-jetbrains);
+  /* ── Backgrounds (warm-slate, ~40° hue tint) ── */
+  --color-bg-primary: oklch(10% 0.008 40);
+  --color-top-fade: oklch(10% 0.008 40 / 0.7);
+  --color-bg-panel: oklch(13.5% 0.01 40);
+  --color-bg-row: oklch(16% 0.01 40);
+  --color-spread-bg: oklch(16% 0.01 40);
+
+  /* ── Signals: Emerald bull, Crimson bear ── */
+  --color-bull: oklch(67% 0.19 148);
+  --color-bear: oklch(58% 0.22 25);
+  --color-bull-surface: oklch(13% 0.035 148);
+  --color-bear-surface: oklch(13% 0.04 25);
+  --color-bull-flash: oklch(67% 0.19 148 / 0.13);
+  --color-bear-flash: oklch(58% 0.22 25 / 0.13);
+  --color-bull-depth: oklch(67% 0.19 148 / 0.25);
+  --color-bear-depth: oklch(58% 0.22 25 / 0.25);
+
+  /* ── Brand (amber gold — header only, unchanged) ── */
+  --color-brand: oklch(75% 0.13 68);
+
+  /* ── Text ── */
+  --color-text-primary: oklch(91% 0.006 60);
+  --color-text-muted: oklch(54% 0.01 50);
+
+  /* ── Structure ── */
+  --color-border: oklch(20% 0.012 40);
+  --color-spread: oklch(26% 0.01 40);
+  --color-neutral-hover: oklch(20% 0.01 40);
+  --color-hover-overlay: oklch(100% 0 0 / 0.04);
+
+  /* ── Chart (deeper warm-slate) ── */
+  --color-chart-bg: oklch(11% 0.008 40);
+  --color-chart-grid: oklch(20% 0.01 40);
+  --color-chart-crosshair: oklch(26% 0.01 40);
+  /* Hex bridge tokens for JS charting libs that cannot parse oklch() */
+  --color-chart-bg-hex: #060403;
+  --color-chart-grid-hex: #1a1513;
+  --color-chart-crosshair-hex: #292220;
+  --color-chart-vwap-hex: #8791a3;
+  --color-bull-hex: #11b34a;
+  --color-bear-hex: #df202e;
+  --color-text-muted-hex: #746d6a;
+
+  /* ── Focus (amber-tinted, matches brand warmth) ── */
+  --color-focus-ring: oklch(72% 0.14 68);
+  --color-focus-ring-shadow: oklch(72% 0.14 68 / 0.33);
+  --shadow-overlay: 0 24px 64px oklch(0% 0 0 / 0.72);
+
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-jetbrains);
 }
 
 body {
-    margin: 0;
-    min-height: 100vh;
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    font-family: var(--font-sans), sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), sans-serif;
 }
 
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 button:focus-visible,
@@ -47,364 +70,372 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [role="tab"]:focus-visible {
-    outline: 2px solid var(--color-focus-ring);
-    outline-offset: 1px;
-    box-shadow: 0 0 0 3px var(--color-focus-ring-shadow);
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px var(--color-focus-ring-shadow);
 }
 
 .panel {
-    border: 1px solid var(--color-border);
-    border-radius: 2px; /* rounded-xs per Tailwind v4 */
-    background: var(--color-bg-panel);
-    overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 2px; /* rounded-xs per Tailwind v4 */
+  background: var(--color-bg-panel);
+  overflow: hidden;
 }
 
 .panel-scroller {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 
 .panel-scroller::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  width: 8px;
+  height: 8px;
 }
 
 .panel-scroller::-webkit-scrollbar-thumb {
-    background: color-mix(
-        in oklab,
-        var(--color-border) 78%,
-        var(--color-text-muted)
-    );
-    border-radius: 999px;
+  background: color-mix(
+    in oklab,
+    var(--color-border) 78%,
+    var(--color-text-muted)
+  );
+  border-radius: 999px;
 }
 
 .panel-scroller::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 .panel-title {
-    padding: 8px 10px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-text-primary);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
 .terminal-shell {
-    position: relative;
+  position: relative;
 }
 
 .top-fade {
-    position: relative;
+  position: relative;
 }
 
 .top-fade::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 14px;
-    pointer-events: none;
-    background: linear-gradient(
-        180deg,
-        var(--color-top-fade) 0%,
-        transparent 100%
-    );
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--color-top-fade) 0%,
+    transparent 100%
+  );
 }
 
 .ticker-flash {
-    animation-duration: 400ms;
-    animation-timing-function: linear;
+  animation-duration: 400ms;
+  animation-timing-function: linear;
 }
 
 @keyframes flash-up {
-    0% {
-        background-color: transparent;
-    }
-    30% {
-        background-color: var(--color-bull-flash);
-    }
-    100% {
-        background-color: transparent;
-    }
+  0% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: var(--color-bull-flash);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 @keyframes flash-down {
-    0% {
-        background-color: transparent;
-    }
-    30% {
-        background-color: var(--color-bear-flash);
-    }
-    100% {
-        background-color: transparent;
-    }
+  0% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: var(--color-bear-flash);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .flash-up {
-    animation-name: flash-up;
+  animation-name: flash-up;
 }
 
 .flash-down {
-    animation-name: flash-down;
+  animation-name: flash-down;
 }
 
 @keyframes pulse-scale {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.04);
-    }
-    100% {
-        transform: scale(1);
-    }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .spread-pulse {
-    animation: pulse-scale 200ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: pulse-scale 200ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 @keyframes equity-pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.02);
-    }
-    100% {
-        transform: scale(1);
-    }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .equity-pulse {
-    animation: equity-pulse 150ms cubic-bezier(0.25, 0, 0.1, 1);
-    display: inline-block;
+  animation: equity-pulse 150ms cubic-bezier(0.25, 0, 0.1, 1);
+  display: inline-block;
 }
 
 @keyframes slide-in {
-    from {
-        transform: translateX(8px);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+  from {
+    transform: translateX(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .trade-row-enter {
-    animation: slide-in 180ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: slide-in 180ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 .book-row-enter {
-    animation: slide-in 80ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: slide-in 80ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 @keyframes fade-out {
-    from {
-        opacity: 1;
-    }
-    to {
-        opacity: 0;
-    }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .book-row-exit {
-    animation: fade-out 100ms linear forwards;
+  animation: fade-out 100ms linear forwards;
 }
 
 @keyframes depth-flash {
-    0% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.72;
-    }
-    100% {
-        opacity: 1;
-    }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .depth-flash {
-    animation: depth-flash 120ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: depth-flash 120ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 .book-row,
 .trade-row,
 .order-chip {
-    transition: background-color 140ms cubic-bezier(0.25, 0, 0.1, 1);
+  transition: background-color 140ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 .book-row:hover,
 .trade-row:hover,
 .order-chip:hover {
-    background-color: var(--color-hover-overlay);
+  background-color: var(--color-hover-overlay);
 }
 
 .trade-sm {
-    font-weight: 400;
+  font-weight: 400;
 }
 
 .trade-md {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .trade-lg {
-    font-weight: 700;
+  font-weight: 700;
 }
 
 .trade-lg td {
-    color: var(--color-text-primary);
+  color: var(--color-text-primary);
 }
 
 .trade-block {
-    font-weight: 700;
-    background: color-mix(in oklab, var(--color-bull-surface) 30%, transparent);
-    border-left: 2px solid var(--color-border);
+  font-weight: 700;
+  background: color-mix(in oklab, var(--color-bull-surface) 30%, transparent);
+  border-left: 2px solid var(--color-border);
 }
 
 .trade-block td {
-    color: var(--color-text-primary);
+  color: var(--color-text-primary);
 }
 
 .status-dot {
-    animation: pulse-dot 2000ms ease-in-out infinite;
+  animation: pulse-dot 2000ms ease-in-out infinite;
 }
 
 @keyframes pulse-dot {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.35;
-    }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .order-submit {
-    position: relative;
-    overflow: hidden;
-    transition: transform 140ms cubic-bezier(0.25, 0, 0.1, 1);
+  position: relative;
+  overflow: hidden;
+  transition: transform 140ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 .order-submit:active {
-    transform: scale(0.985);
+  transform: scale(0.985);
 }
 
 .order-submit::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: currentColor;
-    pointer-events: none;
-    opacity: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: currentColor;
+  pointer-events: none;
+  opacity: 0;
 }
 
 .order-submit:focus-visible::after,
 .order-submit:active::after {
-    animation: ripple 400ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: ripple 400ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 @keyframes panel-in {
-    from {
-        opacity: 0;
-        transform: translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes ripple {
-    from {
-        transform: scale(0);
-        opacity: 0.6;
-    }
-    to {
-        transform: scale(2.5);
-        opacity: 0;
-    }
+  from {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
 }
 
 .is-live .terminal-panel {
-    animation: panel-in 360ms cubic-bezier(0.25, 0, 0.1, 1) both;
+  animation: panel-in 360ms cubic-bezier(0.25, 0, 0.1, 1) both;
 }
 
 .is-live .panel-delay-1 {
-    animation-delay: 0ms;
+  animation-delay: 0ms;
 }
 
 .is-live .panel-delay-2 {
-    animation-delay: 80ms;
+  animation-delay: 80ms;
 }
 
 .is-live .panel-delay-3 {
-    animation-delay: 160ms;
+  animation-delay: 160ms;
 }
 
 .is-live .panel-delay-4 {
-    animation-delay: 240ms;
+  animation-delay: 240ms;
 }
 
 @keyframes notice-in {
-    from {
-        opacity: 0;
-        transform: translateY(16px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .notice-enter {
-    animation: notice-in 250ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: notice-in 250ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
 @keyframes palette-in {
-    from {
-        opacity: 0;
-        /* translateX(-50%) must be preserved — it's Tailwind's -translate-x-1/2 */
-        transform: translateX(-50%) translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
+  from {
+    opacity: 0;
+    /* translateX(-50%) must be preserved — it's Tailwind's -translate-x-1/2 */
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .palette-enter {
-    animation: palette-in 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: palette-in 150ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes stats-in {
-    from {
-        opacity: 0;
-        transform: translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stats-reveal {
-    animation: stats-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: stats-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 1ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 1ms !important;
-        scroll-behavior: auto !important;
-    }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .touch-target-compact {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
+  }
 }

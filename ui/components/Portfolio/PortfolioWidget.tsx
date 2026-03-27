@@ -29,9 +29,12 @@ export default function PortfolioWidget() {
 
         // Equity scale pulse — spec: scale(1.02), 150ms
         if (equityRef.current) {
-            equityRef.current.classList.remove("equity-pulse");
-            void equityRef.current.offsetWidth;
-            equityRef.current.classList.add("equity-pulse");
+            const node = equityRef.current;
+            node.classList.remove("equity-pulse");
+            const raf = window.requestAnimationFrame(() => {
+                node.classList.add("equity-pulse");
+            });
+            return () => window.cancelAnimationFrame(raf);
         }
     }, [portfolio]);
 
@@ -40,8 +43,7 @@ export default function PortfolioWidget() {
     const positionLabel = (h: number) => (h > 0 ? "LONG" : h < 0 ? "SHORT" : "FLAT");
 
     return (
-        <section className="panel relative h-full px-2 py-2">
-            <div className="panel-title mb-2 border-0 p-0">Portfolio</div>
+        <section className="relative h-full">
             <div className="grid gap-1.5 font-mono text-[14px]">
                 <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Equity</span>
