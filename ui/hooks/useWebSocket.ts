@@ -67,21 +67,36 @@ export function useWebSocket({
   const previousPriceRef = useRef(0);
   const aggregator = useMemo(() => createCandleAggregator(), []);
 
+  // ── WS telemetry — all refs, zero re-renders on the hot path ──
+  // msgTimestampsRef: sliding-window of arrival timestamps for msgs/sec
+  const msgTimestampsRef = useRef<number[]>([]);
+  // arrivalRef: arrival time of the first msg in the current rAF batch (reset after flush)
+  const arrivalRef = useRef<number>(0);
+  // latencyRef: last computed flush latency in ms (written by rAF, read by setInterval)
+  const latencyRef = useRef<number>(0);
+  const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
     let socket: WebSocket | null = null;
     let cancelled = false;
 
     const scheduleFlush = () => {
-      if (frameRef.current !== null) {
-        return;
-      }
+      if (frameRef.current !== null) return;
 
       frameRef.current = window.requestAnimationFrame(() => {
         frameRef.current = null;
-        const drained = queueRef.current.splice(0, queueRef.current.length);
 
+        // Latency = gap between first msg arrival in this batch and the rAF callback
+        const now = Date.now();
+        if (arrivalRef.current > 0) {
+          latencyRef.current = now - arrivalRef.current;
+          arrivalRef.current = 0;
+        }
+
+        const drained = queueRef.current.splice(0, queueRef.current.length);
         const store = useTradingStore.getState();
+
         for (const message of drained) {
           switch (message.type) {
             case "snapshot": {
@@ -105,7 +120,6 @@ export function useWebSocket({
               store.setPortfolio(message);
               break;
             case "order_update": {
-              // Check before updating — knownOrderIds identifies human orders
               const isHuman = store.knownOrderIds.has(message.order_id);
               store.onOrderUpdate(message);
               if (isHuman) {
@@ -119,10 +133,20 @@ export function useWebSocket({
       });
     };
 
+    // Throttled stats reporter — once per second, reads from refs
+    statsTimerRef.current = setInterval(() => {
+      const now = Date.now();
+      msgTimestampsRef.current = msgTimestampsRef.current.filter(
+        (t) => now - t < 1000,
+      );
+      useTradingStore.getState().setWsStats({
+        msgsPerSec: msgTimestampsRef.current.length,
+        latencyMs: Math.round(latencyRef.current),
+      });
+    }, 1000);
+
     const connect = () => {
-      if (cancelled) {
-        return;
-      }
+      if (cancelled) return;
 
       useTradingStore.getState().setConnectionStatus("connecting");
       socket = new WebSocket(wsUrl);
@@ -134,13 +158,16 @@ export function useWebSocket({
       socket.onmessage = (event) => {
         try {
           const parsed: unknown = JSON.parse(event.data);
-          if (!isWSMessage(parsed)) {
-            return;
-          }
+          if (!isWSMessage(parsed)) return;
+
+          const now = Date.now();
+          msgTimestampsRef.current.push(now);
+          // Only record the first arrival time per rAF batch
+          if (arrivalRef.current === 0) arrivalRef.current = now;
           queueRef.current.push(parsed);
           scheduleFlush();
         } catch {
-          return;
+          // ignore malformed frames
         }
       };
 
@@ -148,6 +175,7 @@ export function useWebSocket({
         const store = useTradingStore.getState();
         store.setConnectionStatus("closed");
         store.setSnapshotReady(false);
+        store.setWsStats({ msgsPerSec: 0, latencyMs: 0 });
         if (!cancelled) {
           reconnectRef.current = window.setTimeout(connect, 1000);
         }
@@ -162,12 +190,9 @@ export function useWebSocket({
 
     return () => {
       cancelled = true;
-      if (frameRef.current !== null) {
-        window.cancelAnimationFrame(frameRef.current);
-      }
-      if (reconnectRef.current !== null) {
-        window.clearTimeout(reconnectRef.current);
-      }
+      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+      if (reconnectRef.current !== null) window.clearTimeout(reconnectRef.current);
+      if (statsTimerRef.current !== null) clearInterval(statsTimerRef.current);
       socket?.close();
     };
   }, [aggregator, directionRef, priceFlashRef, priceRef]);

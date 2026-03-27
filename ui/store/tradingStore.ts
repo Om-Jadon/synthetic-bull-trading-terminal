@@ -34,8 +34,10 @@ type TradingStore = {
   knownOrderIds: Set<string>;
   snapshotReady: boolean;
   connectionStatus: "connecting" | "open" | "closed";
+  wsStats: { msgsPerSec: number; latencyMs: number };
   setConnectionStatus: (status: TradingStore["connectionStatus"]) => void;
   setSnapshotReady: (ready: boolean) => void;
+  setWsStats: (stats: { msgsPerSec: number; latencyMs: number }) => void;
   setChartTimeframe: (seconds: number) => void;
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
   addTrade: (trade: TradeMsg) => void;
@@ -98,8 +100,11 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   knownOrderIds: new Set(),
   snapshotReady: false,
   connectionStatus: "connecting",
+  wsStats: { msgsPerSec: 0, latencyMs: 0 },
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+
+  setWsStats: (wsStats) => set({ wsStats }),
 
   setSnapshotReady: (snapshotReady) =>
     set((state) =>

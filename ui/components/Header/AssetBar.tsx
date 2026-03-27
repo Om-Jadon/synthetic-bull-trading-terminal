@@ -21,10 +21,10 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     const vwapDenominator = useTradingStore((state) => state.vwapDenominator);
     const tradeCount = useTradingStore((state) => state.tradeCount);
     const connectionStatus = useTradingStore((state) => state.connectionStatus);
+    const wsStats = useTradingStore((state) => state.wsStats);
 
     const [muted, setMutedState] = useState(false);
 
-    // Load persisted mute preference after mount (localStorage is client-only)
     useEffect(() => {
         setMutedState(sounds.loadMutePreference());
     }, []);
@@ -45,9 +45,10 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 : "text-text-muted";
 
     return (
-        <header className="h-10 shrink-0 border-b border-border bg-bg-panel px-3">
-            <div className="flex h-full items-center justify-between gap-4">
-                {/* Left: brand + pair + price */}
+        <header className="h-auto shrink-0 border-b border-border bg-bg-panel" role="banner">
+            {/* ── Tier 1: Brand + Price + Change ── */}
+            <div className="flex h-10 items-center justify-between gap-4 border-b border-border px-3">
+                {/* Left: wordmark + pair + live price */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 border-r border-border pr-3 font-semibold tracking-[0.18em] text-brand">
                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
@@ -74,11 +75,18 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                     </span>
                 </div>
 
-                {/* Center: boot connecting state → live session stats */}
+                {/* Right: SIM badge */}
+                <span className="hidden rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-text-muted sm:inline-block">
+                    Sim
+                </span>
+            </div>
+
+            {/* ── Tier 2: Session stats + WS diagnostics + controls ── */}
+            <div className="flex h-7 items-center justify-between gap-4 px-3">
+                {/* Left: session stats */}
                 <div className="hidden items-center md:flex">
                     {snapshotReady ? (
-                        // key forces remount on snapshotReady flip → re-triggers stats-reveal animation
-                        <div key="live" className="stats-reveal flex items-center gap-4 font-mono text-[11px]">
+                        <div key="live" className="stats-reveal flex items-center gap-4 font-mono text-[10px]">
                             <span className="text-text-muted">
                                 H{" "}
                                 <span className="text-text-primary">{sessionHigh.toFixed(4)}</span>
@@ -89,7 +97,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                             </span>
                             <span className="text-text-muted">
                                 VWAP{" "}
-                                <span className="text-text-primary">{vwap === null ? "-" : vwap.toFixed(4)}</span>
+                                <span className="text-text-primary">{vwap === null ? "—" : vwap.toFixed(4)}</span>
                             </span>
                             <span className="text-text-muted">
                                 Vol{" "}
@@ -101,54 +109,66 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                             </span>
                         </div>
                     ) : (
-                        <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
                             <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-text-muted" />
                             Connecting to market
                         </span>
                     )}
                 </div>
 
-                {/* Right: mute toggle + status */}
-                <div className="flex items-center gap-2">
-                    <span className="hidden rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-text-muted sm:inline-block">
-                        Sim
-                    </span>
+                {/* Right: WS diagnostics + mute + status */}
+                <div className="ml-auto flex items-center gap-3">
+                    {/* WS telemetry — only shown when connected and active */}
+                    {connectionStatus === "open" && wsStats.msgsPerSec > 0 && (
+                        <span
+                            className="hidden font-mono text-[10px] text-text-muted sm:block"
+                            title="WebSocket latency and message rate"
+                        >
+                            WS{" "}
+                            <span className="text-text-primary">
+                                {wsStats.latencyMs > 0 ? `${wsStats.latencyMs}ms` : "—"}
+                            </span>
+                            {" · "}
+                            <span className="text-text-primary">{wsStats.msgsPerSec}/s</span>
+                        </span>
+                    )}
 
+                    {/* Mute toggle */}
                     <button
                         type="button"
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="relative inline-flex h-6 w-6 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary after:absolute after:-inset-3 sm:after:hidden"
+                        className="relative inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary after:absolute after:-inset-3 sm:after:hidden"
                     >
                         {muted ? (
-                            // Speaker with X — muted
-                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">
                                 <path d="M1.5 3.5H3L5.5 1.5V9.5L3 7.5H1.5V3.5Z" fill="currentColor" />
                                 <path d="M8 3.5L10 5.5M10 3.5L8 5.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                             </svg>
                         ) : (
-                            // Speaker with wave arc — unmuted
-                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">
                                 <path d="M1.5 3.5H3L5.5 1.5V9.5L3 7.5H1.5V3.5Z" fill="currentColor" />
                                 <path d="M7.5 3C8.5 4 8.5 7 7.5 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                             </svg>
                         )}
                     </button>
 
+                    {/* Connection status pill */}
                     <span
                         role="status"
                         aria-live="polite"
                         aria-label={`Connection status: ${connectionStatus}`}
-                        className={`inline-flex items-center gap-1.5 rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] ${statusTone}`}
+                        className={`inline-flex items-center gap-1.5 rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] ${statusTone}`}
                     >
                         <span
-                            className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${connectionStatus === "open"
-                                ? "bg-bull"
-                                : connectionStatus === "closed"
-                                    ? "bg-bear"
-                                    : "bg-text-muted"
-                                }`}
+                            className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${
+                                connectionStatus === "open"
+                                    ? "bg-bull"
+                                    : connectionStatus === "closed"
+                                        ? "bg-bear"
+                                        : "bg-text-muted"
+                            }`}
                         />
                         {connectionStatus}
                     </span>
