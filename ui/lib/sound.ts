@@ -1,5 +1,5 @@
 /**
- * sound.ts — Web Audio API sound design for NEXTBULL terminal.
+ * sound.ts — Web Audio API sound design for SYNTHETIC-BULL terminal.
  *
  * All sounds are generated synthetically — no external files.
  * AudioContext is created lazily on the first user interaction to satisfy
@@ -87,7 +87,10 @@ function burst(
 
   osc.start(t);
   osc.stop(t + dur + 0.01);
-  osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+  osc.onended = () => {
+    osc.disconnect();
+    gain.disconnect();
+  };
 }
 
 // ─── Primitive: frequency-swept oscillator (for cancel tone) ─────────────────
@@ -115,7 +118,10 @@ function sweep(
 
   osc.start(c.currentTime);
   osc.stop(c.currentTime + dur + 0.01);
-  osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+  osc.onended = () => {
+    osc.disconnect();
+    gain.disconnect();
+  };
 }
 
 // ─── Public sound API ────────────────────────────────────────────────────────
@@ -154,8 +160,8 @@ export function orderSubmit(): void {
  * Staggered 90ms apart for a pleasant musical feel.
  */
 export function orderFill(): void {
-  burst(880, 0.07, 0.15);         // A5 — root
-  burst(1320, 0.05, 0.12, 0.09);  // E6 — perfect fifth, delayed
+  burst(880, 0.07, 0.15); // A5 — root
+  burst(1320, 0.05, 0.12, 0.09); // E6 — perfect fifth, delayed
 }
 
 /**

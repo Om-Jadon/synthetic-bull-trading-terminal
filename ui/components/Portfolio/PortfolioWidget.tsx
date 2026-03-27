@@ -43,21 +43,21 @@ export default function PortfolioWidget() {
         <section className="panel relative h-full px-2 py-2">
             <div className="panel-title mb-2 border-0 p-0">Portfolio</div>
             <div className="grid gap-1.5 font-mono text-[14px]">
-                <div className="flex items-center justify-between rounded-[3px] border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
+                <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Equity</span>
                     <span ref={equityRef} className="text-text-primary">
                         {portfolio ? portfolio.equity.toFixed(2) : "--"}
                     </span>
                 </div>
-                <div className="flex items-center justify-between rounded-[3px] border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
+                <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Cash</span>
                     <span className="text-text-primary">{portfolio ? portfolio.cash.toFixed(2) : "--"}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-[3px] border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
+                <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>{portfolio ? positionLabel(portfolio.holdings) : "POS"}</span>
                     <span className="text-text-primary">{portfolio ? portfolio.holdings.toFixed(4) : "--"}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-[3px] border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
+                <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Avg Entry</span>
                     <span className="text-text-primary">
                         {portfolio && portfolio.avg_entry > 0 ? portfolio.avg_entry.toFixed(4) : "--"}
@@ -65,7 +65,7 @@ export default function PortfolioWidget() {
                 </div>
                 <div
                     ref={pnlFlashRef}
-                    className="ticker-flash grid grid-cols-2 gap-1 rounded-[3px] border border-border/70 bg-bg-row px-2 py-1"
+                    className="ticker-flash grid grid-cols-2 gap-1 rounded-xs border border-border/70 bg-bg-row px-2 py-1"
                 >
                     <div className="flex items-center justify-between">
                         <span className="text-[11px] text-text-muted">Unreal</span>

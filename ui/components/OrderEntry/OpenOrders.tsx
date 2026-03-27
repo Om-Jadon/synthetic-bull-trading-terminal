@@ -28,7 +28,7 @@ export default function OpenOrders() {
                     <div className="text-xs text-text-muted">No resting orders</div>
                 ) : (
                     orders.map((order) => (
-                        <div key={order.order_id} className="order-chip mb-1.5 grid grid-cols-[1fr_auto] items-center gap-2 rounded-[3px] border border-border bg-bg-row p-2">
+                        <div key={order.order_id} className="order-chip mb-1.5 grid grid-cols-[1fr_auto] items-center gap-2 rounded-xs border border-border bg-bg-row p-2">
                             <div className="font-mono text-[11px]">
                                 <div className={order.side === "buy" ? "text-bull" : "text-bear"}>
                                     {order.side.toUpperCase()} {order.price.toFixed(4)}
@@ -41,7 +41,7 @@ export default function OpenOrders() {
                                 type="button"
                                 onClick={() => onCancel(order.order_id)}
                                 aria-label={`Cancel ${order.side} order, ${order.remaining_size.toFixed(2)} remaining at ${order.price.toFixed(4)}`}
-                                className="h-9 rounded-[3px] border border-border bg-bg-panel px-2 text-[10px] uppercase tracking-[0.08em] text-text-muted hover:bg-neutral-hover"
+                                className="h-9 rounded-xs border border-border bg-bg-panel px-2 text-[10px] uppercase tracking-[0.08em] text-text-muted hover:bg-neutral-hover"
                             >
                                 Cancel
                             </button>

@@ -17,6 +17,9 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     const sessionVolume = useTradingStore((state) => state.sessionVolume);
     const sessionHigh = useTradingStore((state) => state.sessionHigh);
     const sessionLow = useTradingStore((state) => state.sessionLow);
+    const vwapNumerator = useTradingStore((state) => state.vwapNumerator);
+    const vwapDenominator = useTradingStore((state) => state.vwapDenominator);
+    const tradeCount = useTradingStore((state) => state.tradeCount);
     const connectionStatus = useTradingStore((state) => state.connectionStatus);
 
     const [muted, setMutedState] = useState(false);
@@ -33,12 +36,13 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     };
 
     const isUp = changePct >= 0;
+    const vwap = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : null;
     const statusTone =
         connectionStatus === "open"
             ? "text-bull"
             : connectionStatus === "closed"
-              ? "text-bear"
-              : "text-text-muted";
+                ? "text-bear"
+                : "text-text-muted";
 
     return (
         <header className="h-10 shrink-0 border-b border-border bg-bg-panel px-3">
@@ -47,7 +51,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 border-r border-border pr-3 font-semibold tracking-[0.18em] text-brand">
                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
-                        <span>NEXTBULL</span>
+                        <span>SYNTHETIC-BULL</span>
                     </div>
 
                     <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-text-muted">
@@ -84,8 +88,16 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                                 <span className="text-text-primary">{sessionLow.toFixed(4)}</span>
                             </span>
                             <span className="text-text-muted">
+                                VWAP{" "}
+                                <span className="text-text-primary">{vwap === null ? "-" : vwap.toFixed(4)}</span>
+                            </span>
+                            <span className="text-text-muted">
                                 Vol{" "}
                                 <span className="text-text-primary">{sessionVolume.toFixed(2)}</span>
+                            </span>
+                            <span className="text-text-muted">
+                                Trades{" "}
+                                <span className="text-text-primary">{tradeCount.toLocaleString()}</span>
                             </span>
                         </div>
                     ) : (
@@ -131,13 +143,12 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         className={`inline-flex items-center gap-1.5 rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] ${statusTone}`}
                     >
                         <span
-                            className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${
-                                connectionStatus === "open"
-                                    ? "bg-bull"
-                                    : connectionStatus === "closed"
-                                      ? "bg-bear"
-                                      : "bg-text-muted"
-                            }`}
+                            className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${connectionStatus === "open"
+                                ? "bg-bull"
+                                : connectionStatus === "closed"
+                                    ? "bg-bear"
+                                    : "bg-text-muted"
+                                }`}
                         />
                         {connectionStatus}
                     </span>

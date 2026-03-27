@@ -7,6 +7,15 @@ import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 import type { OrderRequest } from "@/types/ws";
 
+const TIMEFRAME_MAP: Record<string, number> = {
+  "1s": 1,
+  "5s": 5,
+  "15s": 15,
+  "30s": 30,
+  "1m": 60,
+  "5m": 300,
+};
+
 // ─── Command definitions ────────────────────────────────────────────────────
 
 type CommandDef = {
@@ -21,28 +30,35 @@ const COMMAND_DEFS: CommandDef[] = [
   { syntax: "sell <size> at <price>", description: "Limit sell" },
   { syntax: "cancel all", description: "Cancel all open orders" },
   { syntax: "cancel last", description: "Cancel most recent order" },
+  {
+    syntax: "timeframe <1s|5s|15s|30s|1m|5m>",
+    description: "Switch chart timeframe",
+  },
   { syntax: "help", description: "Show all commands" },
 ];
 
 // ─── Parser ─────────────────────────────────────────────────────────────────
 
-type ParsedOrder = {
-  kind: "order";
-  side: "buy" | "sell";
-  orderType: "market";
-  size: number;
-} | {
-  kind: "order";
-  side: "buy" | "sell";
-  orderType: "limit";
-  size: number;
-  price: number;
-};
+type ParsedOrder =
+  | {
+      kind: "order";
+      side: "buy" | "sell";
+      orderType: "market";
+      size: number;
+    }
+  | {
+      kind: "order";
+      side: "buy" | "sell";
+      orderType: "limit";
+      size: number;
+      price: number;
+    };
 
 type ParsedCommand =
   | ParsedOrder
   | { kind: "cancel_all" }
   | { kind: "cancel_last" }
+  | { kind: "timeframe"; value: string }
   | { kind: "help" };
 
 function parseCommand(raw: string): ParsedCommand | null {
@@ -50,7 +66,9 @@ function parseCommand(raw: string): ParsedCommand | null {
   if (!s) return null;
 
   // buy/sell <size> at <price>
-  const limitMatch = s.match(/^(buy|sell)\s+(\d+(?:\.\d+)?)\s+at\s+(\d+(?:\.\d+)?)$/i);
+  const limitMatch = s.match(
+    /^(buy|sell)\s+(\d+(?:\.\d+)?)\s+at\s+(\d+(?:\.\d+)?)$/i,
+  );
   if (limitMatch) {
     return {
       kind: "order",
@@ -74,6 +92,10 @@ function parseCommand(raw: string): ParsedCommand | null {
 
   if (/^cancel\s+all$/i.test(s)) return { kind: "cancel_all" };
   if (/^cancel\s+last$/i.test(s)) return { kind: "cancel_last" };
+
+  const tfMatch = s.match(/^timeframe\s+(1s|5s|15s|30s|1m|5m)$/i);
+  if (tfMatch) return { kind: "timeframe", value: tfMatch[1].toLowerCase() };
+
   if (/^help$/i.test(s)) return { kind: "help" };
 
   return null;
@@ -82,7 +104,9 @@ function parseCommand(raw: string): ParsedCommand | null {
 function filterSuggestions(query: string): CommandDef[] {
   if (!query.trim()) return COMMAND_DEFS;
   const firstWord = query.trim().toLowerCase().split(/\s+/)[0];
-  return COMMAND_DEFS.filter((c) => c.syntax.toLowerCase().startsWith(firstWord));
+  return COMMAND_DEFS.filter((c) =>
+    c.syntax.toLowerCase().startsWith(firstWord),
+  );
 }
 
 // Text to fill input from a suggestion (up to first placeholder, with trailing space)
@@ -114,8 +138,8 @@ export default function CommandPalette({ open, onClose }: Props) {
   const openOrders = useTradingStore((s) => s.openOrders);
   const orderHistory = useTradingStore((s) => s.orderHistory);
   const snapshotReady = useTradingStore((s) => s.snapshotReady);
-  const asks = useTradingStore((s) => s.asks);
-  const bids = useTradingStore((s) => s.bids);
+  const bestAsk = useTradingStore((s) => (open ? s.asks[0]?.[0] : undefined));
+  const bestBid = useTradingStore((s) => (open ? s.bids[0]?.[0] : undefined));
 
   const suggestions = filterSuggestions(query);
   const parsed = parseCommand(query);
@@ -148,13 +172,17 @@ export default function CommandPalette({ open, onClose }: Props) {
 
   // Clamp selected index when suggestion list length changes
   useEffect(() => {
-    setSelectedIdx((i) => (suggestions.length === 0 ? 0 : Math.min(i, suggestions.length - 1)));
+    setSelectedIdx((i) =>
+      suggestions.length === 0 ? 0 : Math.min(i, suggestions.length - 1),
+    );
   }, [suggestions.length]);
 
   // Scroll selected item into view on arrow navigation
   useEffect(() => {
     if (!listRef.current) return;
-    const el = listRef.current.querySelector<HTMLElement>('[aria-selected="true"]');
+    const el = listRef.current.querySelector<HTMLElement>(
+      '[aria-selected="true"]',
+    );
     el?.scrollIntoView({ block: "nearest" });
   }, [selectedIdx]);
 
@@ -201,6 +229,15 @@ export default function CommandPalette({ open, onClose }: Props) {
         return;
       }
 
+      if (parsed.kind === "timeframe") {
+        useTradingStore
+          .getState()
+          .setChartTimeframe(TIMEFRAME_MAP[parsed.value]);
+        setFeedback({ ok: true, message: `Timeframe → ${parsed.value}` });
+        scheduleClose(800);
+        return;
+      }
+
       if (parsed.kind === "cancel_last") {
         // orderHistory is newest-first; find first entry still in openOrders
         const lastOpen = orderHistory.find((o) => openOrders.has(o.order_id));
@@ -218,7 +255,12 @@ export default function CommandPalette({ open, onClose }: Props) {
       // Buy / sell
       const payload: OrderRequest =
         parsed.orderType === "limit"
-          ? { type: "limit", side: parsed.side, size: parsed.size, price: parsed.price }
+          ? {
+              type: "limit",
+              side: parsed.side,
+              size: parsed.size,
+              price: parsed.price,
+            }
           : { type: "market", side: parsed.side, size: parsed.size };
 
       const resp = await placeOrder(payload);
@@ -239,7 +281,15 @@ export default function CommandPalette({ open, onClose }: Props) {
       });
       setBusy(false);
     }
-  }, [parsed, busy, snapshotReady, openOrders, orderHistory, trackOrderId, scheduleClose]);
+  }, [
+    parsed,
+    busy,
+    snapshotReady,
+    openOrders,
+    orderHistory,
+    trackOrderId,
+    scheduleClose,
+  ]);
 
   const fillSelected = useCallback(() => {
     const sug = suggestions[selectedIdx];
@@ -296,8 +346,8 @@ export default function CommandPalette({ open, onClose }: Props) {
   // Market fill price preview
   let fillPreview: string | null = null;
   if (parsed?.kind === "order" && parsed.orderType === "market") {
-    const level = parsed.side === "buy" ? asks[0] : bids[0];
-    if (level) fillPreview = `~$${level[0].toFixed(4)}`;
+    const price = parsed.side === "buy" ? bestAsk : bestBid;
+    if (price) fillPreview = `~$${price.toFixed(4)}`;
   }
 
   const showSuggestions = !feedback?.ok;
@@ -316,7 +366,7 @@ export default function CommandPalette({ open, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="palette-enter fixed left-1/2 top-12 z-50 w-120 max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-[3px] border border-border bg-bg-panel"
+        className="palette-enter fixed left-1/2 top-12 z-50 w-120 max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-xs border border-border bg-bg-panel"
         style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.72)" }}
       >
         {/* ── Input row ── */}
@@ -330,7 +380,13 @@ export default function CommandPalette({ open, onClose }: Props) {
             className="shrink-0 text-text-muted"
             aria-hidden="true"
           >
-            <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.2" />
+            <circle
+              cx="5.5"
+              cy="5.5"
+              r="4"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
             <path
               d="M9 9L11.5 11.5"
               stroke="currentColor"
@@ -358,7 +414,9 @@ export default function CommandPalette({ open, onClose }: Props) {
             aria-haspopup="listbox"
             aria-controls="palette-list"
             aria-activedescendant={
-              suggestions[selectedIdx] ? `palette-item-${selectedIdx}` : undefined
+              suggestions[selectedIdx]
+                ? `palette-item-${selectedIdx}`
+                : undefined
             }
             className="min-w-0 flex-1 bg-transparent font-mono text-[13px] text-text-primary placeholder:text-text-muted/50 focus:outline-none"
           />
@@ -392,7 +450,11 @@ export default function CommandPalette({ open, onClose }: Props) {
             <span className="font-mono text-[11px]">
               {parsed.kind === "order" ? (
                 <>
-                  <span className={parsed.side === "buy" ? "text-bull" : "text-bear"}>
+                  <span
+                    className={
+                      parsed.side === "buy" ? "text-bull" : "text-bear"
+                    }
+                  >
                     {parsed.side.toUpperCase()}
                   </span>
                   <span className="text-text-muted">
@@ -405,7 +467,14 @@ export default function CommandPalette({ open, onClose }: Props) {
               ) : parsed.kind === "cancel_all" ? (
                 <span className="text-text-muted">Cancel all open orders</span>
               ) : parsed.kind === "cancel_last" ? (
-                <span className="text-text-muted">Cancel most recent open order</span>
+                <span className="text-text-muted">
+                  Cancel most recent open order
+                </span>
+              ) : parsed.kind === "timeframe" ? (
+                <span className="text-text-muted">
+                  Switch chart to{" "}
+                  <span className="text-text-primary">{parsed.value}</span>
+                </span>
               ) : (
                 <span className="text-text-muted">Show all commands</span>
               )}
@@ -414,13 +483,14 @@ export default function CommandPalette({ open, onClose }: Props) {
             <span className="flex items-center gap-3 font-mono text-[11px] text-text-muted">
               {fillPreview && (
                 <span>
-                  est.{" "}
-                  <span className="text-text-primary">{fillPreview}</span>
+                  est. <span className="text-text-primary">{fillPreview}</span>
                 </span>
               )}
               <span>
-                <kbd className="rounded-xs border border-border px-1 text-[9px]">↵</kbd>
-                {" "}execute
+                <kbd className="rounded-xs border border-border px-1 text-[9px]">
+                  ↵
+                </kbd>{" "}
+                execute
               </span>
             </span>
           </div>
@@ -460,8 +530,12 @@ export default function CommandPalette({ open, onClose }: Props) {
                       : "border-l-2 border-transparent hover:bg-hover-overlay"
                   }`}
                 >
-                  <span className="font-mono text-[12px] text-text-primary">{cmd.syntax}</span>
-                  <span className="font-sans text-[11px] text-text-muted">{cmd.description}</span>
+                  <span className="font-mono text-[12px] text-text-primary">
+                    {cmd.syntax}
+                  </span>
+                  <span className="font-sans text-[11px] text-text-muted">
+                    {cmd.description}
+                  </span>
                 </li>
               ))
             ) : (
@@ -479,13 +553,22 @@ export default function CommandPalette({ open, onClose }: Props) {
         {showSuggestions && suggestions.length > 0 && (
           <div className="flex items-center gap-3 border-t border-border px-3 py-1.5 font-mono text-[10px] text-text-muted">
             <span>
-              <kbd className="rounded-xs border border-border px-1 text-[9px]">↑↓</kbd> navigate
+              <kbd className="rounded-xs border border-border px-1 text-[9px]">
+                ↑↓
+              </kbd>{" "}
+              navigate
             </span>
             <span>
-              <kbd className="rounded-xs border border-border px-1 text-[9px]">tab</kbd> fill
+              <kbd className="rounded-xs border border-border px-1 text-[9px]">
+                tab
+              </kbd>{" "}
+              fill
             </span>
             <span>
-              <kbd className="rounded-xs border border-border px-1 text-[9px]">↵</kbd> execute
+              <kbd className="rounded-xs border border-border px-1 text-[9px]">
+                ↵
+              </kbd>{" "}
+              execute
             </span>
           </div>
         )}

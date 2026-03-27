@@ -1,4 +1,4 @@
-# Git & GitHub Guide — NEXTBULL Trading Terminal
+# Git & GitHub Guide — SYNTHETIC-BULL Trading Terminal
 
 ---
 
@@ -50,11 +50,11 @@ Build your frontend inside `ui/`.
 
 ## Branch Naming
 
-| Purpose | Pattern            | Example              |
-| ------- | ------------------ | -------------------- |
-| UI team | `ui/team-name`     | `ui/team-alice`      |
-| Bug fix | `fix/description`  | `fix/ws-reconnect`   |
-| Docs    | `docs/description` | `docs/api-examples`  |
+| Purpose | Pattern            | Example             |
+| ------- | ------------------ | ------------------- |
+| UI team | `ui/team-name`     | `ui/team-alice`     |
+| Bug fix | `fix/description`  | `fix/ws-reconnect`  |
+| Docs    | `docs/description` | `docs/api-examples` |
 
 ---
 

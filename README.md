@@ -1,4 +1,4 @@
-# NEXTBULL Trading Terminal
+# SYNTHETIC-BULL Trading Terminal
 
 OpenSoft 2026 — IIT Kharagpur
 

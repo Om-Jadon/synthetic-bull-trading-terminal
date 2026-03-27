@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { useTradingStore } from "@/store/tradingStore";
 import type { TradeMsg } from "@/types/ws";
@@ -28,11 +28,15 @@ const timeFormatter = new Intl.DateTimeFormat("en-GB", {
 
 export default function TradesTable({ trades }: TradesTableProps) {
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const pauseAutoScrollRef = useRef(false);
+
     const formattedRows = useMemo(
         () =>
             trades.map((trade, index) => ({
                 key: `${trade.id}-${trade.ts}-${index}`,
                 side: trade.side,
+                rawSize: trade.size,
                 price: Number.isFinite(trade.price) ? priceFormatter.format(trade.price) : "-",
                 size: Number.isFinite(trade.size) ? sizeFormatter.format(trade.size) : "-",
                 time: Number.isFinite(trade.ts) ? timeFormatter.format(new Date(trade.ts)) : "--:--:--",
@@ -40,10 +44,35 @@ export default function TradesTable({ trades }: TradesTableProps) {
         [trades],
     );
 
+    useEffect(() => {
+        if (pauseAutoScrollRef.current) {
+            return;
+        }
+        const node = containerRef.current;
+        if (!node) {
+            return;
+        }
+        node.scrollTop = 0;
+    }, [formattedRows]);
+
+    const sizeClass = (size: number): string => {
+        if (size > 50) return "trade-block";
+        if (size >= 20) return "trade-lg";
+        if (size >= 5) return "trade-md";
+        return "trade-sm";
+    };
+
     return (
         <div
+            ref={containerRef}
             className="panel-scroller top-fade h-full min-h-0 overflow-y-auto overflow-x-hidden"
             aria-busy={!snapshotReady}
+            onMouseEnter={() => {
+                pauseAutoScrollRef.current = true;
+            }}
+            onMouseLeave={() => {
+                pauseAutoScrollRef.current = false;
+            }}
         >
             {!snapshotReady ? (
                 <div
@@ -75,7 +104,7 @@ export default function TradesTable({ trades }: TradesTableProps) {
                     </thead>
                     <tbody>
                         {formattedRows.map((trade, index) => (
-                            <tr key={trade.key} className={`trade-row border-b border-border/50 ${index === 0 ? "trade-row-enter" : ""}`}>
+                            <tr key={trade.key} className={`trade-row ${sizeClass(trade.rawSize)} border-b border-border/50 ${index === 0 ? "trade-row-enter" : ""}`}>
                                 <td className={`px-2 py-1.5 ${trade.side === "buy" ? "text-bull" : "text-bear"}`}>
                                     {trade.price}
                                 </td>

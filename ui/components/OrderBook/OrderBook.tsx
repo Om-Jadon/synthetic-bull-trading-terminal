@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useTradingStore } from "@/store/tradingStore";
 
@@ -24,6 +24,32 @@ function cumulativeRows(levels: [number, number][]) {
     });
 }
 
+type RenderRow = {
+    price: number;
+    size: number;
+    total: number;
+    depthPct: number;
+    exiting?: boolean;
+};
+
+function syncRows(previous: RenderRow[], nextBase: { price: number; size: number; total: number }[], maxTotal: number): RenderRow[] {
+    const byPrice = new Map(nextBase.map((row) => [row.price, row]));
+
+    const nextRows: RenderRow[] = nextBase.map((row) => ({
+        ...row,
+        depthPct: row.total / Math.max(1, maxTotal),
+        exiting: false,
+    }));
+
+    for (const row of previous) {
+        if (!byPrice.has(row.price) && !row.exiting) {
+            nextRows.push({ ...row, exiting: true });
+        }
+    }
+
+    return nextRows;
+}
+
 export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
     const bids = useTradingStore((state) => state.bids);
     const asks = useTradingStore((state) => state.asks);
@@ -31,6 +57,9 @@ export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const [activeTab, setActiveTab] = useState<"book" | "trades">("book");
     const resolvedTab = mode === "tab" ? activeTab : "book";
+    const [renderBidRows, setRenderBidRows] = useState<RenderRow[]>([]);
+    const [renderAskRows, setRenderAskRows] = useState<RenderRow[]>([]);
+    const removeTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
     const bidRows = useMemo(() => cumulativeRows(bids.slice(0, 15)), [bids]);
     const askRows = useMemo(() => cumulativeRows(asks.slice(0, 15)).reverse(), [asks]);
@@ -42,6 +71,53 @@ export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
 
     const bestBid = bids[0]?.[0];
     const bestAsk = asks[0]?.[0];
+    const bookEmpty =
+        snapshotReady &&
+        bidRows.length === 0 &&
+        askRows.length === 0 &&
+        renderBidRows.length === 0 &&
+        renderAskRows.length === 0;
+
+    useEffect(() => {
+        return () => {
+            for (const timer of removeTimersRef.current.values()) {
+                clearTimeout(timer);
+            }
+            removeTimersRef.current.clear();
+        };
+    }, []);
+
+    useEffect(() => {
+        setRenderAskRows((prev) => syncRows(prev, askRows, maxTotal));
+    }, [askRows, maxTotal]);
+
+    useEffect(() => {
+        setRenderBidRows((prev) => syncRows(prev, bidRows, maxTotal));
+    }, [bidRows, maxTotal]);
+
+    useEffect(() => {
+        const timers = removeTimersRef.current;
+        const rows = [...renderAskRows, ...renderBidRows];
+        for (const row of rows) {
+            const key = `${row.price}`;
+            if (!row.exiting) {
+                const existing = timers.get(key);
+                if (existing) {
+                    clearTimeout(existing);
+                    timers.delete(key);
+                }
+                continue;
+            }
+            if (timers.has(key)) continue;
+
+            const timer = setTimeout(() => {
+                setRenderAskRows((curr) => curr.filter((r) => !(r.exiting && r.price === row.price)));
+                setRenderBidRows((curr) => curr.filter((r) => !(r.exiting && r.price === row.price)));
+                timers.delete(key);
+            }, 100);
+            timers.set(key, timer);
+        }
+    }, [renderAskRows, renderBidRows]);
 
     const onTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
         if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -81,7 +157,7 @@ export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
                     type="button"
                     onClick={() => onModeChange(item)}
                     aria-pressed={mode === item}
-                    className={`h-7 rounded-[3px] border px-2 text-[10px] uppercase tracking-[0.08em] ${mode === item
+                    className={`h-7 rounded-xs border px-2 text-[10px] uppercase tracking-[0.08em] ${mode === item
                         ? "border-border bg-bg-row text-text-primary"
                         : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                         }`}
@@ -102,27 +178,41 @@ export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
                 <span className="text-right">Total</span>
             </div>
             <div className="panel-scroller top-fade min-h-0 overflow-y-auto overflow-x-hidden pt-1">
-                {askRows.map((row) => (
-                    <OrderRow
-                        key={`ask-${row.price}`}
-                        side="ask"
-                        price={row.price}
-                        size={row.size}
-                        totalSize={row.total}
-                        depthPct={row.total / maxTotal}
-                    />
-                ))}
-                <SpreadRow bestBid={bestBid} bestAsk={bestAsk} />
-                {bidRows.map((row) => (
-                    <OrderRow
-                        key={`bid-${row.price}`}
-                        side="bid"
-                        price={row.price}
-                        size={row.size}
-                        totalSize={row.total}
-                        depthPct={row.total / maxTotal}
-                    />
-                ))}
+                {bookEmpty ? (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="grid h-full place-items-center px-2 py-3 text-xs uppercase tracking-[0.12em] text-text-muted"
+                    >
+                        Book Empty
+                    </div>
+                ) : (
+                    <>
+                        {renderAskRows.map((row) => (
+                            <OrderRow
+                                key={`ask-${row.price}`}
+                                side="ask"
+                                price={row.price}
+                                size={row.size}
+                                totalSize={row.total}
+                                depthPct={row.depthPct}
+                                exiting={row.exiting}
+                            />
+                        ))}
+                        <SpreadRow bestBid={bestBid} bestAsk={bestAsk} />
+                        {renderBidRows.map((row) => (
+                            <OrderRow
+                                key={`bid-${row.price}`}
+                                side="bid"
+                                price={row.price}
+                                size={row.size}
+                                totalSize={row.total}
+                                depthPct={row.depthPct}
+                                exiting={row.exiting}
+                            />
+                        ))}
+                    </>
+                )}
             </div>
         </div>
     );
@@ -161,7 +251,7 @@ export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
                         tabIndex={activeTab === "book" ? 0 : -1}
                         onClick={() => setActiveTab("book")}
                         onKeyDown={onTabKeyDown}
-                        className={`h-8 rounded-[3px] border text-[10px] uppercase tracking-[0.1em] ${activeTab === "book"
+                        className={`h-8 rounded-xs border text-[10px] uppercase tracking-[0.1em] ${activeTab === "book"
                             ? "border-border bg-bg-row text-text-primary"
                             : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                             }`}
@@ -177,7 +267,7 @@ export default function OrderBook({ mode, onModeChange }: OrderBookProps) {
                         tabIndex={activeTab === "trades" ? 0 : -1}
                         onClick={() => setActiveTab("trades")}
                         onKeyDown={onTabKeyDown}
-                        className={`h-8 rounded-[3px] border text-[10px] uppercase tracking-[0.1em] ${activeTab === "trades"
+                        className={`h-8 rounded-xs border text-[10px] uppercase tracking-[0.1em] ${activeTab === "trades"
                             ? "border-border bg-bg-row text-text-primary"
                             : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                             }`}

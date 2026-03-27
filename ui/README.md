@@ -1,4 +1,4 @@
-# NEXTBULL UI (Phase 2)
+# SYNTHETIC-BULL UI (Phase 2)
 
 Hyperliquid-inspired trading terminal frontend for OpenSoft 2026.
 

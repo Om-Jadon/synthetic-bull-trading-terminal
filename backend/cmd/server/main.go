@@ -163,7 +163,7 @@ func main() {
 
 	// 4. HTTP server
 	go func() {
-		log.Printf("NEXTBULL backend listening on :%s", port)
+			log.Printf("SYNTHETIC-BULL backend listening on :%s", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("http server error: %v", err)
 		}

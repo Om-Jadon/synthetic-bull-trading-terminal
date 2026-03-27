@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { UTCTimestamp } from "lightweight-charts";
 
 import type {
   Candle,
@@ -9,10 +10,19 @@ import type {
 } from "@/types/ws";
 
 type TradingStore = {
+  fills: FillMarker[];
+  equityHistory: EquityPoint[];
+  activeTool: "none" | "line";
+  drawings: DrawingLine[];
+  chartFullscreen: boolean;
   bids: [number, number][];
   asks: [number, number][];
   trades: TradeMsg[];
   candles: Candle[];
+  chartTimeframe: number; // seconds; 1s candles are the base
+  vwapNumerator: number;
+  vwapDenominator: number;
+  tradeCount: number;
   lastPrice: number;
   changePct: number;
   sessionHigh: number;
@@ -26,21 +36,57 @@ type TradingStore = {
   connectionStatus: "connecting" | "open" | "closed";
   setConnectionStatus: (status: TradingStore["connectionStatus"]) => void;
   setSnapshotReady: (ready: boolean) => void;
+  setChartTimeframe: (seconds: number) => void;
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
   addTrade: (trade: TradeMsg) => void;
   setCandles: (candles: Candle[]) => void;
   upsertCandle: (candle: Candle) => void;
   setStats: (stats: StatsMsg) => void;
   setPortfolio: (portfolio: PortfolioMsg) => void;
+  setActiveTool: (tool: TradingStore["activeTool"]) => void;
+  addDrawing: (drawing: DrawingLine) => void;
+  clearDrawings: () => void;
+  toggleChartFullscreen: () => void;
   trackOrderId: (orderId: string) => void;
   onOrderUpdate: (update: OrderUpdateMsg) => void;
 };
 
+type FillMarker = {
+  time: UTCTimestamp;
+  price: number;
+  side: "buy" | "sell";
+};
+
+type EquityPoint = {
+  time: UTCTimestamp;
+  value: number;
+};
+
+type DrawingLine = {
+  id: string;
+  price: number;
+};
+
+function toUtcTimestamp(ts: number): UTCTimestamp {
+  const seconds =
+    ts > 1_000_000_000_000 ? Math.floor(ts / 1000) : Math.floor(ts);
+  return seconds as UTCTimestamp;
+}
+
 export const useTradingStore = create<TradingStore>((set, get) => ({
+  fills: [],
+  equityHistory: [],
+  activeTool: "none",
+  drawings: [],
+  chartFullscreen: false,
   bids: [],
   asks: [],
   trades: [],
   candles: [],
+  chartTimeframe: 1,
+  vwapNumerator: 0,
+  vwapDenominator: 0,
+  tradeCount: 0,
   lastPrice: 0,
   changePct: 0,
   sessionHigh: 0,
@@ -55,13 +101,33 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 
-  setSnapshotReady: (snapshotReady) => set({ snapshotReady }),
+  setSnapshotReady: (snapshotReady) =>
+    set((state) =>
+      snapshotReady
+        ? { snapshotReady }
+        : {
+            snapshotReady,
+            fills: [],
+            equityHistory: [],
+            drawings: [],
+            activeTool: "none",
+            chartFullscreen: false,
+            vwapNumerator: 0,
+            vwapDenominator: 0,
+            tradeCount: 0,
+          },
+    ),
+
+  setChartTimeframe: (chartTimeframe) => set({ chartTimeframe }),
 
   setBidAsks: (bids, asks) => set({ bids, asks }),
 
   addTrade: (trade) =>
     set((state) => ({
       trades: [trade, ...state.trades].slice(0, 50),
+      vwapNumerator: state.vwapNumerator + trade.price * trade.size,
+      vwapDenominator: state.vwapDenominator + trade.size,
+      tradeCount: state.tradeCount + 1,
     })),
 
   setCandles: (candles) => set({ candles: candles.slice(-300) }),
@@ -92,7 +158,36 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       sessionVolume: stats.session_volume,
     }),
 
-  setPortfolio: (portfolio) => set({ portfolio }),
+  setPortfolio: (portfolio) =>
+    set((state) => {
+      const point = {
+        time: toUtcTimestamp(portfolio.ts),
+        value: portfolio.equity,
+      };
+
+      let equityHistory: EquityPoint[];
+      const last = state.equityHistory[state.equityHistory.length - 1];
+      if (last && last.time === point.time) {
+        equityHistory = [...state.equityHistory.slice(0, -1), point];
+      } else {
+        equityHistory = [...state.equityHistory, point];
+      }
+
+      return {
+        portfolio,
+        equityHistory: equityHistory.slice(-600),
+      };
+    }),
+
+  setActiveTool: (activeTool) => set({ activeTool }),
+
+  addDrawing: (drawing) =>
+    set((state) => ({ drawings: [...state.drawings, drawing].slice(-80) })),
+
+  clearDrawings: () => set({ drawings: [] }),
+
+  toggleChartFullscreen: () =>
+    set((state) => ({ chartFullscreen: !state.chartFullscreen })),
 
   trackOrderId: (orderId) =>
     set((state) => {
@@ -115,9 +210,25 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
         openOrders.set(update.order_id, update);
       }
 
+      const fallbackFillPrice =
+        update.price > 0
+          ? update.price
+          : (curr.trades[0]?.price ?? curr.lastPrice);
+
       return {
         openOrders,
         orderHistory: [update, ...curr.orderHistory].slice(0, 200),
+        fills:
+          update.status === "filled" && fallbackFillPrice > 0
+            ? [
+                ...curr.fills,
+                {
+                  time: toUtcTimestamp(update.ts),
+                  price: fallbackFillPrice,
+                  side: update.side,
+                },
+              ].slice(-200)
+            : curr.fills,
       };
     });
   },

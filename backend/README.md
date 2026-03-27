@@ -1,4 +1,4 @@
-# NEXTBULL Backend
+# SYNTHETIC-BULL Backend
 
 This folder contains the Go backend for the trading terminal. It provides:
 
@@ -64,7 +64,7 @@ What this does:
 You should see a log line similar to:
 
 ```text
-NEXTBULL backend listening on :8080
+SYNTHETIC-BULL backend listening on :8080
 ```
 
 Stop it with `Ctrl+C`.
