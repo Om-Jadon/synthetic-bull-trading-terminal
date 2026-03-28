@@ -96,7 +96,7 @@
   - These cover the same "show a success/error message" use case with two completely different data structures, lifetimes, and rendering strategies.
 - **Action:** Extract a shared `useToast` hook.
 
-### 4.3 `OrderBookPanel.tsx` Exit Animation System Is Overly Complex for Fixed-Height Rows
+### [DONE] 4.3 `OrderBookPanel.tsx` Exit Animation System Is Overly Complex for Fixed-Height Rows
 - **Verified:** `OrderBookPanel.tsx` maintains `renderAskRows`/`renderBidRows` state, `staleAskRef`/`staleBidRef` refs, and a `removeTimersRef` Map of timeouts to handle the 400ms `book-row-exit` animation when rows leave the book. Given that the book now always shows exactly 15 fixed rows and new data comes in every 120ms, price levels that leave the book are immediately replaced by others — the exit animation is effectively invisible in practice (the row disappears behind new data before the 400ms plays out).
 - **Action:** Consider removing the exit animation system entirely, simplifying to a direct `useMemo` render without the `syncRows` diffing state. This would drastically simplify the component from ~130 lines of logic to ~20.
 
@@ -108,7 +108,7 @@
   But `OrderRow.tsx` renders `{price.toFixed(2)}`, which for `100.5` produces `"100.50"`, not `"100.5000"`. This test is **asserting wrong output** and will either fail or pass erroneously depending on the test DOM state.
 - **Action:** Fix the assertion to `"100.50"`.
 
-### 4.5 `useWebSocket.ts` Includes Stable Refs in Dependency Array
+### [DONE] 4.5 `useWebSocket.ts` Includes Stable Refs in Dependency Array
 - **Verified:** Line 211: `}, [aggregator, directionRef, priceFlashRef, priceRef]);`
   `directionRef`, `priceFlashRef`, and `priceRef` are `React.RefObject` instances created with `useRef` — they are stable references that never change identity. Including them in deps is misleading.
 - **Action:** Add a comment or suppress the ESLint rule to clarify these are stable refs and won't cause re-subscription.
@@ -186,9 +186,9 @@
 | 3.5 | `BookMode` prop-drilling | Wrong place for state | **Done** |
 | 4.1 | `estimateMarketFill` in OrderEntry | Pure util in wrong file | **Done** |
 | 4.2 | Two toast implementations | Inconsistent UI pattern | **Done** |
-| 4.3 | `OrderBookPanel` exit animation system | Overengineered for fixed rows | Pending |
+| 4.3 | `OrderBookPanel` exit animation system | Overengineered for fixed rows | **Done** |
 | 4.4 | `OrderRow.test.tsx` assertion | Tests wrong output value | **Done** |
-| 4.5 | Ref objects in `useWebSocket` deps | Misleading but harmless | Pending |
+| 4.5 | Ref objects in `useWebSocket` deps | Misleading but harmless | **Done** |
 | 5.1 | `SpreadRow` unused `useTradingStore` import | Dead import | **Done** |
 | 5.2 | `Workbench` unused `useRef` import | Dead import | **Done** |
 | 5.3 | `TradingTerminal` unused `CSSProperties` named import | Dead import | **Done** |

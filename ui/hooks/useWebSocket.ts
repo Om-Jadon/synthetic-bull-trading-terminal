@@ -209,5 +209,5 @@ export function useWebSocket({
       if (statsTimerRef.current !== null) clearInterval(statsTimerRef.current);
       socket?.close();
     };
-  }, [aggregator, directionRef, priceFlashRef, priceRef]);
+  }, [aggregator]); // priceRef, priceFlashRef, and directionRef are stable refs and don't need to be in deps
 }

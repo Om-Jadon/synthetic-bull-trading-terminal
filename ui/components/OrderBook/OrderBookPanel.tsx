@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
 import { groupLevels, BOOK_TICKS, TARGET_ROWS } from "@/lib/groupBook";
 import { useTradingStore } from "@/store/tradingStore";
@@ -14,37 +14,6 @@ function cumulativeRows(levels: [number, number][]) {
         running += size;
         return { price, size, total: running };
     });
-}
-
-type RenderRow = {
-    price: number;
-    size: number;
-    total: number;
-    depthPct: number;
-    exiting?: boolean;
-};
-
-function syncRows(
-    previous: RenderRow[],
-    nextBase: { price: number; size: number; total: number }[],
-    maxTotal: number,
-): RenderRow[] {
-    const byPrice = new Map(nextBase.map((row) => [row.price, row]));
-
-    const nextRows: RenderRow[] = nextBase.map((row) => ({
-        ...row,
-        depthPct: row.total / Math.max(1, maxTotal),
-        exiting: false,
-    }));
-
-    for (const row of previous) {
-        if (!byPrice.has(row.price) && !row.exiting) {
-            nextRows.push({ ...row, exiting: true });
-        }
-    }
-
-    nextRows.sort((a, b) => b.price - a.price);
-    return nextRows;
 }
 
 export default function OrderBookPanel() {
@@ -71,60 +40,7 @@ export default function OrderBookPanel() {
     const bestBid = bids[0]?.[0];
     const bestAsk = asks[0]?.[0];
 
-    const [renderBidRows, setRenderBidRows] = useState<RenderRow[]>([]);
-    const [renderAskRows, setRenderAskRows] = useState<RenderRow[]>([]);
-    const removeTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-
-    // Stale refs — prevent blank flash between rapid WS updates
-    const staleAskRef = useRef<RenderRow[]>([]);
-    const staleBidRef = useRef<RenderRow[]>([]);
-
-    useEffect(() => {
-        return () => {
-            for (const timer of removeTimersRef.current.values()) clearTimeout(timer);
-            removeTimersRef.current.clear();
-        };
-    }, []);
-
-    useEffect(() => {
-        setRenderAskRows((prev) => {
-            const next = syncRows(prev, askRows, maxTotal);
-            if (next.filter((r) => !r.exiting).length > 0) staleAskRef.current = next;
-            return next;
-        });
-    }, [askRows, maxTotal]);
-
-    useEffect(() => {
-        setRenderBidRows((prev) => {
-            const next = syncRows(prev, bidRows, maxTotal);
-            if (next.filter((r) => !r.exiting).length > 0) staleBidRef.current = next;
-            return next;
-        });
-    }, [bidRows, maxTotal]);
-
-    // Remove exiting rows after 400ms fade animation completes
-    useEffect(() => {
-        const timers = removeTimersRef.current;
-        for (const row of [...renderAskRows, ...renderBidRows]) {
-            const key = `${row.price}`;
-            if (!row.exiting) {
-                const existing = timers.get(key);
-                if (existing) { clearTimeout(existing); timers.delete(key); }
-                continue;
-            }
-            if (timers.has(key)) continue;
-            const timer = setTimeout(() => {
-                setRenderAskRows((c) => c.filter((r) => !(r.exiting && r.price === row.price)));
-                setRenderBidRows((c) => c.filter((r) => !(r.exiting && r.price === row.price)));
-                timers.delete(key);
-            }, 400);
-            timers.set(key, timer);
-        }
-    }, [renderAskRows, renderBidRows]);
-
-    const displayAskRows = renderAskRows.length > 0 ? renderAskRows : staleAskRef.current;
-    const displayBidRows = renderBidRows.length > 0 ? renderBidRows : staleBidRef.current;
-    const bookEmpty = snapshotReady && displayAskRows.length === 0 && displayBidRows.length === 0;
+    const bookEmpty = snapshotReady && askRows.length === 0 && bidRows.length === 0;
 
     return (
         <section className="panel relative flex h-full min-h-0 flex-col">
@@ -164,16 +80,15 @@ export default function OrderBookPanel() {
                         {/* Asks — fixed-height rows, packed to the bottom (closest to spread) */}
                         <div className="min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide">
                             <div className="flex flex-col justify-end min-h-full">
-                                {displayAskRows.map((row, i) => (
+                                {askRows.map((row, i) => (
                                     <OrderRow
                                         key={`ask-${row.price}`}
                                         side="ask"
                                         price={row.price}
                                         size={row.size}
                                         totalSize={row.total}
-                                        depthPct={row.depthPct}
-                                        exiting={row.exiting}
-                                        isBest={i === displayAskRows.length - 1}
+                                        depthPct={row.total / Math.max(1, maxTotal)}
+                                        isBest={i === askRows.length - 1}
                                     />
                                 ))}
                             </div>
@@ -184,15 +99,14 @@ export default function OrderBookPanel() {
                         {/* Bids — fixed-height rows, packed to the top (closest to spread) */}
                         <div className="min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide">
                             <div className="flex flex-col justify-start">
-                                {displayBidRows.map((row, i) => (
+                                {bidRows.map((row, i) => (
                                     <OrderRow
                                         key={`bid-${row.price}`}
                                         side="bid"
                                         price={row.price}
                                         size={row.size}
                                         totalSize={row.total}
-                                        depthPct={row.depthPct}
-                                        exiting={row.exiting}
+                                        depthPct={row.total / Math.max(1, maxTotal)}
                                         isBest={i === 0}
                                     />
                                 ))}

@@ -8,7 +8,6 @@ type OrderRowProps = {
     totalSize: number;
     side: "bid" | "ask";
     depthPct: number;
-    exiting?: boolean;
     isBest?: boolean;
 };
 
@@ -18,7 +17,6 @@ function OrderRow({
     totalSize,
     side,
     depthPct,
-    exiting = false,
     isBest = false,
 }: OrderRowProps) {
     const priceClass = side === "bid" ? "text-bull" : "text-bear";
@@ -41,7 +39,7 @@ function OrderRow({
 
     return (
         <div
-            className={`book-row relative grid h-[22px] shrink-0 grid-cols-3 items-center px-2 font-mono text-[11px] ${exiting ? "book-row-exit" : "book-row-enter"} ${isBest ? "font-medium" : ""}`}
+            className={`book-row notice-enter relative grid h-[22px] shrink-0 grid-cols-3 items-center px-2 font-mono text-[11px] ${isBest ? "font-medium" : ""}`}
         >
             <div
                 ref={depthRef}
