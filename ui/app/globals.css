@@ -53,6 +53,41 @@
   --font-mono: var(--font-jetbrains);
 }
 
+/* ── Typography Scale ── */
+@utility text-micro {
+  font-size: 10px;
+}
+
+@utility text-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@utility text-data {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-data-lg {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+@utility text-heading {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -107,8 +142,9 @@ textarea:focus-visible,
 
 .panel-title {
   padding: 8px 10px;
-  font-size: 13px;
-  font-weight: 500;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
@@ -438,4 +474,12 @@ textarea:focus-visible,
     min-height: 44px;
     padding: 0.5rem;
   }
+}
+
+@utility layout-cols-tablet {
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 38vw, 380px);
+}
+
+@utility layout-cols-desktop {
+  grid-template-columns: minmax(0, 1fr) var(--book-col) var(--order-col);
 }

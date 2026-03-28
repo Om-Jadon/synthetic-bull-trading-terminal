@@ -111,7 +111,7 @@ export default function OrderBookPanel() {
     return (
         <section className="panel relative flex h-full min-h-0 flex-col">
         <div className="grid h-full min-h-0 grid-rows-[auto_1fr]">
-                <div className="grid h-6 grid-cols-3 items-center border-b border-border/70 px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
+                <div className="grid h-6 grid-cols-3 items-center border-b border-border/70 px-2 text-label text-text-muted">
                     <span>Price</span>
                     <span className="text-right">Size</span>
                     <span className="text-right">Total</span>
@@ -121,7 +121,7 @@ export default function OrderBookPanel() {
                     <div
                         role="status"
                         aria-live="polite"
-                        className="grid flex-1 place-items-center px-2 py-3 text-xs uppercase tracking-[0.12em] text-text-muted"
+                        className="grid flex-1 place-items-center px-2 py-3 text-label text-text-muted"
                     >
                         Book Empty
                     </div>
@@ -167,7 +167,7 @@ export default function OrderBookPanel() {
             </div>
 
             {!snapshotReady && (
-                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-[10px] uppercase tracking-[0.12em] text-text-muted">
+                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-label text-brand/80">
                     Connecting
                 </div>
             )}

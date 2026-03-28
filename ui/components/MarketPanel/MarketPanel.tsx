@@ -91,8 +91,8 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                                     setActiveTab("book");
                                 }
                             }}
-                            className={`flex w-full items-center rounded-xs px-3 py-2 text-[11px] uppercase tracking-[0.08em] transition-colors ${mode === item
-                                ? "bg-bg-row text-bull font-medium"
+                            className={`flex w-full items-center rounded-xs px-3 py-2 text-label transition-colors ${mode === item
+                                ? "bg-brand/10 text-brand font-medium"
                                 : "text-text-muted hover:bg-bg-row hover:text-text-primary"
                                 }`}
                         >
@@ -109,9 +109,9 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
 
     if (mode === "tab") {
         return (
-            <section className="panel relative grid h-full min-h-0 grid-rows-[40px_1fr]">
-                <div className="flex h-10 items-center justify-between gap-2 border-b border-border px-2">
-                    <div className="grid flex-1 grid-cols-2 gap-1" role="tablist" aria-label="Order book and trades view">
+            <section className="panel relative grid h-full min-h-0 grid-rows-[auto_1fr]">
+                <div className="flex h-10 max-sm:h-14 items-center justify-between gap-2 border-b border-border px-2">
+                    <div className="grid flex-1 grid-cols-2 gap-1 py-1" role="tablist" aria-label="Order book and trades view">
                         <button
                             id="market-tab-book"
                             type="button"
@@ -121,8 +121,8 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                             tabIndex={activeTab === "book" ? 0 : -1}
                             onClick={() => setActiveTab("book")}
                             onKeyDown={onTabKeyDown}
-                            className={`h-8 rounded-xs border px-3 text-[10px] uppercase tracking-[0.1em] ${activeTab === "book"
-                                ? "border-border bg-bg-row text-text-primary"
+                            className={`h-8 max-sm:h-11 rounded-xs border px-3 text-label ${activeTab === "book"
+                                ? "border-brand bg-brand/10 text-brand font-medium"
                                 : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                                 }`}
                         >
@@ -137,8 +137,8 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                             tabIndex={activeTab === "trades" ? 0 : -1}
                             onClick={() => setActiveTab("trades")}
                             onKeyDown={onTabKeyDown}
-                            className={`h-8 rounded-xs border px-3 text-[10px] uppercase tracking-[0.1em] ${activeTab === "trades"
-                                ? "border-border bg-bg-row text-text-primary"
+                            className={`h-8 max-sm:h-11 rounded-xs border px-3 text-label ${activeTab === "trades"
+                                ? "border-brand bg-brand/10 text-brand font-medium"
                                 : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                                 }`}
                         >

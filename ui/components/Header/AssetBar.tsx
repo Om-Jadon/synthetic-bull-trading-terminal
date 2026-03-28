@@ -76,7 +76,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 </div>
 
                 {/* Right: SIM badge */}
-                <span className="hidden rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-text-muted sm:inline-block">
+                <span className="hidden rounded-xs border border-brand/20 bg-brand/10 px-2 py-0.5 text-label text-brand sm:inline-block">
                     Sim
                 </span>
             </div>
@@ -86,7 +86,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 {/* Left: session stats */}
                 <div className="hidden items-center md:flex">
                     {snapshotReady ? (
-                        <div key="live" className="stats-reveal flex items-center gap-4 font-mono text-[10px]">
+                        <div key="live" className="stats-reveal flex items-center gap-4 text-data text-text-muted">
                             <span className="text-text-muted">
                                 H{" "}
                                 <span className="text-text-primary">{sessionHigh.toFixed(4)}</span>
@@ -109,8 +109,8 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                             </span>
                         </div>
                     ) : (
-                        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
-                            <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-text-muted" />
+                        <span className="flex items-center gap-2 text-label text-text-muted">
+                            <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-brand" />
                             Connecting to market
                         </span>
                     )}
@@ -121,10 +121,10 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                     {/* WS telemetry — only shown when connected and active */}
                     {connectionStatus === "open" && wsStats.msgsPerSec > 0 && (
                         <span
-                            className="hidden font-mono text-[10px] text-text-muted sm:block"
+                            className="hidden font-mono text-micro text-text-muted sm:block"
                             title="WebSocket latency and message rate"
                         >
-                            WS{" "}
+                            <span className="text-brand/80">WS</span>{" "}
                             <span className="text-text-primary">
                                 {wsStats.latencyMs > 0 ? `${wsStats.latencyMs}ms` : "—"}
                             </span>
@@ -135,11 +135,11 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
 
                     {/* Persistent ⌘K command palette indicator */}
                     <span
-                        className="hidden items-center gap-1 rounded-xs border border-border bg-bg-row px-1.5 py-0.5 font-mono text-[10px] text-text-muted sm:inline-flex"
+                        className="hidden items-center gap-1 rounded-xs border border-border bg-bg-row px-1.5 py-0.5 font-mono text-micro text-text-muted sm:inline-flex"
                         title="Open command palette"
                         aria-hidden="true"
                     >
-                        <kbd className="text-[9px] font-medium">⌘K</kbd>
+                        <kbd className="text-micro font-medium">⌘K</kbd>
                     </span>
                     <button
                         type="button"

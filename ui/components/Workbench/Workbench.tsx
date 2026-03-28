@@ -72,9 +72,9 @@ export default function Workbench() {
                             tabIndex={activeTab === tab ? 0 : -1}
                             onClick={() => setActiveTab(tab)}
                             onKeyDown={(e) => onTabKeyDown(e, tab)}
-                            className={`h-7 rounded-xs px-3 text-[10px] uppercase tracking-[0.08em] transition-colors border ${
+                            className={`h-7 max-sm:h-11 rounded-xs px-3 text-label transition-colors border ${
                                 activeTab === tab
-                                    ? "border-border bg-bg-row text-text-primary"
+                                    ? "border-brand bg-brand/10 text-brand font-medium"
                                     : "border-transparent text-text-muted hover:border-border hover:bg-bg-row hover:text-text-primary"
                             }`}
                         >

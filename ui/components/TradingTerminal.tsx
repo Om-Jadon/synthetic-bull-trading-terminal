@@ -100,13 +100,9 @@ export default function TradingTerminal() {
 
     const positionLabel = (h: number) => (h > 0 ? "Long" : h < 0 ? "Short" : "Position");
 
-    const bookColumnWidth =
-        mode === "large"
-            ? "clamp(480px,52vw,720px)"
-            : mode === "stacked"
-                ? "clamp(300px,30vw,420px)"
-                : "clamp(260px,26vw,340px)";
-    const orderColumnWidth = "clamp(240px,22vw,300px)";
+    const bookColumnPct =
+        mode === "large" ? "30%" : mode === "stacked" ? "26%" : "22%";
+    const orderColumnPct = "20%";
 
     return (
         <div
@@ -131,7 +127,7 @@ export default function TradingTerminal() {
 
             <AssetBar priceRef={priceRef} priceFlashRef={priceFlashRef} directionRef={directionRef} />
 
-            <div ref={fullscreenHostRef} className="min-h-0 flex-1">
+            <div ref={fullscreenHostRef} className="min-h-0 flex-1 min-w-0 w-full flex flex-col">
                 {chartFullscreen ? (
                     <div className="relative h-full">
                         <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
@@ -156,12 +152,11 @@ export default function TradingTerminal() {
                     </div>
                 ) : (
                     <main
-                        className="relative z-10 flex min-h-0 h-full flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2 sm:p-3 md:grid md:grid-cols-[minmax(0,1fr)_clamp(280px,38vw,380px)] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_var(--book-col)_var(--order-col)] lg:grid-rows-1 lg:gap-2.5 lg:overflow-hidden lg:p-3"
-                        style={{ "--book-col": bookColumnWidth, "--order-col": orderColumnWidth } as CSSProperties}
+                        className="relative z-10 flex min-h-0 h-full flex-1 flex-col gap-2 overflow-hidden p-2 sm:p-3 md:grid md:grid-cols-[1fr_30%] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-2 lg:flex lg:flex-row lg:gap-2.5 lg:p-3"
                         role="main"
                     >
                 {/* Chart + status strip */}
-                        <section className="terminal-panel panel-delay-2 grid min-h-96 min-w-0 grid-rows-[1fr_auto] lg:col-span-1">
+                        <section className="terminal-panel panel-delay-2 grid min-h-96 min-w-0 grid-rows-[1fr_auto] md:col-start-1 md:row-start-1 md:col-span-1 md:row-span-1 lg:flex-1 lg:min-w-0 lg:h-full">
                             <CandlestickChart
                                 onPaletteOpen={() => setPaletteOpen(true)}
                                 onFullscreenToggle={handleFullscreenToggle}
@@ -191,12 +186,18 @@ export default function TradingTerminal() {
                         </section>
 
                 {/* Order book + trade tape */}
-                        <section className="terminal-panel panel-delay-3 min-h-96 min-w-0 lg:min-h-0">
+                        <section
+                            className="terminal-panel panel-delay-3 min-h-96 min-w-0 md:col-start-2 md:row-start-1 md:col-span-1 md:row-span-2 lg:shrink-0 lg:min-h-0 lg:h-full"
+                            style={{ flexBasis: bookColumnPct, width: bookColumnPct } as React.CSSProperties}
+                        >
                             <MarketPanel mode={mode} onModeChange={setMode} />
                         </section>
 
                 {/* Order entry + workbench */}
-                        <section className="terminal-panel panel-delay-4 grid min-h-96 min-w-0 grid-rows-[auto_minmax(0,1fr)]">
+                        <section
+                            className="terminal-panel panel-delay-4 grid min-h-96 min-w-0 grid-rows-[auto_minmax(0,1fr)] md:col-start-1 md:row-start-2 md:col-span-1 md:row-span-1 lg:shrink-0 lg:h-full"
+                            style={{ flexBasis: orderColumnPct, width: orderColumnPct } as React.CSSProperties}
+                        >
                             <OrderEntry />
                             <div className="border-t border-border min-h-0">
                                 <Workbench />

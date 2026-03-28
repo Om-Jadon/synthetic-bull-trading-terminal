@@ -78,7 +78,7 @@ export default function TradesTable({ trades }: TradesTableProps) {
                 <div
                     role="status"
                     aria-live="polite"
-                    className="grid h-full place-items-center px-2 py-3 text-xs uppercase tracking-[0.12em] text-text-muted"
+                    className="grid h-full place-items-center px-2 py-3 text-label text-brand/80"
                 >
                     Connecting
                 </div>
@@ -87,10 +87,10 @@ export default function TradesTable({ trades }: TradesTableProps) {
                     Waiting for trades...
                 </div>
             ) : (
-                <table className="w-full table-fixed border-collapse font-mono text-[12px] tabular-nums">
+                <table className="w-full table-fixed border-collapse font-mono text-data tabular-nums">
                     <caption className="sr-only">Recent market trades</caption>
                     <thead className="sticky top-0 z-10 bg-bg-panel">
-                        <tr className="border-b border-border/70 text-[10px] uppercase tracking-[0.08em] text-text-muted">
+                        <tr className="border-b border-border/70 text-label text-text-muted">
                             <th scope="col" className="px-2 py-1 text-left font-medium">
                                 Price
                             </th>

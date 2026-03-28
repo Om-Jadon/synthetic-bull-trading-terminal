@@ -44,7 +44,7 @@ export default function PortfolioWidget() {
 
     return (
         <section className="relative h-full">
-            <div className="grid gap-1.5 font-mono text-[14px]">
+            <div className="grid gap-1.5 font-mono text-data-lg">
                 <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Equity</span>
                     <span ref={equityRef} className="text-text-primary">
@@ -70,7 +70,7 @@ export default function PortfolioWidget() {
                     className="ticker-flash grid grid-cols-2 gap-1 rounded-xs border border-border/70 bg-bg-row px-2 py-1"
                 >
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-text-muted">Unreal</span>
+                        <span className="text-label text-text-muted">Unreal</span>
                         <span className={unrealizedPnl >= 0 ? "text-bull" : "text-bear"}>
                             {portfolio
                                 ? `${unrealizedPnl >= 0 ? "+" : ""}${unrealizedPnl.toFixed(2)}`
@@ -78,7 +78,7 @@ export default function PortfolioWidget() {
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-text-muted">Real</span>
+                        <span className="text-label text-text-muted">Real</span>
                         <span className={realizedPnl >= 0 ? "text-bull" : "text-bear"}>
                             {portfolio
                                 ? `${realizedPnl >= 0 ? "+" : ""}${realizedPnl.toFixed(2)}`
@@ -89,7 +89,7 @@ export default function PortfolioWidget() {
             </div>
 
             {!snapshotReady && (
-                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-[10px] uppercase tracking-[0.12em] text-text-muted">
+                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-label text-brand/80">
                     Connecting
                 </div>
             )}

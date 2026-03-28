@@ -291,9 +291,9 @@ export default function OrderEntry() {
               type="button"
               onClick={() => setType(item)}
               aria-pressed={type === item}
-              className={`order-chip h-8 rounded-xs border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${type === item
-                  ? "border-border bg-bg-row text-text-primary"
-                  : "border-border text-text-muted"
+              className={`order-chip h-8 max-sm:h-11 rounded-xs border px-2 text-label transition-shadow duration-150 ${type === item
+                  ? "border-brand bg-brand/10 text-brand font-medium"
+                  : "border-border text-text-muted hover:bg-bg-row hover:text-text-primary"
                 } ${ringClass(item)}`}
             >
               {item}
@@ -312,7 +312,7 @@ export default function OrderEntry() {
               type="button"
               onClick={() => setSide(item)}
               aria-pressed={side === item}
-              className={`order-chip h-8 rounded-xs border px-2 text-xs uppercase tracking-[0.08em] transition-shadow duration-150 ${side === item
+              className={`order-chip h-8 max-sm:h-11 rounded-xs border px-2 text-label transition-shadow duration-150 ${side === item
                   ? item === "buy"
                     ? "border-bull bg-bull-surface text-bull"
                     : "border-bear bg-bear-surface text-bear"
@@ -324,13 +324,13 @@ export default function OrderEntry() {
           ))}
         </div>
 
-        <p className="mb-2 text-center font-mono text-[10px] text-text-muted/50 tracking-[0.04em]">
+        <p className="mb-2 text-center font-mono text-micro text-text-muted/50 tracking-[0.04em]">
             Post Only · Reduce Only — not available in simulation
           </p>
 
         <form ref={formRef} className="space-y-2.5" onSubmit={submitOrder}>
           {type === "limit" && (
-            <label className="block text-[13px] text-text-muted">
+            <label className="block text-body text-text-muted">
               Price
               <input
                 value={price}
@@ -338,13 +338,13 @@ export default function OrderEntry() {
                 type="number"
                 step="0.0001"
                 min="0"
-                className="mt-1 h-9 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-[13px] text-text-primary"
+                className="mt-1 h-9 max-sm:h-11 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-body text-text-primary"
               />
             </label>
           )}
 
           {type === "market" && (
-            <div className="flex items-center justify-between rounded-xs border border-border bg-bg-row px-2 py-2 font-mono text-[11px]">
+            <div className="flex items-center justify-between rounded-xs border border-border bg-bg-row px-2 py-2 text-data">
               <span className="text-text-muted">Est. fill</span>
               {marketEst ? (
                 <span className="text-text-primary">
@@ -356,7 +356,7 @@ export default function OrderEntry() {
             </div>
           )}
 
-          <label className="block text-[13px] text-text-muted">
+          <label className="block text-body text-text-muted">
             Size
             <input
               value={size}
@@ -364,11 +364,11 @@ export default function OrderEntry() {
               type="number"
               step="0.01"
               min="0"
-              className="mt-1 h-9 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-[13px] text-text-primary"
+              className="mt-1 h-9 max-sm:h-11 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-body text-text-primary"
             />
           </label>
 
-          <div className="font-mono text-[10px] text-text-muted">
+          <div className="font-mono text-micro text-text-muted">
             {equityPct !== null && notional > 0
               ? `~${equityPct.toFixed(1)}% of capital  ·  $${moneyFormatter.format(notional)} notional  ·  Fee ~$${(notional * 0.001).toFixed(2)}`
               : "—"}
@@ -381,7 +381,7 @@ export default function OrderEntry() {
                 type="button"
                 onClick={() => setSize(quick)}
                 aria-label={`Set size to ${quick}`}
-                className={`order-chip relative h-7 rounded-xs border border-border bg-bg-row px-1 font-mono text-[11px] text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:-inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
+                className={`order-chip relative h-7 max-sm:h-10 rounded-xs border border-border bg-bg-row px-1 text-data text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:-inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
               >
                 {quick}
               </button>
@@ -391,30 +391,30 @@ export default function OrderEntry() {
           {showHint && (
             <div
               aria-hidden="true"
-              className="notice-enter flex items-center justify-center gap-2 font-mono text-[10px] text-text-muted transition-opacity duration-500"
+              className="notice-enter max-sm:hidden flex items-center justify-center gap-2 font-mono text-micro text-text-muted transition-opacity duration-500"
             >
               <span>
-                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">
+                <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">
                   ⌘K
                 </kbd>
               </span>
               <span className="text-border">·</span>
               <span>
-                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">
+                <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">
                   B
                 </kbd>{" "}
                 buy
               </span>
               <span className="text-border">·</span>
               <span>
-                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">
+                <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">
                   S
                 </kbd>{" "}
                 sell
               </span>
               <span className="text-border">·</span>
               <span>
-                <kbd className="rounded-xs border border-border px-1 py-0.5 text-[9px]">
+                <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">
                   ↵
                 </kbd>{" "}
                 submit
@@ -425,7 +425,7 @@ export default function OrderEntry() {
           <button
             type="submit"
             disabled={submitting || !snapshotReady}
-            className={`order-submit h-11 w-full rounded-xs font-semibold uppercase tracking-[0.08em] text-bg-primary transition-shadow duration-150 ${side === "buy" ? "bg-bull" : "bg-bear"
+            className={`order-submit h-11 w-full rounded-xs text-heading uppercase tracking-[0.08em] text-bg-primary transition-shadow duration-150 ${side === "buy" ? "bg-bull" : "bg-bear"
               } disabled:cursor-not-allowed disabled:opacity-60 ${ringClass("submit")}`}
           >
             {submitting
@@ -436,7 +436,7 @@ export default function OrderEntry() {
           </button>
 
           {errorMsg && (
-            <p role="alert" className="text-[11px] text-bear">
+            <p role="alert" className="text-body text-bear">
               {errorMsg}
             </p>
           )}
@@ -446,7 +446,7 @@ export default function OrderEntry() {
           <div
             role="status"
             aria-live="polite"
-            className="mt-2 min-h-4 text-[11px] text-text-muted"
+            className="mt-2 min-h-4 text-data text-brand/80"
           >
             Waiting for market snapshot
           </div>
