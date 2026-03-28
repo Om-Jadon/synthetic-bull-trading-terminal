@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCandleAggregator } from "@/hooks/useCandles";
+import { createCandleAggregator } from "@/lib/candleAggregator";
 import type { TradeMsg } from "@/types/ws";
 
 describe("createCandleAggregator", () => {

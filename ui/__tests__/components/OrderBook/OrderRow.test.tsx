@@ -9,7 +9,7 @@ describe("OrderRow", () => {
             <OrderRow price={100.5} size={10.25} totalSize={50} side="bid" depthPct={0.6} />,
         );
 
-        expect(screen.getByText("100.5000")).toBeInTheDocument();
+        expect(screen.getByText("100.50")).toBeInTheDocument();
         expect(screen.getByText("10.25")).toBeInTheDocument();
         expect(screen.getByText("50.00")).toBeInTheDocument();
     });

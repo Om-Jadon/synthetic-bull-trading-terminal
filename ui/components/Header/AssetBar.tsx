@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 import * as sounds from "@/lib/sound";
-import { useTradingStore } from "@/store/tradingStore";
+import { useTradingStore, selectVwap } from "@/store/tradingStore";
+import SessionStats from "./SessionStats";
 
 type AssetBarProps = {
     priceRef: React.RefObject<HTMLSpanElement | null>;
@@ -14,12 +15,6 @@ type AssetBarProps = {
 export default function AssetBar({ priceRef, priceFlashRef, directionRef }: AssetBarProps) {
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const changePct = useTradingStore((state) => state.changePct);
-    const sessionVolume = useTradingStore((state) => state.sessionVolume);
-    const sessionHigh = useTradingStore((state) => state.sessionHigh);
-    const sessionLow = useTradingStore((state) => state.sessionLow);
-    const vwapNumerator = useTradingStore((state) => state.vwapNumerator);
-    const vwapDenominator = useTradingStore((state) => state.vwapDenominator);
-    const tradeCount = useTradingStore((state) => state.tradeCount);
     const connectionStatus = useTradingStore((state) => state.connectionStatus);
     const wsStats = useTradingStore((state) => state.wsStats);
 
@@ -36,7 +31,6 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     };
 
     const isUp = changePct >= 0;
-    const vwap = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : null;
     const statusTone =
         connectionStatus === "open"
             ? "text-bull"
@@ -85,35 +79,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
             <div className="flex h-7 items-center justify-between gap-4 px-3">
                 {/* Left: session stats */}
                 <div className="hidden items-center md:flex">
-                    {snapshotReady ? (
-                        <div key="live" className="stats-reveal flex items-center gap-4 text-data text-text-muted">
-                            <span className="text-text-muted">
-                                H{" "}
-                                <span className="text-text-primary">{sessionHigh.toFixed(4)}</span>
-                            </span>
-                            <span className="text-text-muted">
-                                L{" "}
-                                <span className="text-text-primary">{sessionLow.toFixed(4)}</span>
-                            </span>
-                            <span className="text-text-muted">
-                                VWAP{" "}
-                                <span className="text-text-primary">{vwap === null ? "—" : vwap.toFixed(4)}</span>
-                            </span>
-                            <span className="text-text-muted">
-                                Vol{" "}
-                                <span className="text-text-primary">{sessionVolume.toFixed(2)}</span>
-                            </span>
-                            <span className="text-text-muted">
-                                Trades{" "}
-                                <span className="text-text-primary">{tradeCount.toLocaleString()}</span>
-                            </span>
-                        </div>
-                    ) : (
-                        <span className="flex items-center gap-2 text-label text-text-muted">
-                            <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-brand" />
-                            Connecting to market
-                        </span>
-                    )}
+                    <SessionStats />
                 </div>
 
                 {/* Right: WS diagnostics + mute + status */}

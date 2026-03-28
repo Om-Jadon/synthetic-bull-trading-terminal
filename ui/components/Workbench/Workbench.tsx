@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import OpenOrders from "@/components/OrderEntry/OpenOrders";
 import EquityCurve from "@/components/Portfolio/EquityCurve";
 import PortfolioWidget from "@/components/Portfolio/PortfolioWidget";
-import { useTradingStore } from "@/store/tradingStore";
 
 type WorkbenchTab = "orders" | "portfolio" | "performance";
 const TABS: WorkbenchTab[] = ["orders", "portfolio", "performance"];
@@ -27,7 +26,6 @@ const LABELS: Record<WorkbenchTab, string> = {
 
 export default function Workbench() {
     const [activeTab, setActiveTab] = useState<WorkbenchTab>("orders");
-    const chartFullscreen = useTradingStore((state) => state.chartFullscreen);
 
     // Roving tabIndex keyboard navigation (matches MarketPanel pattern)
     const onTabKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, current: WorkbenchTab) => {
@@ -94,7 +92,7 @@ export default function Workbench() {
                         <PortfolioWidget />
                     </div>
                 )}
-                {activeTab === "performance" && !chartFullscreen && (
+                {activeTab === "performance" && (
                     <div role="tabpanel" id={PANEL_IDS.performance} aria-labelledby={TAB_IDS.performance} className="relative h-full w-full">
                         <EquityCurve />
                     </div>

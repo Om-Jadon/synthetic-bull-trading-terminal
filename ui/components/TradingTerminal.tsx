@@ -1,19 +1,22 @@
 "use client";
 
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import CandlestickChart from "@/components/Chart/CandlestickChart";
 import CommandPalette from "@/components/CommandPalette/CommandPalette";
 import AssetBar from "@/components/Header/AssetBar";
-import MarketPanel, { type BookMode } from "@/components/MarketPanel/MarketPanel";
+import MarketPanel from "@/components/MarketPanel/MarketPanel";
 import * as sounds from "@/lib/sound";
 import OrderEntry from "@/components/OrderEntry/OrderEntry";
 import Workbench from "@/components/Workbench/Workbench";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useTradingStore } from "@/store/tradingStore";
+import SessionStats from "./Header/SessionStats";
+import ToastManager from "./Toast/ToastManager";
 
 export default function TradingTerminal() {
-    const [mode, setMode] = useState<BookMode>("tab");
+    const mode = useTradingStore((state) => state.bookMode);
+    const setMode = useTradingStore((state) => state.setBookMode);
     const [paletteOpen, setPaletteOpen] = useState(false);
     const priceRef = useRef<HTMLSpanElement | null>(null);
     const priceFlashRef = useRef<HTMLDivElement | null>(null);
@@ -55,15 +58,7 @@ export default function TradingTerminal() {
     const chartFullscreen = useTradingStore((state) => state.chartFullscreen);
     const pnl = portfolio ? portfolio.unrealized_pnl + portfolio.realized_pnl : null;
 
-    const vwapNumerator = useTradingStore((state) => state.vwapNumerator);
-    const vwapDenominator = useTradingStore((state) => state.vwapDenominator);
-    const sessionHigh = useTradingStore((state) => state.sessionHigh);
-    const sessionLow = useTradingStore((state) => state.sessionLow);
-    const tradeCount = useTradingStore((state) => state.tradeCount);
-    const vwap = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : null;
-    const displaySessionHigh = snapshotReady ? sessionHigh.toFixed(4) : "—";
-    const displaySessionLow = snapshotReady ? sessionLow.toFixed(4) : "—";
-    const displayTradeCount = snapshotReady ? tradeCount.toLocaleString() : "—";
+
 
     useEffect(() => {
         const handler = () => {
@@ -109,6 +104,7 @@ export default function TradingTerminal() {
             className={`terminal-shell flex h-dvh min-h-screen flex-col overflow-hidden bg-bg-primary text-text-primary ${snapshotReady ? "is-live" : ""}`}
         >
             <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+            <ToastManager />
 
             {/* Boot sequence — "MARKET OPEN" flash on first connect */}
             {marketFlash !== "hidden" && (
@@ -130,20 +126,12 @@ export default function TradingTerminal() {
             <div ref={fullscreenHostRef} className="min-h-0 flex-1 min-w-0 w-full flex flex-col">
                 {chartFullscreen ? (
                     <div className="relative h-full">
-                        <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
-                            H <span className="text-text-primary">{displaySessionHigh}</span>
-                            <span className="mx-2 text-border">|</span>
-                            L <span className="text-text-primary">{displaySessionLow}</span>
-                            <span className="mx-2 text-border">|</span>
-                            VWAP <span className="text-text-primary">{vwap === null ? "—" : vwap.toFixed(4)}</span>
-                            <span className="mx-2 text-border">|</span>
-                            Trades <span className="text-text-primary">{displayTradeCount}</span>
-                        </div>
+                        <SessionStats variant="fullscreen" />
                         <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
                             Esc to Exit Fullscreen
                         </div>
                         <p className="sr-only" aria-live="polite">
-                            Fullscreen chart stats. Session high {displaySessionHigh}, session low {displaySessionLow}, vwap {vwap === null ? "unavailable" : vwap.toFixed(4)}, trades {displayTradeCount}.
+                            Fullscreen chart enabled. View all session statistics in the header.
                         </p>
                         <CandlestickChart
                             onPaletteOpen={() => setPaletteOpen(true)}

@@ -34,6 +34,10 @@ const COMMAND_DEFS: CommandDef[] = [
     syntax: "timeframe <1s|5s|15s|30s|1m|5m>",
     description: "Switch chart timeframe",
   },
+  {
+    syntax: "layout <tab|stacked|large>",
+    description: "Switch terminal layout",
+  },
   { syntax: "help", description: "Show all commands" },
 ];
 
@@ -59,6 +63,7 @@ type ParsedCommand =
   | { kind: "cancel_all" }
   | { kind: "cancel_last" }
   | { kind: "timeframe"; value: string }
+  | { kind: "layout"; value: "tab" | "stacked" | "large" }
   | { kind: "help" };
 
 function parseCommand(raw: string): ParsedCommand | null {
@@ -95,6 +100,9 @@ function parseCommand(raw: string): ParsedCommand | null {
 
   const tfMatch = s.match(/^timeframe\s+(1s|5s|15s|30s|1m|5m)$/i);
   if (tfMatch) return { kind: "timeframe", value: tfMatch[1].toLowerCase() };
+
+  const layoutMatch = s.match(/^layout\s+(tab|stacked|large)$/i);
+  if (layoutMatch) return { kind: "layout", value: layoutMatch[1].toLowerCase() as any };
 
   if (/^help$/i.test(s)) return { kind: "help" };
 
@@ -233,10 +241,9 @@ export default function CommandPalette({ open, onClose }: Props) {
           return;
         }
         await Promise.all(orders.map((o) => cancelOrder(o.order_id)));
-        setFeedback({
-          ok: true,
-          message: `Cancelled ${orders.length} order${orders.length !== 1 ? "s" : ""}`,
-        });
+        const msg = `Cancelled ${orders.length} order${orders.length !== 1 ? "s" : ""}`;
+        setFeedback({ ok: true, message: msg });
+        useTradingStore.getState().addToast(msg, true);
         scheduleClose(1200);
         return;
       }
@@ -245,7 +252,18 @@ export default function CommandPalette({ open, onClose }: Props) {
         useTradingStore
           .getState()
           .setChartTimeframe(TIMEFRAME_MAP[parsed.value]);
-        setFeedback({ ok: true, message: `Timeframe → ${parsed.value}` });
+        const msg = `Timeframe → ${parsed.value}`;
+        setFeedback({ ok: true, message: msg });
+        useTradingStore.getState().addToast(msg, true);
+        scheduleClose(800);
+        return;
+      }
+
+      if (parsed.kind === "layout") {
+        useTradingStore.getState().setBookMode(parsed.value);
+        const msg = `Layout → ${parsed.value}`;
+        setFeedback({ ok: true, message: msg });
+        useTradingStore.getState().addToast(msg, true);
         scheduleClose(800);
         return;
       }
@@ -259,7 +277,9 @@ export default function CommandPalette({ open, onClose }: Props) {
           return;
         }
         await cancelOrder(lastOpen.order_id);
-        setFeedback({ ok: true, message: "Order cancelled" });
+        const msg = "Order cancelled";
+        setFeedback({ ok: true, message: msg });
+        useTradingStore.getState().addToast(msg, true);
         scheduleClose(1200);
         return;
       }
@@ -284,7 +304,9 @@ export default function CommandPalette({ open, onClose }: Props) {
           ? `${parsed.side.toUpperCase()} ${parsed.size} @ ${parsed.price}`
           : `${parsed.side.toUpperCase()} ${parsed.size} market`;
 
-      setFeedback({ ok: true, message: `${label} — accepted` });
+      const msg = `${label} — accepted`;
+      setFeedback({ ok: true, message: msg });
+      useTradingStore.getState().addToast(msg, true);
       scheduleClose(1000);
     } catch (err) {
       setFeedback({
@@ -486,6 +508,11 @@ export default function CommandPalette({ open, onClose }: Props) {
               ) : parsed.kind === "timeframe" ? (
                 <span className="text-text-muted">
                   Switch chart to{" "}
+                  <span className="text-text-primary">{parsed.value}</span>
+                </span>
+              ) : parsed.kind === "layout" ? (
+                <span className="text-text-muted">
+                  Switch layout to{" "}
                   <span className="text-text-primary">{parsed.value}</span>
                 </span>
               ) : (

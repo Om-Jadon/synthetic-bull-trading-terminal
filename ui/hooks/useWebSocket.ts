@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-import { createCandleAggregator } from "@/hooks/useCandles";
+import { createCandleAggregator } from "@/lib/candleAggregator";
 import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 import type { SnapshotMsg, StatsMsg, WSMessage } from "@/types/ws";
@@ -129,6 +129,7 @@ export function useWebSocket({
               if (isHuman) {
                 if (message.status === "filled") sounds.orderFill();
                 else if (message.status === "cancelled") sounds.orderCancel();
+                // "partial" status intentionally plays no sound to avoid audio spam on highly fragmented fills
               }
               break;
             }

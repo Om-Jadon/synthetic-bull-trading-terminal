@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cancelOrder, placeOrder } from "@/lib/api";
 import * as sounds from "@/lib/sound";
+import { estimateMarketFill } from "@/lib/tradeUtils";
 import { useTradingStore } from "@/store/tradingStore";
 import type { OrderRequest } from "@/types/ws";
 
@@ -16,52 +17,6 @@ const moneyFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-
-function estimateMarketFill(
-  side: "buy" | "sell",
-  size: number,
-  asks: [number, number][],
-  bids: [number, number][],
-  lastPrice: number,
-): {
-  avgPrice: number;
-  slippage: number;
-  levelsUsed: number;
-  partial: boolean;
-} | null {
-  if (!(size > 0)) return null;
-  const levels = side === "buy" ? asks : bids;
-  if (levels.length === 0) return null;
-
-  let remaining = size;
-  let totalCost = 0;
-  let levelsUsed = 0;
-
-  for (const [price, volume] of levels) {
-    if (remaining <= 0) break;
-    if (!(volume > 0)) continue;
-    const fill = Math.min(remaining, volume);
-    totalCost += price * fill;
-    remaining -= fill;
-    levelsUsed += 1;
-  }
-
-  const filled = size - remaining;
-  if (filled <= 0) return null;
-
-  const avgPrice = totalCost / filled;
-  const refPrice = lastPrice > 0 ? lastPrice : avgPrice;
-  const slippage =
-    refPrice > 0 ? (Math.abs(avgPrice - refPrice) / refPrice) * 100 : 0;
-
-  return { avgPrice, slippage, levelsUsed, partial: remaining > 0 };
-}
-
-
-
-type Toast = { id: number; message: string; ok: boolean };
-
-let toastSeq = 0;
 
 // Module-level constant — stable reference, no re-creation on render
 const QUICK_SIZES = ["0.50", "1.00", "2.00", "5.00"];
@@ -81,13 +36,10 @@ export default function OrderEntry() {
   const [size, setSize] = useState("1");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const addToast = useTradingStore((state) => state.addToast);
   const [showHint, setShowHint] = useState(false);
   const [keyFlash, setKeyFlash] = useState<string | null>(null);
 
-  const timerRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(
-    new Map(),
-  );
   const hintShownRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,14 +49,8 @@ export default function OrderEntry() {
   openOrdersRef.current = openOrders;
 
   const pushToast = useCallback((message: string, ok: boolean) => {
-    const id = ++toastSeq;
-    setToasts((prev) => [...prev, { id, message, ok }]);
-    const timer = setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-      timerRefs.current.delete(id);
-    }, 3000);
-    timerRefs.current.set(id, timer);
-  }, []);
+    addToast(message, ok);
+  }, [addToast]);
 
   const pushToastRef = useRef(pushToast);
   pushToastRef.current = pushToast;
@@ -117,9 +63,7 @@ export default function OrderEntry() {
   }, []);
 
   useEffect(() => {
-    const timers = timerRefs.current;
     return () => {
-      timers.forEach((t) => clearTimeout(t));
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
   }, []);
@@ -448,26 +392,6 @@ export default function OrderEntry() {
           </div>
         )}
       </section>
-
-
-      {/* Bottom-right toast portal */}
-      <div
-        aria-live="polite"
-        className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col gap-2"
-      >
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            role="status"
-            className={`notice-enter pointer-events-auto rounded-xs border px-3 py-2 font-mono text-[12px] ${toast.ok
-                ? "border-bull/40 bg-bull-surface text-bull"
-                : "border-bear/40 bg-bear-surface text-bear"
-              }`}
-          >
-            {toast.message}
-          </div>
-        ))}
-      </div>
     </>
   );
 }

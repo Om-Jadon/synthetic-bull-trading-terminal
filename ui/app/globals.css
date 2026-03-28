@@ -267,14 +267,6 @@ textarea:focus-visible,
   animation: slide-in 80ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
 
 .book-row-exit {
   animation: book-row-exit 400ms ease-out forwards;
@@ -495,10 +487,3 @@ textarea:focus-visible,
   }
 }
 
-@utility layout-cols-tablet {
-  grid-template-columns: minmax(0, 1fr) clamp(280px, 38vw, 380px);
-}
-
-@utility layout-cols-desktop {
-  grid-template-columns: minmax(0, 1fr) var(--book-col) var(--order-col);
-}

@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import OrderBookPanel from "@/components/OrderBook/OrderBookPanel";
 import TradesPanel from "@/components/OrderBook/TradesPanel";
-
-export type BookMode = "tab" | "stacked" | "large";
+import { type BookMode } from "@/store/tradingStore";
 
 type MarketPanelProps = {
     mode: BookMode;

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import OrderBook from "@/components/OrderBook/OrderBook";
+import MarketPanel from "@/components/MarketPanel/MarketPanel";
 
 type StoreState = {
     bids: [number, number][];
@@ -38,9 +38,9 @@ vi.mock("@/store/tradingStore", () => ({
 
 describe("OrderBook view modes", () => {
     it("tab mode defaults to order book and can switch to trades", () => {
-        render(<OrderBook mode="tab" onModeChange={vi.fn()} />);
+        render(<MarketPanel mode="tab" onModeChange={vi.fn()} />);
 
-        const tabList = screen.getByRole("tablist", { name: /market view/i });
+        const tabList = screen.getByRole("tablist", { name: /order book and trades view/i });
         const bookTab = within(tabList).getByRole("tab", { name: /order book/i });
         const tradesTab = within(tabList).getByRole("tab", { name: /trades/i });
 
@@ -60,7 +60,7 @@ describe("OrderBook view modes", () => {
     });
 
     it("tab mode supports arrow navigation between tabs", () => {
-        render(<OrderBook mode="tab" onModeChange={vi.fn()} />);
+        render(<MarketPanel mode="tab" onModeChange={vi.fn()} />);
 
         const orderBookTab = screen.getByRole("tab", { name: /order book/i });
         const tradesTab = screen.getByRole("tab", { name: /trades/i });
@@ -73,22 +73,24 @@ describe("OrderBook view modes", () => {
     });
 
     it("stacked mode shows both order book and trades panels", () => {
-        render(<OrderBook mode="stacked" onModeChange={vi.fn()} />);
+        render(<MarketPanel mode="stacked" onModeChange={vi.fn()} />);
 
-        expect(screen.queryByRole("tablist", { name: /market view/i })).not.toBeInTheDocument();
-        expect(screen.getByText("Order Book")).toBeInTheDocument();
-        expect(screen.getByText("Recent Trades")).toBeInTheDocument();
-        expect(screen.getByRole("columnheader", { name: /price/i })).toBeInTheDocument();
+        expect(screen.queryByRole("tablist", { name: /order book and trades view/i })).not.toBeInTheDocument();
+        expect(screen.getByText("Total")).toBeInTheDocument(); // from OrderBookPanel
+        expect(screen.getByRole("columnheader", { name: /time/i })).toBeInTheDocument(); // from TradesPanel
+        expect(screen.getAllByText("Price")).not.toHaveLength(0); // Appears in both
     });
 
     it("large mode keeps both panels and mode switch control works", () => {
         const onModeChange = vi.fn();
-        render(<OrderBook mode="large" onModeChange={onModeChange} />);
+        render(<MarketPanel mode="large" onModeChange={onModeChange} />);
 
-        expect(screen.getByText("Order Book")).toBeInTheDocument();
-        expect(screen.getByText("Recent Trades")).toBeInTheDocument();
+        expect(screen.getByText("Total")).toBeInTheDocument();
+        expect(screen.getByRole("columnheader", { name: /time/i })).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole("button", { name: "tab" }));
+        fireEvent.click(screen.getByRole("button", { name: /layout options/i }));
+        fireEvent.click(screen.getByRole("menuitem", { name: /tab/i }));
+        
         expect(onModeChange).toHaveBeenCalledWith("tab");
     });
 });

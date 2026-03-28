@@ -9,11 +9,17 @@ import type {
   TradeMsg,
 } from "@/types/ws";
 
+export type BookMode = "tab" | "stacked" | "large";
+
+export type Toast = {
+  id: number;
+  message: string;
+  ok: boolean;
+};
+
 type TradingStore = {
   fills: FillMarker[];
   equityHistory: EquityPoint[];
-  activeTool: "none" | "line";
-  drawings: DrawingLine[];
   chartFullscreen: boolean;
   bids: [number, number][];
   asks: [number, number][];
@@ -36,20 +42,22 @@ type TradingStore = {
   connectionStatus: "connecting" | "open" | "closed";
   wsStats: { msgsPerSec: number; latencyMs: number };
   bookGroupTick: number;
+  bookMode: BookMode;
+  toasts: Toast[];
   setConnectionStatus: (status: TradingStore["connectionStatus"]) => void;
   setSnapshotReady: (ready: boolean) => void;
   setWsStats: (stats: { msgsPerSec: number; latencyMs: number }) => void;
   setBookGroupTick: (tick: number) => void;
+  setBookMode: (mode: BookMode) => void;
   setChartTimeframe: (seconds: number) => void;
+  addToast: (message: string, ok: boolean) => void;
+  removeToast: (id: number) => void;
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
   addTrade: (trade: TradeMsg) => void;
   setCandles: (candles: Candle[]) => void;
   upsertCandle: (candle: Candle) => void;
   setStats: (stats: StatsMsg) => void;
   setPortfolio: (portfolio: PortfolioMsg) => void;
-  setActiveTool: (tool: TradingStore["activeTool"]) => void;
-  addDrawing: (drawing: DrawingLine) => void;
-  clearDrawings: () => void;
   toggleChartFullscreen: () => void;
   trackOrderId: (orderId: string) => void;
   onOrderUpdate: (update: OrderUpdateMsg) => void;
@@ -66,22 +74,17 @@ type EquityPoint = {
   value: number;
 };
 
-type DrawingLine = {
-  id: string;
-  price: number;
-};
-
 function toUtcTimestamp(ts: number): UTCTimestamp {
   const seconds =
     ts > 1_000_000_000_000 ? Math.floor(ts / 1000) : Math.floor(ts);
   return seconds as UTCTimestamp;
 }
 
+let toastSeq = 0;
+
 export const useTradingStore = create<TradingStore>((set, get) => ({
   fills: [],
   equityHistory: [],
-  activeTool: "none",
-  drawings: [],
   chartFullscreen: false,
   bids: [],
   asks: [],
@@ -104,12 +107,25 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   connectionStatus: "connecting",
   wsStats: { msgsPerSec: 0, latencyMs: 0 },
   bookGroupTick: 0.01,
+  bookMode: "tab",
+  toasts: [],
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 
   setWsStats: (wsStats) => set({ wsStats }),
 
   setBookGroupTick: (bookGroupTick) => set({ bookGroupTick }),
+
+  setBookMode: (bookMode) => set({ bookMode }),
+
+  addToast: (message, ok) => {
+    const id = ++toastSeq;
+    set((state) => ({ toasts: [...state.toasts, { id, message, ok }] }));
+    setTimeout(() => get().removeToast(id), 3000);
+  },
+
+  removeToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 
   setSnapshotReady: (snapshotReady) =>
     set((state) =>
@@ -119,8 +135,6 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
             snapshotReady,
             fills: [],
             equityHistory: [],
-            drawings: [],
-            activeTool: "none",
             chartFullscreen: false,
             vwapNumerator: 0,
             vwapDenominator: 0,
@@ -189,12 +203,6 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       };
     }),
 
-  setActiveTool: (activeTool) => set({ activeTool }),
-
-  addDrawing: (drawing) =>
-    set((state) => ({ drawings: [...state.drawings, drawing].slice(-80) })),
-
-  clearDrawings: () => set({ drawings: [] }),
 
   toggleChartFullscreen: () =>
     set((state) => ({ chartFullscreen: !state.chartFullscreen })),
@@ -217,6 +225,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       if (update.status === "filled" || update.status === "cancelled") {
         openOrders.delete(update.order_id);
       } else {
+        // "open" and "partial" keep the order in the active map over time, overwriting the old state since remaining_size may change.
         openOrders.set(update.order_id, update);
       }
 
@@ -243,3 +252,6 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
     });
   },
 }));
+
+export const selectVwap = (state: TradingStore) =>
+  state.vwapDenominator > 0 ? state.vwapNumerator / state.vwapDenominator : null;

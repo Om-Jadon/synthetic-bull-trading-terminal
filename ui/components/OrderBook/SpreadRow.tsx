@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { useTradingStore } from "@/store/tradingStore";
 
 type SpreadRowProps = {
     bestBid?: number;

@@ -16,7 +16,7 @@ import {
     type UTCTimestamp,
 } from "lightweight-charts";
 
-import { useTradingStore } from "@/store/tradingStore";
+import { selectVwap, useTradingStore } from "@/store/tradingStore";
 import type { Candle } from "@/types/ws";
 
 // ─── Timeframe config ────────────────────────────────────────────────────────
@@ -99,7 +99,6 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
     const markerApiRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
-    const priceLinesRef = useRef<Map<string, IPriceLine>>(new Map());
 
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const chartTimeframe = useTradingStore((state) => state.chartTimeframe);
@@ -232,29 +231,12 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         chartRef.current = chart;
         markerApiRef.current = createSeriesMarkers(candleSeries, []);
 
-        const clickHandler = (param: { point?: { x: number; y: number } }) => {
-            const store = useTradingStore.getState();
-            if (store.activeTool !== "line") return;
-            if (!param.point) return;
-            const price = candleSeries.coordinateToPrice(param.point.y);
-            if (price == null || !Number.isFinite(price)) return;
-
-            store.addDrawing({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                price,
-            });
-            store.setActiveTool("none");
-        };
-        chart.subscribeClick(clickHandler);
-
         return () => {
-            chart.unsubscribeClick(clickHandler);
             chart.remove();
             chartRef.current = null;
             candleSeriesRef.current = null;
             volumeSeriesRef.current = null;
             markerApiRef.current = null;
-            priceLinesRef.current.clear();
         };
     }, []);
 
@@ -345,7 +327,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             const candleSeries = candleSeriesRef.current;
             if (!candleSeries) return;
 
-            const vwap = state.vwapDenominator > 0 ? state.vwapNumerator / state.vwapDenominator : null;
+            const vwap = selectVwap(state);
             if (vwap === null) return;
             
             if (!vwapLine) {
@@ -390,43 +372,6 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
         syncMarkers(useTradingStore.getState(), {});
         const unsubscribe = useTradingStore.subscribe(syncMarkers);
-
-        return () => { unsubscribe(); };
-    }, []);
-
-    // Subscribe to drawing state and keep chart price lines in sync
-    useEffect(() => {
-        const { textMuted: lineColor } = paletteRef.current;
-
-        const syncDrawings = (state: any, prevState: any) => {
-            if (prevState.drawings && state.drawings === prevState.drawings) return;
-            const candleSeries = candleSeriesRef.current;
-            if (!candleSeries) return;
-
-            const nextIds = new Set(state.drawings.map((d: any) => d.id));
-            for (const [id, line] of priceLinesRef.current) {
-                if (!nextIds.has(id)) {
-                    candleSeries.removePriceLine(line);
-                    priceLinesRef.current.delete(id);
-                }
-            }
-
-            for (const drawing of state.drawings) {
-                if (priceLinesRef.current.has(drawing.id)) continue;
-                const line = candleSeries.createPriceLine({
-                    price: drawing.price,
-                    color: lineColor,
-                    lineWidth: 1,
-                    lineStyle: 2,
-                    axisLabelVisible: false,
-                    title: "",
-                });
-                priceLinesRef.current.set(drawing.id, line);
-            }
-        };
-
-        syncDrawings(useTradingStore.getState(), {});
-        const unsubscribe = useTradingStore.subscribe(syncDrawings);
 
         return () => { unsubscribe(); };
     }, []);

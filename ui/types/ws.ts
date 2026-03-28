@@ -16,7 +16,6 @@ export type TradeMsg = {
 
 export type StatsMsg = {
   type: "stats";
-  session_open: number;
   session_high: number;
   session_low: number;
   last_price: number;
@@ -40,7 +39,6 @@ export type OrderUpdateMsg = {
   type: "order_update";
   order_id: string;
   status: "open" | "partial" | "filled" | "cancelled";
-  filled_size: number;
   remaining_size: number;
   price: number;
   side: "buy" | "sell";
