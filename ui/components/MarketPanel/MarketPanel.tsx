@@ -77,7 +77,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                 </svg>
             </button>
             {dropdownOpen && (
-                <div className="palette-enter absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-[2px] border border-border bg-bg-panel p-1 shadow-2xl" role="menu">
+                <div className="dropdown-enter absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-[2px] border border-border bg-bg-panel p-1 shadow-2xl" role="menu">
                     {(["tab", "stacked", "large"] as const).map((item) => (
                         <button
                             key={item}

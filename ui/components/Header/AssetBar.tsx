@@ -99,14 +99,15 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         </span>
                     )}
 
-                    {/* Persistent ⌘K command palette indicator */}
-                    <span
-                        className="hidden items-center gap-1 rounded-xs border border-border bg-bg-row px-1.5 py-0.5 font-mono text-micro text-text-muted sm:inline-flex"
-                        title="Open command palette"
-                        aria-hidden="true"
+                    {/* Interactive Help toggle */}
+                    <button
+                        type="button"
+                        onClick={() => useTradingStore.getState().setHelpOpen(true)}
+                        aria-label="Open shortcuts help"
+                        className="btn-tactile inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-[10px] font-bold text-text-muted transition-colors hover:text-text-primary"
                     >
-                        <kbd className="text-micro font-medium">⌘K</kbd>
-                    </span>
+                        ?
+                    </button>
                     <button
                         type="button"
                         onClick={toggleMute}

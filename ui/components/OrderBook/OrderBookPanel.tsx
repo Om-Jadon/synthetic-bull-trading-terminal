@@ -2,19 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { groupLevels, BOOK_TICKS, TARGET_ROWS } from "@/lib/groupBook";
+import {
+    getGroupedMap,
+    generateLadder,
+    BOOK_TICKS,
+    TARGET_ROWS,
+} from "@/lib/groupBook";
 import { useTradingStore } from "@/store/tradingStore";
 
 import OrderRow from "./OrderRow";
 import SpreadRow from "./SpreadRow";
-
-function cumulativeRows(levels: [number, number][]) {
-    let running = 0;
-    return levels.map(([price, size]) => {
-        running += size;
-        return { price, size, total: running };
-    });
-}
 
 export default function OrderBookPanel() {
     const bids = useTradingStore((state) => state.bids);
@@ -40,22 +37,39 @@ export default function OrderBookPanel() {
         };
     }, [isGroupOpen]);
 
-    const bidRows = useMemo(
-        () => cumulativeRows(groupLevels(bids, bookGroupTick).slice(0, TARGET_ROWS)),
-        [bids, bookGroupTick],
-    );
-    const askRows = useMemo(
-        () => cumulativeRows(groupLevels(asks, bookGroupTick).slice(0, TARGET_ROWS)).reverse(),
-        [asks, bookGroupTick],
-    );
-    const maxTotal = useMemo(() => {
-        const bidMax = bidRows.length ? bidRows[bidRows.length - 1].total : 1;
-        const askMax = askRows.length ? askRows[0].total : 1;
-        return Math.max(1, bidMax, askMax);
-    }, [askRows, bidRows]);
-
     const bestBid = bids[0]?.[0];
     const bestAsk = asks[0]?.[0];
+
+    // Price Ladder Generation
+    const { askRows, bidRows, maxTotal } = useMemo(() => {
+        const factor = Math.round(1 / bookGroupTick);
+        const mid = (bestBid && bestAsk) ? (bestBid + bestAsk) / 2 : (bestBid || bestAsk || 0);
+        const roundedMid = Math.round(mid * factor) / factor;
+
+        const bidMap = getGroupedMap(bids, bookGroupTick);
+        const askMap = getGroupedMap(asks, bookGroupTick);
+
+        const askLadder = generateLadder(roundedMid, bookGroupTick, TARGET_ROWS, 1).reverse();
+        const bidLadder = generateLadder(roundedMid, bookGroupTick, TARGET_ROWS, -1);
+
+        let runningAskTotal = 0;
+        const asksWithTotal = askLadder.map((price) => {
+            const size = askMap.get(price) || 0;
+            runningAskTotal += size;
+            return { price, size, total: runningAskTotal };
+        });
+
+        let runningBidTotal = 0;
+        const bidsWithTotal = bidLadder.map((price) => {
+            const size = bidMap.get(price) || 0;
+            runningBidTotal += size;
+            return { price, size, total: runningBidTotal };
+        });
+
+        const mTotal = Math.max(1, runningAskTotal, runningBidTotal);
+
+        return { askRows: asksWithTotal, bidRows: bidsWithTotal, maxTotal: mTotal };
+    }, [bids, asks, bestBid, bestAsk, bookGroupTick]);
 
     const bookEmpty = snapshotReady && askRows.length === 0 && bidRows.length === 0;
 
@@ -95,7 +109,7 @@ export default function OrderBookPanel() {
 
                         {isGroupOpen && (
                             <div
-                                className="palette-enter absolute right-0 top-full z-50 mt-1 min-w-[60px] rounded-[2px] border border-border bg-bg-panel p-1 shadow-2xl"
+                                className="dropdown-enter absolute right-0 top-full z-50 mt-1 min-w-[60px] rounded-[2px] border border-border bg-bg-panel p-1 shadow-2xl"
                                 role="listbox"
                             >
                                 {BOOK_TICKS.map((tick) => (
@@ -128,10 +142,10 @@ export default function OrderBookPanel() {
                     </div>
                 ) : (
                     <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-                        {/* Asks — fixed-height rows, packed to the bottom (closest to spread) */}
+                        {/* Asks — Price Ladder (Higher prices at top) */}
                         <div className="min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                            <div className="flex flex-col justify-end min-h-full">
-                                {askRows.map((row: { price: number; size: number; total: number }, i: number) => (
+                            <div className="flex flex-col min-h-full">
+                                {askRows.map((row: { price: number; size: number; total: number }) => (
                                     <OrderRow
                                         key={`ask-${row.price}`}
                                         side="ask"
@@ -139,7 +153,6 @@ export default function OrderBookPanel() {
                                         size={row.size}
                                         totalSize={row.total}
                                         depthPct={row.total / Math.max(1, maxTotal)}
-                                        isBest={i === askRows.length - 1}
                                     />
                                 ))}
                             </div>
@@ -147,10 +160,10 @@ export default function OrderBookPanel() {
 
                         <SpreadRow bestBid={bestBid} bestAsk={bestAsk} />
 
-                        {/* Bids — fixed-height rows, packed to the top (closest to spread) */}
+                        {/* Bids — Price Ladder (Lower prices at bottom) */}
                         <div className="min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                            <div className="flex flex-col justify-start">
-                                {bidRows.map((row: { price: number; size: number; total: number }, i: number) => (
+                            <div className="flex flex-col">
+                                {bidRows.map((row: { price: number; size: number; total: number }) => (
                                     <OrderRow
                                         key={`bid-${row.price}`}
                                         side="bid"
@@ -158,7 +171,6 @@ export default function OrderBookPanel() {
                                         size={row.size}
                                         totalSize={row.total}
                                         depthPct={row.total / Math.max(1, maxTotal)}
-                                        isBest={i === 0}
                                     />
                                 ))}
                             </div>

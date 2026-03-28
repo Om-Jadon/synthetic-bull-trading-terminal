@@ -9,7 +9,6 @@ type OrderRowProps = {
     totalSize: number;
     side: "bid" | "ask";
     depthPct: number;
-    isBest?: boolean;
 };
 
 function OrderRow({
@@ -18,7 +17,6 @@ function OrderRow({
     totalSize,
     side,
     depthPct,
-    isBest = false,
 }: OrderRowProps) {
     const setPendingPriceFill = useTradingStore((state) => state.setPendingPriceFill);
 
@@ -26,7 +24,11 @@ function OrderRow({
         setPendingPriceFill(price, side === "bid" ? "buy" : "sell");
     };
 
-    const priceClass = side === "bid" ? "text-bull" : "text-bear";
+    const hasLiquidity = size > 0;
+    const priceClass = hasLiquidity
+        ? (side === "bid" ? "text-bull" : "text-bear")
+        : "text-text-muted/40";
+    
     const prevSizeRef = useRef(size);
     const depthRef = useRef<HTMLDivElement | null>(null);
 
@@ -34,7 +36,10 @@ function OrderRow({
         if (!depthRef.current) return;
         const prev = prevSizeRef.current;
         prevSizeRef.current = size;
-        if (size <= prev) return;
+        
+        // Only flash on significant size increases (>5%) to reduce jitter/noise
+        const isSignificantIncrease = prev > 0 && (size - prev) / prev > 0.05;
+        if (!isSignificantIncrease) return;
 
         const node = depthRef.current;
         node.classList.remove("depth-flash");
@@ -47,7 +52,7 @@ function OrderRow({
     return (
         <div
             onClick={onRowClick}
-            className={`book-row notice-enter relative grid h-[22px] shrink-0 cursor-pointer grid-cols-3 items-center px-2 font-mono text-[11px] hover:bg-bg-row active:bg-brand/10 ${isBest ? "font-medium" : ""}`}
+            className="book-row book-row-reflow relative grid h-[22px] shrink-0 cursor-pointer grid-cols-3 items-center px-2 font-mono text-[11px] hover:bg-bg-row active:bg-brand/10"
         >
             <div
                 ref={depthRef}
@@ -61,16 +66,17 @@ function OrderRow({
                             ? "var(--color-bull-depth)"
                             : "var(--color-bear-depth)",
                     willChange: "transform",
-                    transition: "transform 200ms cubic-bezier(0.25, 0, 0.1, 1)",
+                    transition: "transform 100ms cubic-bezier(0.25, 0, 0.1, 1)",
+                    opacity: hasLiquidity ? 1 : 0,
                 }}
             />
-            <span className={`${priceClass} relative z-10 ${isBest ? "!font-semibold" : ""}`}>
+            <span className={`${priceClass} relative z-10`}>
                 {price.toFixed(2)}
             </span>
-            <span className="relative z-10 text-right text-text-primary">
+            <span className={`relative z-10 text-right text-text-primary ${!hasLiquidity ? "opacity-20" : ""}`}>
                 {size.toFixed(2)}
             </span>
-            <span className="relative z-10 text-right text-text-muted">
+            <span className={`relative z-10 text-right text-text-muted ${!hasLiquidity ? "opacity-5" : ""}`}>
                 {totalSize.toFixed(2)}
             </span>
         </div>

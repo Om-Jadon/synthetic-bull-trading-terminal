@@ -39,6 +39,7 @@ type TradingStore = {
   orderHistory: OrderUpdateMsg[];
   knownOrderIds: Set<string>;
   snapshotReady: boolean;
+  isHelpOpen: boolean;
   connectionStatus: "connecting" | "open" | "closed";
   wsStats: { msgsPerSec: number; latencyMs: number };
   bookGroupTick: number;
@@ -47,6 +48,7 @@ type TradingStore = {
   pendingPriceFill: { price: number; side: "buy" | "sell" } | null;
   setConnectionStatus: (status: TradingStore["connectionStatus"]) => void;
   setSnapshotReady: (ready: boolean) => void;
+  setHelpOpen: (open: boolean) => void;
   setWsStats: (stats: { msgsPerSec: number; latencyMs: number }) => void;
   setBookGroupTick: (tick: number) => void;
   setBookMode: (mode: BookMode) => void;
@@ -106,6 +108,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   orderHistory: [],
   knownOrderIds: new Set(),
   snapshotReady: false,
+  isHelpOpen: false,
   connectionStatus: "connecting",
   wsStats: { msgsPerSec: 0, latencyMs: 0 },
   bookGroupTick: 0.01,
@@ -120,6 +123,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   setBookGroupTick: (bookGroupTick) => set({ bookGroupTick }),
 
   setBookMode: (bookMode) => set({ bookMode }),
+
+  setHelpOpen: (isHelpOpen) => set({ isHelpOpen }),
 
   addToast: (message, ok) => {
     const id = ++toastSeq;
@@ -139,6 +144,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
             fills: [],
             equityHistory: [],
             chartFullscreen: false,
+            isHelpOpen: false,
             vwapNumerator: 0,
             vwapDenominator: 0,
             tradeCount: 0,

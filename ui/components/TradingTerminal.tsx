@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import CandlestickChart from "@/components/Chart/CandlestickChart";
 import CommandPalette from "@/components/CommandPalette/CommandPalette";
 import AssetBar from "@/components/Header/AssetBar";
+import HelpModal from "@/components/Help/HelpModal";
 import MarketPanel from "@/components/MarketPanel/MarketPanel";
 import * as sounds from "@/lib/sound";
 import OrderEntry from "@/components/OrderEntry/OrderEntry";
@@ -17,6 +18,7 @@ import ToastManager from "./Toast/ToastManager";
 export default function TradingTerminal() {
     const mode = useTradingStore((state) => state.bookMode);
     const setMode = useTradingStore((state) => state.setBookMode);
+    const setHelpOpen = useTradingStore((state) => state.setHelpOpen);
     const [paletteOpen, setPaletteOpen] = useState(false);
     const priceRef = useRef<HTMLSpanElement | null>(null);
     const priceFlashRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +42,25 @@ export default function TradingTerminal() {
             window.removeEventListener("keydown", init);
         };
     }, []);
+
+    // Global Help Shortcut
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
+                // Only trigger if not in an input
+                if (
+                    document.activeElement instanceof HTMLInputElement ||
+                    document.activeElement instanceof HTMLTextAreaElement
+                )
+                    return;
+
+                e.preventDefault();
+                setHelpOpen(true);
+            }
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [setHelpOpen]);
 
     // Global Cmd+K / Ctrl+K to open the command palette
     useEffect(() => {
@@ -104,6 +125,7 @@ export default function TradingTerminal() {
             className={`terminal-shell flex h-dvh min-h-screen flex-col overflow-hidden bg-bg-primary text-text-primary ${snapshotReady ? "is-live" : ""}`}
         >
             <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+            <HelpModal />
             <ToastManager />
 
             {/* Boot sequence — "MARKET OPEN" flash on first connect */}

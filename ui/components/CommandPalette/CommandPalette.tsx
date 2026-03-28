@@ -400,7 +400,7 @@ export default function CommandPalette({ open, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="palette-enter fixed left-1/2 top-12 z-50 w-120 max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-xs border border-border bg-bg-panel"
+        className="command-palette-enter fixed left-1/2 top-12 z-50 w-120 max-w-[calc(100vw-32px)] -translate-x-1/2 overflow-hidden rounded-xs border border-border bg-bg-panel"
         style={{ boxShadow: "var(--shadow-overlay)" }}
       >
         {/* ── Input row ── */}
