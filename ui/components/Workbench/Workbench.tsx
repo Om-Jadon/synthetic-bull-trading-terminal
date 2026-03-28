@@ -70,7 +70,7 @@ export default function Workbench() {
                             tabIndex={activeTab === tab ? 0 : -1}
                             onClick={() => setActiveTab(tab)}
                             onKeyDown={(e) => onTabKeyDown(e, tab)}
-                            className={`h-7 max-sm:h-11 rounded-xs px-3 text-label transition-colors border ${
+                            className={`h-7 max-sm:h-11 rounded-xs px-3 text-label transition-colors border btn-tactile ${
                                 activeTab === tab
                                     ? "border-brand bg-brand/10 text-brand font-medium"
                                     : "border-transparent text-text-muted hover:border-border hover:bg-bg-row hover:text-text-primary"
@@ -83,17 +83,17 @@ export default function Workbench() {
             </div>
             <div className="relative flex min-h-0 flex-[1_1_0%] flex-col overflow-hidden bg-bg-panel">
                 {activeTab === "orders" && (
-                    <div role="tabpanel" id={PANEL_IDS.orders} aria-labelledby={TAB_IDS.orders} className="h-full w-full">
+                    <div role="tabpanel" id={PANEL_IDS.orders} aria-labelledby={TAB_IDS.orders} className="h-full w-full tab-content-enter">
                         <OpenOrders />
                     </div>
                 )}
                 {activeTab === "portfolio" && (
-                    <div role="tabpanel" id={PANEL_IDS.portfolio} aria-labelledby={TAB_IDS.portfolio} className="h-full w-full overflow-y-auto p-2">
+                    <div role="tabpanel" id={PANEL_IDS.portfolio} aria-labelledby={TAB_IDS.portfolio} className="h-full w-full overflow-y-auto p-2 tab-content-enter">
                         <PortfolioWidget />
                     </div>
                 )}
                 {activeTab === "performance" && (
-                    <div role="tabpanel" id={PANEL_IDS.performance} aria-labelledby={TAB_IDS.performance} className="relative h-full w-full">
+                    <div role="tabpanel" id={PANEL_IDS.performance} aria-labelledby={TAB_IDS.performance} className="relative h-full w-full tab-content-enter">
                         <EquityCurve />
                     </div>
                 )}

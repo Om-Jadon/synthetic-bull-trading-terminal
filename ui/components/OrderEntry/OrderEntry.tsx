@@ -37,8 +37,10 @@ export default function OrderEntry() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const addToast = useTradingStore((state) => state.addToast);
+  const pendingPriceFill = useTradingStore((state) => state.pendingPriceFill);
   const [showHint, setShowHint] = useState(false);
   const [keyFlash, setKeyFlash] = useState<string | null>(null);
+  const [priceFlash, setPriceFlash] = useState(false);
 
   const hintShownRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -76,6 +78,16 @@ export default function OrderEntry() {
     const t = setTimeout(() => setShowHint(false), 4000);
     return () => clearTimeout(t);
   }, [snapshotReady]);
+
+  // Sync with price selection from Order Book
+  useEffect(() => {
+    if (!pendingPriceFill) return;
+    setPrice(pendingPriceFill.price.toString());
+    setSide(pendingPriceFill.side);
+    setPriceFlash(true);
+    const t = setTimeout(() => setPriceFlash(false), 800);
+    return () => clearTimeout(t);
+  }, [pendingPriceFill]);
 
   // ─── Keyboard shortcuts ───────────────────────────────────────────────────
   useEffect(() => {
@@ -278,7 +290,8 @@ export default function OrderEntry() {
                 type="number"
                 step="0.0001"
                 min="0"
-                className="mt-1 h-9 max-sm:h-11 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-body text-text-primary"
+                className={`mt-1 h-9 max-sm:h-11 w-full rounded-xs border border-border bg-bg-row px-2 font-mono text-body text-text-primary transition-all ${priceFlash ? "input-selection-flash" : ""
+                  }`}
               />
             </label>
           )}

@@ -44,6 +44,7 @@ type TradingStore = {
   bookGroupTick: number;
   bookMode: BookMode;
   toasts: Toast[];
+  pendingPriceFill: { price: number; side: "buy" | "sell" } | null;
   setConnectionStatus: (status: TradingStore["connectionStatus"]) => void;
   setSnapshotReady: (ready: boolean) => void;
   setWsStats: (stats: { msgsPerSec: number; latencyMs: number }) => void;
@@ -61,6 +62,7 @@ type TradingStore = {
   toggleChartFullscreen: () => void;
   trackOrderId: (orderId: string) => void;
   onOrderUpdate: (update: OrderUpdateMsg) => void;
+  setPendingPriceFill: (price: number, side: "buy" | "sell") => void;
 };
 
 type FillMarker = {
@@ -109,6 +111,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   bookGroupTick: 0.01,
   bookMode: "tab",
   toasts: [],
+  pendingPriceFill: null,
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 
@@ -251,6 +254,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       };
     });
   },
+  setPendingPriceFill: (price, side) => set({ pendingPriceFill: { price, side } }),
 }));
 
 export const selectVwap = (state: TradingStore) =>

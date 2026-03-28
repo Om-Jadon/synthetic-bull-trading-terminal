@@ -153,7 +153,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                         id="market-panel-book"
                         aria-labelledby="market-tab-book"
                         hidden={activeTab !== "book"}
-                        className="h-full min-h-0"
+                        className={`h-full min-h-0 ${activeTab === "book" ? "tab-content-enter" : ""}`}
                     >
                         <OrderBookPanel />
                     </div>
@@ -162,7 +162,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                         id="market-panel-trades"
                         aria-labelledby="market-tab-trades"
                         hidden={activeTab !== "trades"}
-                        className="h-full min-h-0"
+                        className={`h-full min-h-0 ${activeTab === "trades" ? "tab-content-enter" : ""}`}
                     >
                         <TradesPanel />
                     </div>

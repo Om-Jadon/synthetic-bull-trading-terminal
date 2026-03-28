@@ -49,7 +49,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         <span>SYNTHETIC-BULL</span>
                     </div>
 
-                    <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
+                    <span className="text-label text-text-muted">
                         BULL/USDC
                     </span>
 
@@ -57,14 +57,14 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         ref={priceFlashRef}
                         className="ticker-flash flex items-baseline gap-1 rounded-xs border border-border bg-bg-row px-2 py-0.5 font-mono"
                     >
-                        <span className="text-[11px] text-text-muted">$</span>
-                        <span ref={priceRef} className="text-xl font-semibold text-text-primary">
+                        <span className="text-label text-text-muted">$</span>
+                        <span ref={priceRef} className="text-heading-lg text-text-primary">
                             {snapshotReady ? "0.0000" : "—"}
                         </span>
-                        <span ref={directionRef} className="text-[13px] text-text-muted" aria-hidden="true" />
+                        <span ref={directionRef} className="text-body text-text-muted" aria-hidden="true" />
                     </div>
 
-                    <span className={`font-mono text-[12px] font-medium ${isUp ? "text-bull" : "text-bear"}`}>
+                    <span className={`text-data font-medium ${isUp ? "text-bull" : "text-bear"}`}>
                         {snapshotReady ? `${isUp ? "+" : ""}${changePct.toFixed(2)}%` : "—"}
                     </span>
                 </div>
@@ -112,7 +112,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="relative inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors duration-100 hover:text-text-primary after:absolute after:-inset-3 md:after:hidden"
+                        className="relative btn-tactile inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted hover:text-text-primary after:absolute after:-inset-3 md:after:hidden"
                     >
                         {muted ? (
                             <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">
@@ -132,7 +132,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         role="status"
                         aria-live="polite"
                         aria-label={`Connection status: ${connectionStatus}`}
-                        className={`inline-flex items-center gap-1.5 rounded-xs border border-border bg-bg-row px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] ${statusTone}`}
+                        className={`inline-flex items-center gap-1.5 rounded-xs border border-border bg-bg-row px-2 py-0.5 text-micro uppercase tracking-widest ${statusTone}`}
                     >
                         <span
                             className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${

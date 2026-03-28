@@ -88,6 +88,13 @@
   font-weight: 600;
 }
 
+@utility text-heading-lg {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 @utility scrollbar-hide {
   scrollbar-width: none;
   &::-webkit-scrollbar {
@@ -105,6 +112,11 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+button,
+[role="button"] {
+  cursor: pointer;
 }
 
 button:focus-visible,
@@ -248,19 +260,19 @@ textarea:focus-visible,
   display: inline-block;
 }
 
-@keyframes slide-in {
+@keyframes slide-in-top {
   from {
-    transform: translateX(8px);
+    transform: translateY(-4px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }
 
 .trade-row-enter {
-  animation: slide-in 180ms cubic-bezier(0.25, 0, 0.1, 1);
+  animation: slide-in-top 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .book-row-enter {
@@ -466,6 +478,82 @@ textarea:focus-visible,
 
 .stats-reveal {
   animation: stats-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Delight & Micro-animations ── */
+
+@keyframes selection-flash {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-brand);
+    border-color: var(--color-brand);
+  }
+  100% {
+    box-shadow: 0 0 0 4px transparent;
+    border-color: var(--color-border);
+  }
+}
+
+.input-selection-flash {
+  animation: selection-flash 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes content-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tab-content-enter {
+  animation: content-in 200ms cubic-bezier(0.25, 0, 0.1, 1);
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.market-flash-scanning {
+  position: relative;
+  overflow: hidden;
+}
+
+.market-flash-scanning::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 179, 0, 0.08) 50%,
+    transparent 100%
+  );
+  animation: scan-line 1500ms linear infinite;
+  pointer-events: none;
+}
+
+.btn-tactile {
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-tactile:active {
+  transform: scale(0.97);
+}
+
+.btn-tactile:disabled {
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.5;
 }
 
 @media (prefers-reduced-motion: reduce) {

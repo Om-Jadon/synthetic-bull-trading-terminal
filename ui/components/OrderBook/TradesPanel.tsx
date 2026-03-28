@@ -80,7 +80,7 @@ export default function TradesPanel() {
                         Connecting
                     </div>
                 ) : trades.length === 0 ? (
-                    <div className="grid h-full place-items-center px-2 py-3 text-xs text-text-muted">
+                    <div className="grid h-full place-items-center px-2 py-3 text-data text-text-muted">
                         Waiting for trades...
                     </div>
                 ) : (

@@ -24,19 +24,19 @@ export default function OpenOrders() {
                 {!snapshotReady ? (
                     <div role="status" aria-live="polite" className="text-label text-brand/80">Connecting</div>
                 ) : orders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
-                        <p className="font-mono text-data text-text-muted">No open orders</p>
-                        <p className="font-mono text-micro text-text-muted/60 leading-relaxed">
+                    <div className="flex flex-col items-center justify-center gap-2 py-6 text-center is-live">
+                        <p className="font-mono text-data text-text-muted terminal-panel panel-delay-1">No open orders</p>
+                        <p className="font-mono text-micro text-text-muted/60 leading-relaxed terminal-panel panel-delay-2">
                             Use <span className="text-text-muted">Order Entry</span> above to place a trade
                         </p>
-                        <div className="mt-1 flex items-center gap-2 font-mono text-micro text-text-muted/50">
-                            <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">B</kbd>
+                        <div className="mt-1 flex items-center gap-2 font-mono text-micro text-text-muted/50 terminal-panel panel-delay-3">
+                            <kbd className="rounded-xs border border-border bg-bg-panel px-1 py-0.5 text-micro">B</kbd>
                             <span>buy</span>
                             <span className="text-border">·</span>
-                            <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">S</kbd>
+                            <kbd className="rounded-xs border border-border bg-bg-panel px-1 py-0.5 text-micro">S</kbd>
                             <span>sell</span>
                             <span className="text-border">·</span>
-                            <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">↵</kbd>
+                            <kbd className="rounded-xs border border-border bg-bg-panel px-1 py-0.5 text-micro">↵</kbd>
                             <span>submit</span>
                         </div>
                     </div>
@@ -55,7 +55,7 @@ export default function OpenOrders() {
                                 type="button"
                                 onClick={() => onCancel(order.order_id)}
                                 aria-label={`Cancel ${order.side} order, ${order.remaining_size.toFixed(2)} remaining at ${order.price.toFixed(4)}`}
-                                className="h-9 rounded-xs border border-border bg-bg-panel px-2 text-label text-text-muted hover:bg-neutral-hover"
+                                className="h-9 btn-tactile rounded-xs border border-border bg-bg-panel px-2 text-label text-text-muted hover:border-bear/50 hover:text-bear"
                             >
                                 Cancel
                             </button>

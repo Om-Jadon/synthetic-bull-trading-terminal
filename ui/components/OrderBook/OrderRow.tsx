@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useRef } from "react";
+import { useTradingStore } from "@/store/tradingStore";
 
 type OrderRowProps = {
     price: number;
@@ -19,6 +20,12 @@ function OrderRow({
     depthPct,
     isBest = false,
 }: OrderRowProps) {
+    const setPendingPriceFill = useTradingStore((state) => state.setPendingPriceFill);
+
+    const onRowClick = () => {
+        setPendingPriceFill(price, side === "bid" ? "buy" : "sell");
+    };
+
     const priceClass = side === "bid" ? "text-bull" : "text-bear";
     const prevSizeRef = useRef(size);
     const depthRef = useRef<HTMLDivElement | null>(null);
@@ -39,7 +46,8 @@ function OrderRow({
 
     return (
         <div
-            className={`book-row notice-enter relative grid h-[22px] shrink-0 grid-cols-3 items-center px-2 font-mono text-[11px] ${isBest ? "font-medium" : ""}`}
+            onClick={onRowClick}
+            className={`book-row notice-enter relative grid h-[22px] shrink-0 cursor-pointer grid-cols-3 items-center px-2 font-mono text-[11px] hover:bg-bg-row active:bg-brand/10 ${isBest ? "font-medium" : ""}`}
         >
             <div
                 ref={depthRef}

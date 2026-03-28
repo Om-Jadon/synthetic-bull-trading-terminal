@@ -111,7 +111,7 @@ export default function TradingTerminal() {
                 <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
                     <div
                         aria-live="polite"
-                        className={`notice-enter border border-border bg-bg-panel px-5 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition-opacity duration-500 ${marketFlash === "fading" ? "opacity-0" : "opacity-100"
+                        className={`notice-enter border border-border bg-bg-panel px-5 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition-opacity duration-500 market-flash-scanning ${marketFlash === "fading" ? "opacity-0" : "opacity-100"
                             }`}
                     >
                         <span className="text-text-muted">Market Open · </span>
