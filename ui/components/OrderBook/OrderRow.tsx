@@ -12,7 +12,15 @@ type OrderRowProps = {
     isBest?: boolean;
 };
 
-function OrderRow({ price, size, totalSize, side, depthPct, exiting = false, isBest = false }: OrderRowProps) {
+function OrderRow({
+    price,
+    size,
+    totalSize,
+    side,
+    depthPct,
+    exiting = false,
+    isBest = false,
+}: OrderRowProps) {
     const priceClass = side === "bid" ? "text-bull" : "text-bear";
     const prevSizeRef = useRef(size);
     const depthRef = useRef<HTMLDivElement | null>(null);
@@ -32,11 +40,13 @@ function OrderRow({ price, size, totalSize, side, depthPct, exiting = false, isB
     }, [size]);
 
     return (
-        <div className={`book-row relative grid h-[18px] grid-cols-3 items-center px-2 font-mono text-[11px] ${exiting ? "book-row-exit" : "book-row-enter"} ${isBest ? "font-medium" : ""}`}>
+        <div
+            className={`book-row relative grid h-[22px] shrink-0 grid-cols-3 items-center px-2 font-mono text-[11px] ${exiting ? "book-row-exit" : "book-row-enter"} ${isBest ? "font-medium" : ""}`}
+        >
             <div
                 ref={depthRef}
                 data-depth-bar
-                className="pointer-events-none absolute inset-y-0 left-0 origin-left transition-[transform] duration-[120ms]"
+                className="pointer-events-none absolute inset-y-0 left-0 origin-left"
                 style={{
                     width: "100%",
                     transform: `scaleX(${Math.max(0, Math.min(1, depthPct))})`,
@@ -45,12 +55,18 @@ function OrderRow({ price, size, totalSize, side, depthPct, exiting = false, isB
                             ? "var(--color-bull-depth)"
                             : "var(--color-bear-depth)",
                     willChange: "transform",
-                    transitionTimingFunction: "cubic-bezier(0.25, 0, 0.1, 1)",
+                    transition: "transform 200ms cubic-bezier(0.25, 0, 0.1, 1)",
                 }}
             />
-            <span className={`${priceClass} relative z-10 ${isBest ? "!font-semibold" : ""}`}>{price.toFixed(4)}</span>
-            <span className="relative z-10 text-right text-text-primary">{size.toFixed(2)}</span>
-            <span className="relative z-10 text-right text-text-muted">{totalSize.toFixed(2)}</span>
+            <span className={`${priceClass} relative z-10 ${isBest ? "!font-semibold" : ""}`}>
+                {price.toFixed(2)}
+            </span>
+            <span className="relative z-10 text-right text-text-primary">
+                {size.toFixed(2)}
+            </span>
+            <span className="relative z-10 text-right text-text-muted">
+                {totalSize.toFixed(2)}
+            </span>
         </div>
     );
 }

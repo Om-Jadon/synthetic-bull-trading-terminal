@@ -65,6 +65,7 @@ export function useWebSocket({
   const reconnectRef = useRef<number | null>(null);
   const queueRef = useRef<WSMessage[]>([]);
   const previousPriceRef = useRef(0);
+  const lastBookFlushAt = useRef(0);
   const aggregator = useMemo(() => createCandleAggregator(), []);
 
   // ── WS telemetry — all refs, zero re-renders on the hot path ──
@@ -97,6 +98,9 @@ export function useWebSocket({
         const drained = queueRef.current.splice(0, queueRef.current.length);
         const store = useTradingStore.getState();
 
+        // Collapse all book frames — only the last one matters visually
+        const lastBook = [...drained].reverse().find((m) => m.type === "book");
+
         for (const message of drained) {
           switch (message.type) {
             case "snapshot": {
@@ -105,7 +109,7 @@ export function useWebSocket({
               break;
             }
             case "book":
-              store.setBidAsks(message.bids, message.asks);
+              // Handled below after the loop — skip inline
               break;
             case "trade":
               store.addTrade(message);
@@ -128,6 +132,15 @@ export function useWebSocket({
               }
               break;
             }
+          }
+        }
+
+        // Throttle book writes to at most 1 per 120ms (~8fps for the book)
+        if (lastBook && lastBook.type === "book") {
+          const timeSinceLast = now - lastBookFlushAt.current;
+          if (timeSinceLast >= 120) {
+            store.setBidAsks(lastBook.bids, lastBook.asks);
+            lastBookFlushAt.current = now;
           }
         }
       });

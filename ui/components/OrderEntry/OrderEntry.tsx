@@ -324,10 +324,6 @@ export default function OrderEntry() {
           ))}
         </div>
 
-        <p className="mb-2 text-center font-mono text-micro text-text-muted/50 tracking-[0.04em]">
-            Post Only · Reduce Only — not available in simulation
-          </p>
-
         <form ref={formRef} className="space-y-2.5" onSubmit={submitOrder}>
           {type === "limit" && (
             <label className="block text-body text-text-muted">

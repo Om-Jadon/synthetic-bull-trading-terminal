@@ -35,9 +35,11 @@ type TradingStore = {
   snapshotReady: boolean;
   connectionStatus: "connecting" | "open" | "closed";
   wsStats: { msgsPerSec: number; latencyMs: number };
+  bookGroupTick: number;
   setConnectionStatus: (status: TradingStore["connectionStatus"]) => void;
   setSnapshotReady: (ready: boolean) => void;
   setWsStats: (stats: { msgsPerSec: number; latencyMs: number }) => void;
+  setBookGroupTick: (tick: number) => void;
   setChartTimeframe: (seconds: number) => void;
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
   addTrade: (trade: TradeMsg) => void;
@@ -101,10 +103,13 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   snapshotReady: false,
   connectionStatus: "connecting",
   wsStats: { msgsPerSec: 0, latencyMs: 0 },
+  bookGroupTick: 0.01,
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 
   setWsStats: (wsStats) => set({ wsStats }),
+
+  setBookGroupTick: (bookGroupTick) => set({ bookGroupTick }),
 
   setSnapshotReady: (snapshotReady) =>
     set((state) =>

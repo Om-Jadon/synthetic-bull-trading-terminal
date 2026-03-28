@@ -43,7 +43,7 @@ func main() {
 
 	// Snapshot function — called on each new WS connection
 	snapshotFn := func() []byte {
-		bids, asks := matcher.Depth(20)
+		bids, asks := matcher.Depth(150)
 		snap := map[string]any{
 			"type": "snapshot",
 			"book": map[string]any{
@@ -131,7 +131,7 @@ func main() {
 				if purged := matcher.PurgeStaleHumanOrders(30 * time.Minute); purged > 0 {
 					log.Printf("purged %d stale human orders (no fill/cancel in 30min)", purged)
 				}
-				bids, asks := matcher.Depth(20)
+				bids, asks := matcher.Depth(150)
 				msg, _ := json.Marshal(map[string]any{
 					"type": "book",
 					"bids": bids,

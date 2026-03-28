@@ -88,6 +88,13 @@
   font-weight: 600;
 }
 
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -270,7 +277,19 @@ textarea:focus-visible,
 }
 
 .book-row-exit {
-  animation: fade-out 100ms linear forwards;
+  animation: book-row-exit 400ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes book-row-exit {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.7);
+  }
 }
 
 @keyframes depth-flash {

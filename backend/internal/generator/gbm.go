@@ -61,20 +61,43 @@ func (g *Generator) tick(dt float64) {
 	g.t += dt
 
 	mid := g.price
-	numBids := 1 + rand.IntN(2) // 1–2 orders per side → ~20–40 msgs/sec at default tick
-	numAsks := 1 + rand.IntN(2)
 
-	for i := 0; i < numBids; i++ {
-		offset := rand.Float64() * 0.005 // 0–0.5% below mid
-		price := roundTo2(mid * (1 - offset))
-		size := 1.0 + rand.Float64()*49.0
-		g.emit(engine.Buy, price, size)
+	// Generate layered depth across multiple price tiers so the order book
+	// always has 15+ distinct price levels per side — similar to real markets
+	// with active market makers at each level.
+	//
+	// Tier 1 (tight): 0–0.1% from mid
+	// Tier 2 (mid):   0.1–0.5% from mid
+	// Tier 3 (deep):  0.5–2%   from mid
+	// Tier 4 (whale): 2–15%    from mid — guarantees coarse UI grouping works
+
+	tiers := []struct {
+		minPct, maxPct float64
+		minSize, maxSize float64
+		minLevels, maxLevels int
+	}{
+		{0.0001, 0.001, 1, 30, 2, 5},
+		{0.001, 0.005, 10, 100, 4, 7},
+		{0.005, 0.02, 50, 300, 4, 7},
+		{0.02, 0.15, 100, 1000, 10, 20},
 	}
-	for i := 0; i < numAsks; i++ {
-		offset := rand.Float64() * 0.005
-		price := roundTo2(mid * (1 + offset))
-		size := 1.0 + rand.Float64()*49.0
-		g.emit(engine.Sell, price, size)
+
+	for _, tier := range tiers {
+		nBids := tier.minLevels + rand.IntN(tier.maxLevels-tier.minLevels+1)
+		nAsks := tier.minLevels + rand.IntN(tier.maxLevels-tier.minLevels+1)
+
+		for i := 0; i < nBids; i++ {
+			pct := tier.minPct + rand.Float64()*(tier.maxPct-tier.minPct)
+			price := roundTo2(mid * (1 - pct))
+			size := tier.minSize + rand.Float64()*(tier.maxSize-tier.minSize)
+			g.emit(engine.Buy, price, size)
+		}
+		for i := 0; i < nAsks; i++ {
+			pct := tier.minPct + rand.Float64()*(tier.maxPct-tier.minPct)
+			price := roundTo2(mid * (1 + pct))
+			size := tier.minSize + rand.Float64()*(tier.maxSize-tier.minSize)
+			g.emit(engine.Sell, price, size)
+		}
 	}
 }
 
