@@ -54,6 +54,7 @@ describe("tradingStore", () => {
       type: "order_update",
       order_id: "o_1",
       status: "open",
+      filled_size: 0,
       remaining_size: 2,
       price: 101,
       side: "buy",

@@ -72,6 +72,7 @@ describe("WebSocket message shapes", () => {
       type: "order_update",
       order_id: "o_1",
       status: "partial",
+      filled_size: 5,
       remaining_size: 5,
       price: 100,
       side: "sell",
