@@ -53,6 +53,9 @@ function seedFromSnapshot(snapshot: SnapshotMsg): void {
   store.setBidAsks(snapshot.book.bids, snapshot.book.asks);
   store.setCandles(snapshot.candles ?? []);
   store.setPortfolio(snapshot.portfolio);
+  if (snapshot.stats) {
+    store.setStats(snapshot.stats);
+  }
   store.setSnapshotReady(true);
 }
 

@@ -43,6 +43,7 @@ describe("WebSocket message shapes", () => {
   it("matches status and portfolio type definitions", () => {
     const stats: StatsMsg = {
       type: "stats",
+      session_open: 100,
       session_high: 110,
       session_low: 90,
       last_price: 105,

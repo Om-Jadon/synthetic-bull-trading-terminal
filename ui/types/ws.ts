@@ -16,6 +16,7 @@ export type TradeMsg = {
 
 export type StatsMsg = {
   type: "stats";
+  session_open: number;
   session_high: number;
   session_low: number;
   last_price: number;
@@ -60,6 +61,7 @@ export type SnapshotMsg = {
   book: { bids: [number, number][]; asks: [number, number][]; ts: number };
   candles: Candle[] | null;
   portfolio: PortfolioMsg;
+  stats: StatsMsg | null;
   ts: number;
 };
 
