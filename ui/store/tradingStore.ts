@@ -148,6 +148,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
             vwapNumerator: 0,
             vwapDenominator: 0,
             tradeCount: 0,
+            openOrders: new Map(),
+            knownOrderIds: new Set(),
           },
     ),
 
