@@ -62,6 +62,8 @@ func main() {
 				"last_price":     currentStats.LastPrice,
 				"session_volume": currentStats.SessionVolume,
 				"change_pct":     currentStats.ChangePct,
+				"trade_count":    currentStats.TradeCount,
+				"vwap":           currentStats.VWAP,
 				"ts":             currentStats.Ts,
 			},
 			"ts": time.Now().UnixMilli(),
@@ -161,6 +163,8 @@ func main() {
 					"last_price":     stats.LastPrice,
 					"session_volume": stats.SessionVolume,
 					"change_pct":     stats.ChangePct,
+					"trade_count":    stats.TradeCount,
+					"vwap":           stats.VWAP,
 					"ts":             stats.Ts,
 				})
 				wsHub.Broadcast(msg)

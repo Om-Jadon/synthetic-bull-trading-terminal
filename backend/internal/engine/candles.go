@@ -26,23 +26,28 @@ type SessionStats struct {
 	LastPrice     float64 `json:"last_price"`
 	SessionVolume float64 `json:"session_volume"`
 	ChangePct     float64 `json:"change_pct"`
+	TradeCount    int64   `json:"trade_count"`
+	VWAP          float64 `json:"vwap"`
 	Ts            int64   `json:"ts"`
 }
 
 // CandleStore holds a ring buffer of 1-second candles.
 // Thread-safe reads via RLock; writes from matching goroutine only.
 type CandleStore struct {
-	mu          sync.RWMutex
-	candles     [maxCandles]Candle
-	head        int // index of oldest candle
-	count       int // number of valid candles
-	currentSec  int64
-	sessionOpen float64
-	sessionHigh float64
-	sessionLow  float64
-	totalVolume float64
-	lastPrice   float64
-	initialized bool
+	mu              sync.RWMutex
+	candles         [maxCandles]Candle
+	head            int // index of oldest candle
+	count           int // number of valid candles
+	currentSec      int64
+	sessionOpen     float64
+	sessionHigh     float64
+	sessionLow      float64
+	totalVolume     float64
+	lastPrice       float64
+	initialized     bool
+	tradeCount      int64
+	vwapNumerator   float64
+	vwapDenominator float64
 }
 
 func NewCandleStore(s0 float64) *CandleStore {
@@ -62,6 +67,9 @@ func (cs *CandleStore) OnTrade(price, size float64) {
 	nowSec := time.Now().Unix()
 	cs.lastPrice = price
 	cs.totalVolume += size
+	cs.tradeCount++
+	cs.vwapNumerator += price * size
+	cs.vwapDenominator += size
 
 	if price > cs.sessionHigh {
 		cs.sessionHigh = price
@@ -128,6 +136,10 @@ func (cs *CandleStore) Stats() SessionStats {
 	if cs.sessionOpen > 0 {
 		changePct = math.Round(((cs.lastPrice-cs.sessionOpen)/cs.sessionOpen)*10000) / 100
 	}
+	vwap := 0.0
+	if cs.vwapDenominator > 0 {
+		vwap = math.Round((cs.vwapNumerator/cs.vwapDenominator)*10000) / 10000
+	}
 	return SessionStats{
 		SessionOpen:   cs.sessionOpen,
 		SessionHigh:   cs.sessionHigh,
@@ -135,6 +147,8 @@ func (cs *CandleStore) Stats() SessionStats {
 		LastPrice:     cs.lastPrice,
 		SessionVolume: math.Round(cs.totalVolume*100) / 100,
 		ChangePct:     changePct,
+		TradeCount:    cs.tradeCount,
+		VWAP:          vwap,
 		Ts:            time.Now().UnixMilli(),
 	}
 }
