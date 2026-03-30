@@ -44,6 +44,7 @@ func main() {
 	// Snapshot function — called on each new WS connection
 	snapshotFn := func() []byte {
 		bids, asks := matcher.Depth(150)
+		currentStats := candleStore.Stats()
 		snap := map[string]any{
 			"type": "snapshot",
 			"book": map[string]any{
@@ -52,8 +53,18 @@ func main() {
 				"ts":   time.Now().UnixMilli(),
 			},
 			"candles":   candleStore.Snapshot(300),
-			"portfolio": portfolio.State(candleStore.Stats().LastPrice),
-			"ts":        time.Now().UnixMilli(),
+			"portfolio": portfolio.State(currentStats.LastPrice),
+			"stats": map[string]any{
+				"type":           "stats",
+				"session_open":   currentStats.SessionOpen,
+				"session_high":   currentStats.SessionHigh,
+				"session_low":    currentStats.SessionLow,
+				"last_price":     currentStats.LastPrice,
+				"session_volume": currentStats.SessionVolume,
+				"change_pct":     currentStats.ChangePct,
+				"ts":             currentStats.Ts,
+			},
+			"ts": time.Now().UnixMilli(),
 		}
 		b, _ := json.Marshal(snap)
 		return b
