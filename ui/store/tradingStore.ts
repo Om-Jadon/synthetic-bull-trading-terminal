@@ -90,6 +90,29 @@ function toUtcTimestamp(ts: number): UTCTimestamp {
   return seconds as UTCTimestamp;
 }
 
+const LS_KEYS = {
+  bookGroupTick: "nb_bookGroupTick",
+  bookMode: "nb_bookMode",
+  chartTimeframe: "nb_chartTimeframe",
+} as const;
+
+function lsGet<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw !== null ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function lsSet(key: string, value: unknown): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
 let toastSeq = 0;
 
 export const useTradingStore = create<TradingStore>((set, get) => ({
@@ -100,7 +123,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   asks: [],
   trades: [],
   candles: [],
-  chartTimeframe: 1,
+  chartTimeframe: lsGet(LS_KEYS.chartTimeframe, 1),
   vwap: 0,
   tradeCount: 0,
   lastPrice: 0,
@@ -116,8 +139,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   isHelpOpen: false,
   connectionStatus: "connecting",
   wsStats: { msgsPerSec: 0, latencyMs: 0 },
-  bookGroupTick: 0.01,
-  bookMode: "tab",
+  bookGroupTick: lsGet(LS_KEYS.bookGroupTick, 0.01),
+  bookMode: lsGet<BookMode>(LS_KEYS.bookMode, "tab"),
   toasts: [],
   pendingPriceFill: null,
 
@@ -125,9 +148,15 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
 
   setWsStats: (wsStats) => set({ wsStats }),
 
-  setBookGroupTick: (bookGroupTick) => set({ bookGroupTick }),
+  setBookGroupTick: (bookGroupTick) => {
+    lsSet(LS_KEYS.bookGroupTick, bookGroupTick);
+    set({ bookGroupTick });
+  },
 
-  setBookMode: (bookMode) => set({ bookMode }),
+  setBookMode: (bookMode) => {
+    lsSet(LS_KEYS.bookMode, bookMode);
+    set({ bookMode });
+  },
 
   setHelpOpen: (isHelpOpen) => set({ isHelpOpen }),
 
@@ -157,7 +186,10 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
           },
     ),
 
-  setChartTimeframe: (chartTimeframe) => set({ chartTimeframe }),
+  setChartTimeframe: (chartTimeframe) => {
+    lsSet(LS_KEYS.chartTimeframe, chartTimeframe);
+    set({ chartTimeframe });
+  },
 
   setBidAsks: (bids, asks) => set({ bids, asks }),
 

@@ -25,7 +25,15 @@ const LABELS: Record<WorkbenchTab, string> = {
 };
 
 export default function Workbench() {
-    const [activeTab, setActiveTab] = useState<WorkbenchTab>("orders");
+    const [activeTab, setActiveTab] = useState<WorkbenchTab>(() => {
+        try { return (localStorage.getItem("nb_workbenchTab") as WorkbenchTab) ?? "orders"; }
+        catch { return "orders"; }
+    });
+
+    const handleTabChange = (tab: WorkbenchTab) => {
+        try { localStorage.setItem("nb_workbenchTab", tab); } catch {}
+        setActiveTab(tab);
+    };
 
     // Roving tabIndex keyboard navigation (matches MarketPanel pattern)
     const onTabKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, current: WorkbenchTab) => {
@@ -44,7 +52,7 @@ export default function Workbench() {
 
         if (next) {
             event.preventDefault();
-            setActiveTab(next);
+            handleTabChange(next);
             window.requestAnimationFrame(() => {
                 (document.getElementById(TAB_IDS[next!]) as HTMLButtonElement | null)?.focus();
             });
@@ -68,7 +76,7 @@ export default function Workbench() {
                             aria-selected={activeTab === tab}
                             aria-controls={PANEL_IDS[tab]}
                             tabIndex={activeTab === tab ? 0 : -1}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => handleTabChange(tab)}
                             onKeyDown={(e) => onTabKeyDown(e, tab)}
                             className={`h-7 max-sm:h-11 rounded-xs px-3 text-label transition-colors border btn-tactile ${
                                 activeTab === tab
