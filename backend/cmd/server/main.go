@@ -66,7 +66,8 @@ func main() {
 				"vwap":           currentStats.VWAP,
 				"ts":             currentStats.Ts,
 			},
-			"ts": time.Now().UnixMilli(),
+			"recent_trades": candleStore.RecentTrades(),
+			"ts":            time.Now().UnixMilli(),
 		}
 		b, _ := json.Marshal(snap)
 		return b
@@ -108,7 +109,7 @@ func main() {
 			case o := <-inChan:
 				trades, updates := matcher.Process(o)
 				for _, t := range trades {
-					candleStore.OnTrade(t.Price, t.Size)
+					candleStore.OnTrade(t.Price, t.Size, string(t.AggressorSide))
 					portfolio.OnTrade(t)
 					msg, _ := json.Marshal(map[string]any{
 						"type":  "trade",

@@ -7,6 +7,15 @@ import (
 )
 
 const maxCandles = 1000
+const maxRecentTrades = 50
+
+// TradeRecord is a minimal trade entry for the trade tape snapshot.
+type TradeRecord struct {
+	Price float64 `json:"price"`
+	Size  float64 `json:"size"`
+	Side  string  `json:"side"` // aggressor side: "buy" or "sell"
+	Ts    int64   `json:"ts"`
+}
 
 // Candle represents a 1-second OHLCV bar.
 type Candle struct {
@@ -48,6 +57,9 @@ type CandleStore struct {
 	tradeCount      int64
 	vwapNumerator   float64
 	vwapDenominator float64
+	recentTrades    [maxRecentTrades]TradeRecord
+	recentTradeHead int
+	recentTradeLen  int
 }
 
 func NewCandleStore(s0 float64) *CandleStore {
@@ -60,7 +72,7 @@ func NewCandleStore(s0 float64) *CandleStore {
 }
 
 // OnTrade updates the candle store with a new trade. Call from matching goroutine.
-func (cs *CandleStore) OnTrade(price, size float64) {
+func (cs *CandleStore) OnTrade(price, size float64, side string) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
@@ -108,6 +120,29 @@ func (cs *CandleStore) OnTrade(price, size float64) {
 		c.Close = price
 		c.Volume += size
 	}
+
+	// append to recent trades ring buffer (mutex already held)
+	idx := (cs.recentTradeHead + cs.recentTradeLen) % maxRecentTrades
+	cs.recentTrades[idx] = TradeRecord{Price: price, Size: size, Side: side, Ts: time.Now().UnixMilli()}
+	if cs.recentTradeLen < maxRecentTrades {
+		cs.recentTradeLen++
+	} else {
+		cs.recentTradeHead = (cs.recentTradeHead + 1) % maxRecentTrades
+	}
+}
+
+// RecentTrades returns up to the last 50 trades in chronological order. Thread-safe.
+func (cs *CandleStore) RecentTrades() []TradeRecord {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+	if cs.recentTradeLen == 0 {
+		return nil
+	}
+	out := make([]TradeRecord, cs.recentTradeLen)
+	for i := 0; i < cs.recentTradeLen; i++ {
+		out[i] = cs.recentTrades[(cs.recentTradeHead+i)%maxRecentTrades]
+	}
+	return out
 }
 
 // Snapshot returns the last n candles in chronological order. Thread-safe.
