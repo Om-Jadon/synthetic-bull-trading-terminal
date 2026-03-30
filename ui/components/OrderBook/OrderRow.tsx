@@ -51,7 +51,11 @@ function OrderRow({
 
     return (
         <div
+            role="button"
+            tabIndex={hasLiquidity ? 0 : -1}
+            aria-label={`${side === "bid" ? "Buy" : "Sell"} at ${price.toFixed(2)}`}
             onClick={onRowClick}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(); } }}
             className="book-row book-row-reflow relative grid h-[22px] shrink-0 cursor-pointer grid-cols-3 items-center px-2 font-mono text-[11px] hover:bg-bg-row active:bg-brand/10"
         >
             <div
