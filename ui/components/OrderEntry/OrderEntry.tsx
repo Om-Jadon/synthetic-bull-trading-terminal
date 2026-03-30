@@ -344,7 +344,7 @@ export default function OrderEntry() {
           {showHint && (
             <div
               aria-hidden="true"
-              className="notice-enter max-sm:hidden flex items-center justify-center gap-2 font-mono text-micro text-text-muted transition-opacity duration-500"
+              className="notice-enter max-sm:hidden flex items-center justify-center gap-2 font-mono text-label text-text-muted transition-opacity duration-500"
             >
               <span>
                 <kbd className="rounded-xs border border-border px-1 py-0.5 text-micro">

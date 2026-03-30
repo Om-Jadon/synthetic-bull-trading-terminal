@@ -133,11 +133,13 @@ backend/
 │   ├── api/handlers.go
 │   ├── engine/
 │   │   ├── candles.go
+│   │   ├── candles_test.go
 │   │   ├── matcher.go
 │   │   ├── matcher_test.go
 │   │   ├── orderbook.go
 │   │   ├── orderbook_test.go
 │   │   ├── portfolio.go
+│   │   ├── portfolio_test.go
 │   │   └── types.go
 │   ├── generator/gbm.go
 │   └── hub/hub.go
@@ -263,6 +265,11 @@ Contains initial state:
 - `book`: top bids/asks
 - `candles`: recent candles (up to 300)
 - `portfolio`: human portfolio snapshot
+- `stats`: current session stats (same shape as a `stats` message; prevents 0-flash on reconnect)
+- `recent_trades`: last up to 50 trades (same fields as `trade` messages, no `id`)
+- `equity_history`: up to 600 equity curve points (`{ts, value}`)
+- `fills`: up to 200 human fill records (`{ts, price, side}`)
+- `activity_log`: up to 200 order lifecycle records (same fields as `order_update` messages)
 
 ### 2. `book` (every 100ms)
 
@@ -294,7 +301,7 @@ Order book depth update:
 
 ### 4. `stats` (every 1 second)
 
-Session summary values (`session_open`, `session_high`, `session_low`, `last_price`, `session_volume`, `change_pct`, `ts`).
+Session summary values (`session_open`, `session_high`, `session_low`, `last_price`, `session_volume`, `change_pct`, `trade_count`, `vwap`, `ts`).
 
 ### 5. `order_update` (human order lifecycle)
 
@@ -356,7 +363,8 @@ Current test files in this folder cover:
 
 - order book behaviors (best bid/ask, cancel, depth, FIFO)
 - matching behaviors (limit, market sweep, cancel, partial fill updates, maker lifecycle, cancel ownership)
-- portfolio behaviors (long/short positions, P&L, position reversals, equity)
+- portfolio behaviors (long/short positions, P&L, position reversals, equity, equity history, fill log, activity log)
+- candle store behaviors (VWAP computation, trade count)
 - API handlers (cash validation, short selling)
 
 ## Docker Notes (Beginner-Friendly)
