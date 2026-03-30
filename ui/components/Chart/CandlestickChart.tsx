@@ -16,7 +16,7 @@ import {
     type UTCTimestamp,
 } from "lightweight-charts";
 
-import { selectVwap, useTradingStore } from "@/store/tradingStore";
+import { useTradingStore } from "@/store/tradingStore";
 import type { Candle } from "@/types/ws";
 
 // ─── Timeframe config ────────────────────────────────────────────────────────
@@ -319,15 +319,14 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         const syncVwap = (state: any, prevState: any = {}) => {
             if (
                 prevState &&
-                state.vwapNumerator === prevState.vwapNumerator &&
-                state.vwapDenominator === prevState.vwapDenominator
+                state.vwap === prevState.vwap
             ) {
                 return;
             }
             const candleSeries = candleSeriesRef.current;
             if (!candleSeries) return;
 
-            const vwap = selectVwap(state);
+            const vwap = state.vwap > 0 ? state.vwap : null;
             if (vwap === null) return;
             
             if (!vwapLine) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useTradingStore } from "@/store/tradingStore";
-import { selectVwap } from "@/store/tradingStore";
 
 type SessionStatsProps = {
     variant?: "header" | "fullscreen";
@@ -12,7 +11,7 @@ export default function SessionStats({ variant = "header" }: SessionStatsProps) 
     const sessionVolume = useTradingStore((state) => state.sessionVolume);
     const sessionHigh = useTradingStore((state) => state.sessionHigh);
     const sessionLow = useTradingStore((state) => state.sessionLow);
-    const vwap = useTradingStore(selectVwap);
+    const vwap = useTradingStore((state) => state.vwap);
     const tradeCount = useTradingStore((state) => state.tradeCount);
 
     if (!snapshotReady) {
@@ -32,7 +31,7 @@ export default function SessionStats({ variant = "header" }: SessionStatsProps) 
                 <span className="mx-2 text-border">|</span>
                 L <span className="text-text-primary">{sessionLow.toFixed(4)}</span>
                 <span className="mx-2 text-border">|</span>
-                VWAP <span className="text-text-primary">{vwap === null ? "—" : vwap.toFixed(4)}</span>
+                VWAP <span className="text-text-primary">{vwap > 0 ? vwap.toFixed(4) : "—"}</span>
                 <span className="mx-2 text-border">|</span>
                 Trades <span className="text-text-primary">{tradeCount.toLocaleString()}</span>
             </div>
@@ -48,7 +47,7 @@ export default function SessionStats({ variant = "header" }: SessionStatsProps) 
                 L <span className="text-text-primary">{sessionLow.toFixed(4)}</span>
             </span>
             <span className="text-text-muted">
-                VWAP <span className="text-text-primary">{vwap === null ? "—" : vwap.toFixed(4)}</span>
+                VWAP <span className="text-text-primary">{vwap > 0 ? vwap.toFixed(4) : "—"}</span>
             </span>
             <span className="text-text-muted">
                 Vol <span className="text-text-primary">{sessionVolume.toFixed(2)}</span>

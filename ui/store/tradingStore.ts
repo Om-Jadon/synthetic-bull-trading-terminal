@@ -26,8 +26,7 @@ type TradingStore = {
   trades: TradeMsg[];
   candles: Candle[];
   chartTimeframe: number; // seconds; 1s candles are the base
-  vwapNumerator: number;
-  vwapDenominator: number;
+  vwap: number;
   tradeCount: number;
   lastPrice: number;
   changePct: number;
@@ -95,8 +94,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   trades: [],
   candles: [],
   chartTimeframe: 1,
-  vwapNumerator: 0,
-  vwapDenominator: 0,
+  vwap: 0,
   tradeCount: 0,
   lastPrice: 0,
   changePct: 0,
@@ -145,9 +143,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
             equityHistory: [],
             chartFullscreen: false,
             isHelpOpen: false,
-            vwapNumerator: 0,
-            vwapDenominator: 0,
             tradeCount: 0,
+            vwap: 0,
             openOrders: new Map(),
             knownOrderIds: new Set(),
           },
@@ -160,9 +157,6 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   addTrade: (trade) =>
     set((state) => ({
       trades: [trade, ...state.trades].slice(0, 50),
-      vwapNumerator: state.vwapNumerator + trade.price * trade.size,
-      vwapDenominator: state.vwapDenominator + trade.size,
-      tradeCount: state.tradeCount + 1,
     })),
 
   setCandles: (candles) => set({ candles: candles.slice(-300) }),
@@ -191,6 +185,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       sessionHigh: stats.session_high,
       sessionLow: stats.session_low,
       sessionVolume: stats.session_volume,
+      tradeCount: stats.trade_count,
+      vwap: stats.vwap,
     }),
 
   setPortfolio: (portfolio) =>
@@ -265,5 +261,3 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   setPendingPriceFill: (price, side) => set({ pendingPriceFill: { price, side } }),
 }));
 
-export const selectVwap = (state: TradingStore) =>
-  state.vwapDenominator > 0 ? state.vwapNumerator / state.vwapDenominator : null;

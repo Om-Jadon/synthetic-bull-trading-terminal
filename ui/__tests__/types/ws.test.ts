@@ -49,6 +49,8 @@ describe("WebSocket message shapes", () => {
       last_price: 105,
       session_volume: 1000,
       change_pct: 0.05,
+      trade_count: 42,
+      vwap: 104.5,
       ts: Date.now(),
     };
 

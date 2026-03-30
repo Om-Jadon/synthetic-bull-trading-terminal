@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import * as sounds from "@/lib/sound";
-import { useTradingStore, selectVwap } from "@/store/tradingStore";
+import { useTradingStore } from "@/store/tradingStore";
 import SessionStats from "./SessionStats";
 
 type AssetBarProps = {

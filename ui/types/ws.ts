@@ -22,6 +22,8 @@ export type StatsMsg = {
   last_price: number;
   session_volume: number;
   change_pct: number;
+  trade_count: number;
+  vwap: number;
   ts: number;
 };
 
