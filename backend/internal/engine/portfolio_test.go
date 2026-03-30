@@ -213,3 +213,49 @@ func TestPortfolio_NonHumanTrade_Ignored(t *testing.T) {
 		t.Fatalf("non-human trade should not affect cash")
 	}
 }
+
+func TestPortfolio_EquityHistory(t *testing.T) {
+	p := NewPortfolio(100_000.0)
+	if len(p.EquityHistory()) != 0 {
+		t.Fatal("expected empty initial equity history")
+	}
+	trade := &Trade{HumanInvolved: true, HumanIsBuyer: true, Price: 100.0, Size: 10.0, Ts: 1000}
+	p.OnTrade(trade)
+	p.RecordEquity(100.0)
+	history := p.EquityHistory()
+	if len(history) != 1 {
+		t.Fatalf("expected 1 equity point, got %d", len(history))
+	}
+}
+
+func TestPortfolio_FillLog(t *testing.T) {
+	p := NewPortfolio(100_000.0)
+	if len(p.FillLog()) != 0 {
+		t.Fatal("expected empty initial fill log")
+	}
+	trade := &Trade{HumanInvolved: true, HumanIsBuyer: true, Price: 100.0, Size: 10.0, Ts: 1234567890000}
+	p.OnTrade(trade)
+	fills := p.FillLog()
+	if len(fills) != 1 {
+		t.Fatalf("expected 1 fill, got %d", len(fills))
+	}
+	if fills[0].Price != 100.0 {
+		t.Fatalf("expected price 100.0, got %f", fills[0].Price)
+	}
+}
+
+func TestPortfolio_ActivityLog(t *testing.T) {
+	p := NewPortfolio(100_000.0)
+	if len(p.ActivityLog()) != 0 {
+		t.Fatal("expected empty initial activity log")
+	}
+	rec := ActivityRecord{OrderID: "o_1", Status: StatusFilled, FilledSize: 2.0, Price: 100.0, Side: Buy, Ts: 1000}
+	p.RecordActivity(rec)
+	log := p.ActivityLog()
+	if len(log) != 1 {
+		t.Fatalf("expected 1 activity record, got %d", len(log))
+	}
+	if log[0].OrderID != "o_1" {
+		t.Fatalf("unexpected order id: %s", log[0].OrderID)
+	}
+}

@@ -66,8 +66,11 @@ func main() {
 				"vwap":           currentStats.VWAP,
 				"ts":             currentStats.Ts,
 			},
-			"recent_trades": candleStore.RecentTrades(),
-			"ts":            time.Now().UnixMilli(),
+			"recent_trades":  candleStore.RecentTrades(),
+			"equity_history": portfolio.EquityHistory(),
+			"fills":          portfolio.FillLog(),
+			"activity_log":   portfolio.ActivityLog(),
+			"ts":             time.Now().UnixMilli(),
 		}
 		b, _ := json.Marshal(snap)
 		return b
@@ -133,8 +136,19 @@ func main() {
 						"ts":             u.Ts,
 					})
 					wsHub.Broadcast(msg)
+					// record every human order lifecycle event for the activity log
+					portfolio.RecordActivity(engine.ActivityRecord{
+						OrderID:       u.OrderID,
+						Status:        u.Status,
+						FilledSize:    u.FilledSize,
+						RemainingSize: u.RemainingSize,
+						Price:         u.Price,
+						Side:          u.Side,
+						Ts:            u.Ts,
+					})
 					// Send portfolio update after fills
 					if u.Status == engine.StatusPartial || u.Status == engine.StatusFilled {
+						portfolio.RecordEquity(candleStore.Stats().LastPrice)
 						pState := portfolio.State(candleStore.Stats().LastPrice)
 						pmsg, _ := json.Marshal(pState)
 						wsHub.Broadcast(pmsg)
