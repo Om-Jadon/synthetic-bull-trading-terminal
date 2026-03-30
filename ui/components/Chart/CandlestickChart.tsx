@@ -224,6 +224,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         volumeSeries.priceScale().applyOptions({
             borderColor: colors.grid,
             scaleMargins: { top: 0.14, bottom: 0 },
+            visible: false,
         });
 
         candleSeriesRef.current = candleSeries;
@@ -336,7 +337,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                     lineWidth: 1,
                     lineStyle: 1,
                     axisLabelVisible: true,
-                    title: "VWAP",
+                    title: "",
                 });
             } else {
                 vwapLine.applyOptions({ price: vwap });
