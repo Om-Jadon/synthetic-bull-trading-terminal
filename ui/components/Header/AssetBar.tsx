@@ -70,7 +70,10 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 </div>
 
                 {/* Right: SIM badge */}
-                <span className="hidden rounded-xs border border-brand/20 bg-brand/10 px-2 py-0.5 text-label text-brand sm:inline-block">
+                <span
+                    title="Simulation mode — no real money"
+                    className="hidden rounded-xs border border-brand/20 bg-brand/10 px-2 py-0.5 text-label text-brand sm:inline-block"
+                >
                     Sim
                 </span>
             </div>
@@ -104,7 +107,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         type="button"
                         onClick={() => useTradingStore.getState().setHelpOpen(true)}
                         aria-label="Open shortcuts help"
-                        className="btn-tactile inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-[10px] font-bold text-text-muted transition-colors hover:text-text-primary"
+                        className="relative btn-tactile inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-micro font-bold text-text-muted transition-colors hover:text-text-primary after:absolute after:-inset-3"
                     >
                         ?
                     </button>
@@ -113,7 +116,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="relative btn-tactile inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted hover:text-text-primary after:absolute after:-inset-3 md:after:hidden"
+                        className="relative btn-tactile inline-flex h-5 w-5 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted hover:text-text-primary after:absolute after:-inset-3"
                     >
                         {muted ? (
                             <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">
