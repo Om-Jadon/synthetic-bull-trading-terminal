@@ -71,17 +71,17 @@ export default function PortfolioWidget() {
                 >
                     <div className="flex items-center justify-between">
                         <span className="text-label text-text-muted">Unreal</span>
-                        <span className={unrealizedPnl >= 0 ? "text-bull" : "text-bear"}>
+                        <span className={unrealizedPnl > 0 ? "text-bull" : unrealizedPnl < 0 ? "text-bear" : "text-text-muted"}>
                             {portfolio
-                                ? `${unrealizedPnl >= 0 ? "+" : ""}${unrealizedPnl.toFixed(2)}`
+                                ? `${unrealizedPnl > 0 ? "+" : ""}${unrealizedPnl.toFixed(2)}`
                                 : "--"}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-label text-text-muted">Real</span>
-                        <span className={realizedPnl >= 0 ? "text-bull" : "text-bear"}>
+                        <span className={realizedPnl > 0 ? "text-bull" : realizedPnl < 0 ? "text-bear" : "text-text-muted"}>
                             {portfolio
-                                ? `${realizedPnl >= 0 ? "+" : ""}${realizedPnl.toFixed(2)}`
+                                ? `${realizedPnl > 0 ? "+" : ""}${realizedPnl.toFixed(2)}`
                                 : "--"}
                         </span>
                     </div>
