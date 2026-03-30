@@ -67,6 +67,15 @@ function seedFromSnapshot(snapshot: SnapshotMsg): void {
     }));
     store.setTrades(trades);
   }
+  if (snapshot.equity_history?.length) {
+    store.setEquityHistory(snapshot.equity_history);
+  }
+  if (snapshot.fills?.length) {
+    store.setFills(snapshot.fills);
+  }
+  if (snapshot.activity_log?.length) {
+    store.setOrderHistory(snapshot.activity_log);
+  }
   store.setSnapshotReady(true);
 }
 

@@ -65,6 +65,27 @@ export type RecentTrade = {
   ts: number;
 };
 
+export type WsEquityPoint = {
+  ts: number;
+  value: number;
+};
+
+export type WsFillRecord = {
+  ts: number;
+  price: number;
+  side: "buy" | "sell";
+};
+
+export type WsActivityRecord = {
+  order_id: string;
+  status: "open" | "partial" | "filled" | "cancelled";
+  filled_size: number;
+  remaining_size: number;
+  price: number;
+  side: "buy" | "sell";
+  ts: number;
+};
+
 export type SnapshotMsg = {
   type: "snapshot";
   book: { bids: [number, number][]; asks: [number, number][]; ts: number };
@@ -72,6 +93,9 @@ export type SnapshotMsg = {
   portfolio: PortfolioMsg;
   stats: StatsMsg | null;
   recent_trades: RecentTrade[] | null;
+  equity_history: WsEquityPoint[] | null;
+  fills: WsFillRecord[] | null;
+  activity_log: WsActivityRecord[] | null;
   ts: number;
 };
 

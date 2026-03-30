@@ -7,6 +7,9 @@ import type {
   PortfolioMsg,
   StatsMsg,
   TradeMsg,
+  WsEquityPoint,
+  WsFillRecord,
+  WsActivityRecord,
 } from "@/types/ws";
 
 export type BookMode = "tab" | "stacked" | "large";
@@ -57,6 +60,9 @@ type TradingStore = {
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
   addTrade: (trade: TradeMsg) => void;
   setTrades: (trades: TradeMsg[]) => void;
+  setEquityHistory: (points: WsEquityPoint[]) => void;
+  setFills: (fills: WsFillRecord[]) => void;
+  setOrderHistory: (records: WsActivityRecord[]) => void;
   setCandles: (candles: Candle[]) => void;
   upsertCandle: (candle: Candle) => void;
   setStats: (stats: StatsMsg) => void;
@@ -161,6 +167,37 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
     })),
 
   setTrades: (trades) => set({ trades }),
+
+  setEquityHistory: (points) =>
+    set({
+      equityHistory: points.map((p) => ({
+        time: toUtcTimestamp(p.ts),
+        value: p.value,
+      })),
+    }),
+
+  setFills: (fills) =>
+    set({
+      fills: fills.map((f) => ({
+        time: toUtcTimestamp(f.ts),
+        price: f.price,
+        side: f.side,
+      })),
+    }),
+
+  setOrderHistory: (records) =>
+    set({
+      orderHistory: records.map((r) => ({
+        type: "order_update" as const,
+        order_id: r.order_id,
+        status: r.status,
+        filled_size: r.filled_size,
+        remaining_size: r.remaining_size,
+        price: r.price,
+        side: r.side,
+        ts: r.ts,
+      })),
+    }),
 
   setCandles: (candles) => set({ candles: candles.slice(-300) }),
 
