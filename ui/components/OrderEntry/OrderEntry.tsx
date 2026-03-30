@@ -378,7 +378,7 @@ export default function OrderEntry() {
           <button
             type="submit"
             disabled={submitting || !snapshotReady}
-            className={`order-submit h-11 w-full rounded-xs text-heading uppercase tracking-[0.08em] text-bg-primary transition-shadow duration-150 ${side === "buy" ? "bg-bull" : "bg-bear"
+            className={`order-submit h-11 w-full rounded-xs text-heading uppercase tracking-[0.08em] text-white transition-shadow duration-150 ${side === "buy" ? "bg-bull" : "bg-bear"
               } disabled:cursor-not-allowed disabled:opacity-60 ${ringClass("submit")}`}
           >
             {submitting
