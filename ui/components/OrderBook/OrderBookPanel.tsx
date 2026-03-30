@@ -92,12 +92,12 @@ export default function OrderBookPanel() {
                             aria-label="Grouping selector"
                             aria-haspopup="listbox"
                             aria-expanded={isGroupOpen}
-                            className="flex items-center gap-1 py-0.5 font-mono text-[10px] font-medium text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none"
+                            className="flex items-center gap-1 px-1.5 py-0.5 font-mono text-xs font-medium text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none"
                         >
                             <span>{bookGroupTick.toFixed(2)}</span>
                             <svg
-                                width="8"
-                                height="8"
+                                width="10"
+                                height="10"
                                 viewBox="0 0 8 8"
                                 fill="none"
                                 className={`transition-transform duration-200 text-text-muted/50 ${isGroupOpen ? "rotate-180" : ""}`}
@@ -109,7 +109,7 @@ export default function OrderBookPanel() {
 
                         {isGroupOpen && (
                             <div
-                                className="dropdown-enter absolute right-0 top-full z-50 mt-1 min-w-[60px] rounded-[2px] border border-border bg-bg-panel p-1 shadow-2xl"
+                                className="dropdown-enter absolute right-0 top-full z-50 mt-1 min-w-15 rounded-xs border border-border bg-bg-panel p-1 shadow-2xl"
                                 role="listbox"
                             >
                                 {BOOK_TICKS.map((tick) => (
@@ -122,7 +122,7 @@ export default function OrderBookPanel() {
                                             setBookGroupTick(tick);
                                             setIsGroupOpen(false);
                                         }}
-                                        className={`flex w-full items-center justify-end rounded-xs px-2 py-1.5 font-mono text-[10px] transition-colors ${
+                                        className={`flex w-full items-center justify-end rounded-xs px-2 py-1.5 font-mono text-micro transition-colors ${
                                             bookGroupTick === tick
                                                 ? "bg-brand/10 text-brand font-semibold"
                                                 : "text-text-muted hover:bg-bg-row hover:text-text-primary"
