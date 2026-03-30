@@ -14,6 +14,8 @@ type StoreState = {
         ts: number;
     }>;
     snapshotReady: boolean;
+    bookGroupTick: number;
+    bookMode: "tab" | "stacked" | "large";
 };
 
 const mockState: StoreState = {
@@ -30,6 +32,8 @@ const mockState: StoreState = {
         { id: "t2", side: "sell", price: 100.11, size: 0.8, ts: Date.UTC(2026, 2, 26, 9, 1, 0) },
     ],
     snapshotReady: true,
+    bookGroupTick: 0.01,
+    bookMode: "tab",
 };
 
 vi.mock("@/store/tradingStore", () => ({
