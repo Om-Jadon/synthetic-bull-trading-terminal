@@ -58,12 +58,20 @@ export type Candle = {
   volume: number;
 };
 
+export type RecentTrade = {
+  price: number;
+  size: number;
+  side: "buy" | "sell";
+  ts: number;
+};
+
 export type SnapshotMsg = {
   type: "snapshot";
   book: { bids: [number, number][]; asks: [number, number][]; ts: number };
   candles: Candle[] | null;
   portfolio: PortfolioMsg;
   stats: StatsMsg | null;
+  recent_trades: RecentTrade[] | null;
   ts: number;
 };
 

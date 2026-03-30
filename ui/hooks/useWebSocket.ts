@@ -56,6 +56,17 @@ function seedFromSnapshot(snapshot: SnapshotMsg): void {
   if (snapshot.stats) {
     store.setStats(snapshot.stats);
   }
+  if (snapshot.recent_trades?.length) {
+    const trades = snapshot.recent_trades.map((t) => ({
+      type: "trade" as const,
+      id: "",
+      price: t.price,
+      size: t.size,
+      side: t.side,
+      ts: t.ts,
+    }));
+    store.setTrades(trades);
+  }
   store.setSnapshotReady(true);
 }
 

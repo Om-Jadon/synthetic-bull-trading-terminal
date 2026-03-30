@@ -56,6 +56,7 @@ type TradingStore = {
   removeToast: (id: number) => void;
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
   addTrade: (trade: TradeMsg) => void;
+  setTrades: (trades: TradeMsg[]) => void;
   setCandles: (candles: Candle[]) => void;
   upsertCandle: (candle: Candle) => void;
   setStats: (stats: StatsMsg) => void;
@@ -158,6 +159,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
     set((state) => ({
       trades: [trade, ...state.trades].slice(0, 50),
     })),
+
+  setTrades: (trades) => set({ trades }),
 
   setCandles: (candles) => set({ candles: candles.slice(-300) }),
 
