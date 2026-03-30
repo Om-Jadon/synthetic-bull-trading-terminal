@@ -170,6 +170,7 @@ func main() {
 
 			case <-statsTicker.C:
 				stats := candleStore.Stats()
+				portfolio.RecordEquity(stats.LastPrice)
 				msg, _ := json.Marshal(map[string]any{
 					"type":           "stats",
 					"session_open":   stats.SessionOpen,
