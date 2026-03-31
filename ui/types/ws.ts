@@ -96,6 +96,7 @@ export type SnapshotMsg = {
   equity_history: WsEquityPoint[] | null;
   fills: WsFillRecord[] | null;
   activity_log: WsActivityRecord[] | null;
+  open_orders: WsActivityRecord[] | null;
   ts: number;
 };
 

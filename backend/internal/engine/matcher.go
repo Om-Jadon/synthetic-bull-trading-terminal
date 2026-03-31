@@ -280,6 +280,27 @@ func (m *Matcher) emitMakerUpdate(makerID string, fillSize float64) *OrderUpdate
 	}
 }
 
+// OpenHumanOrders returns all resting human orders as order_update records.
+// Used to restore open orders on client reconnect. Safe to call concurrently.
+func (m *Matcher) OpenHumanOrders() []map[string]any {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	out := make([]map[string]any, 0, len(m.humanOrders))
+	for id, o := range m.humanOrders {
+		out = append(out, map[string]any{
+			"type":           "order_update",
+			"order_id":       id,
+			"status":         "open",
+			"filled_size":    m.filledSizes[id],
+			"remaining_size": o.Remaining,
+			"price":          o.Price,
+			"side":           string(o.Side),
+			"ts":             o.CreatedAt.UnixMilli(),
+		})
+	}
+	return out
+}
+
 // Depth returns the top-N price levels. Safe to call concurrently with Process.
 func (m *Matcher) Depth(n int) (bids, asks [][2]float64) {
 	m.mu.RLock()

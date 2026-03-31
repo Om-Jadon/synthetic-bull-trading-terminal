@@ -70,6 +70,7 @@ func main() {
 			"equity_history": portfolio.EquityHistory(),
 			"fills":          portfolio.FillLog(),
 			"activity_log":   portfolio.ActivityLog(),
+			"open_orders":    matcher.OpenHumanOrders(),
 			"ts":             time.Now().UnixMilli(),
 		}
 		b, _ := json.Marshal(snap)

@@ -76,6 +76,9 @@ function seedFromSnapshot(snapshot: SnapshotMsg): void {
   if (snapshot.activity_log?.length) {
     store.setOrderHistory(snapshot.activity_log);
   }
+  if (snapshot.open_orders?.length) {
+    store.seedOpenOrders(snapshot.open_orders);
+  }
   store.setSnapshotReady(true);
 }
 

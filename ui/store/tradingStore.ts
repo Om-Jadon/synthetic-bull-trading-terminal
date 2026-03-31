@@ -69,6 +69,7 @@ export type TradingStore = {
   setStats: (stats: StatsMsg) => void;
   setPortfolio: (portfolio: PortfolioMsg) => void;
   toggleChartFullscreen: () => void;
+  seedOpenOrders: (orders: WsActivityRecord[]) => void;
   trackOrderId: (orderId: string) => void;
   onOrderUpdate: (update: OrderUpdateMsg) => void;
   setPendingPriceFill: (price: number, side: "buy" | "sell") => void;
@@ -297,6 +298,27 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
 
   toggleChartFullscreen: () =>
     set((state) => ({ chartFullscreen: !state.chartFullscreen })),
+
+  seedOpenOrders: (orders) =>
+    set(() => {
+      const openOrders = new Map<string, OrderUpdateMsg>();
+      const knownOrderIds = new Set<string>();
+      for (const o of orders) {
+        const msg: OrderUpdateMsg = {
+          type: "order_update",
+          order_id: o.order_id,
+          status: o.status,
+          filled_size: o.filled_size,
+          remaining_size: o.remaining_size,
+          price: o.price,
+          side: o.side,
+          ts: o.ts,
+        };
+        openOrders.set(o.order_id, msg);
+        knownOrderIds.add(o.order_id);
+      }
+      return { openOrders, knownOrderIds };
+    }),
 
   trackOrderId: (orderId) =>
     set((state) => {
