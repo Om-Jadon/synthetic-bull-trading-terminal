@@ -242,7 +242,7 @@ export default function CommandPalette({ open, onClose }: Props) {
           return;
         }
         await Promise.all(orders.map((o) => cancelOrder(o.order_id)));
-        const msg = `Cancelled ${orders.length} order${orders.length !== 1 ? "s" : ""}`;
+        const msg = `${orders.length} order${orders.length !== 1 ? "s" : ""} cancelled`;
         setFeedback({ ok: true, message: msg });
         useTradingStore.getState().addToast(msg, true);
         scheduleClose(1200);
@@ -305,7 +305,7 @@ export default function CommandPalette({ open, onClose }: Props) {
           ? `${parsed.side.toUpperCase()} ${parsed.size} @ ${parsed.price}`
           : `${parsed.side.toUpperCase()} ${parsed.size} market`;
 
-      const msg = `${label} — accepted`;
+      const msg = `${label} · Order placed`;
       setFeedback({ ok: true, message: msg });
       useTradingStore.getState().addToast(msg, true);
       scheduleClose(1000);
@@ -455,7 +455,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                 : undefined
             }
             aria-label="Trading command input"
-            className="min-w-0 flex-1 bg-transparent font-mono text-[13px] text-text-primary placeholder:text-text-muted/50 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent font-mono text-body text-text-primary placeholder:text-text-muted/50 focus:outline-none"
           />
 
           {busy && (
@@ -473,7 +473,7 @@ export default function CommandPalette({ open, onClose }: Props) {
         {feedback && (
           <div
             role="alert"
-            className={`border-b border-border px-3 py-2 font-mono text-[11px] ${feedback.ok ? "text-bull" : "text-bear"
+            className={`border-b border-border px-3 py-2 font-mono text-label ${feedback.ok ? "text-bull" : "text-bear"
               }`}
           >
             {feedback.message}

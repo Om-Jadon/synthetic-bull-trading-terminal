@@ -30,14 +30,14 @@ export default function SpreadRow({ bestBid, bestAsk }: SpreadRowProps) {
         <div className="border-y border-spread bg-spread-bg">
             <div
                 ref={pulseRef}
-                className="px-2 py-0.5 text-center font-mono text-[10px] tracking-[0.06em] text-text-muted"
+                className="px-2 py-0.5 text-center font-mono text-micro tracking-[0.06em] text-text-muted"
             >
                 {bestBid && bestAsk
                     ? <><span className="opacity-60">spread </span>{spread.toFixed(4)}<span className="ml-2 opacity-60">{spreadPct.toFixed(3)}%</span></>
                     : "—"}
             </div>
             <div className="px-2 pb-1.5">
-                <div className="relative h-[4px] w-full overflow-hidden rounded-[1px] bg-bg-row">
+                <div className="relative h-1 w-full overflow-hidden rounded-[1px] bg-bg-row">
                     <div className="absolute inset-y-0 left-0 w-1/2 bg-bull/80" />
                     <div className="absolute inset-y-0 right-0 w-1/2 bg-bear/80" />
                 </div>

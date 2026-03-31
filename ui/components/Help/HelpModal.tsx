@@ -100,7 +100,7 @@ export default function HelpModal() {
                       className="flex items-center justify-between rounded-xs border border-transparent bg-bg-row/40 px-3 py-2 transition-colors hover:border-border hover:bg-bg-row"
                     >
                       <span className="text-body text-text-muted">{item.desc}</span>
-                      <kbd className="min-w-[40px] rounded-xs border border-border bg-bg-panel px-1.5 py-0.5 text-center font-mono text-[10px] text-text-primary shadow-xs">
+                      <kbd className="min-w-[40px] rounded-xs border border-border bg-bg-panel px-1.5 py-0.5 text-center font-mono text-micro text-text-primary shadow-xs">
                         {item.key}
                       </kbd>
                     </div>
@@ -112,7 +112,7 @@ export default function HelpModal() {
         </div>
 
         <div className="border-t border-border bg-bg-row/50 px-4 py-3 text-center">
-          <p className="font-mono text-[10px] text-text-muted/60">
+          <p className="font-mono text-micro text-text-muted/60">
             SYNTHETIC-BULL Trading Terminal v0.1.0
           </p>
         </div>

@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const holdingsEpsilon = 1e-9
+
 const (
 	maxEquityPoints  = 600
 	maxFills         = 200
@@ -53,10 +55,11 @@ func (p *Portfolio) OnTrade(t *Trade) {
 			coverSize := math.Min(t.Size, -p.holdings)
 			p.realizedPnl += (p.avgEntry - t.Price) * coverSize
 			p.holdings += t.Size
-			if p.holdings > 0 {
+			if p.holdings > holdingsEpsilon {
 				// Flipped to long — reset avg entry to the new long price
 				p.avgEntry = t.Price
-			} else if p.holdings == 0 {
+			} else if math.Abs(p.holdings) <= holdingsEpsilon {
+				p.holdings = 0
 				p.avgEntry = 0
 			}
 			// If still short, avgEntry is unchanged (still the short avg)
@@ -75,10 +78,11 @@ func (p *Portfolio) OnTrade(t *Trade) {
 			closeSize := math.Min(t.Size, p.holdings)
 			p.realizedPnl += (t.Price - p.avgEntry) * closeSize
 			p.holdings -= t.Size
-			if p.holdings < 0 {
+			if p.holdings < -holdingsEpsilon {
 				// Flipped to short — reset avg entry to the new short price
 				p.avgEntry = t.Price
-			} else if p.holdings == 0 {
+			} else if math.Abs(p.holdings) <= holdingsEpsilon {
+				p.holdings = 0
 				p.avgEntry = 0
 			}
 			// If still long, avgEntry is unchanged

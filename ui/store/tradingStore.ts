@@ -279,7 +279,10 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
 
       let equityHistory: EquityPoint[];
       const last = state.equityHistory[state.equityHistory.length - 1];
-      if (last && last.time === point.time) {
+      // Replace only if same second AND same value (fill-triggered and stats-triggered updates can share a timestamp)
+      if (last && last.time === point.time && last.value === point.value) {
+        equityHistory = state.equityHistory;
+      } else if (last && last.time === point.time) {
         equityHistory = [...state.equityHistory.slice(0, -1), point];
       } else {
         equityHistory = [...state.equityHistory, point];

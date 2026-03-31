@@ -149,7 +149,7 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
 
                 {bookEmpty ? (
                     <div role="status" aria-live="polite" className="grid flex-1 place-items-center px-2 py-3 text-label text-text-muted">
-                        Book Empty
+                        No orders
                     </div>
                 ) : (
                     <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)]">

@@ -38,8 +38,8 @@ export default function TradesPanel({ showTitle, action }: TradesPanelProps = {}
                 key: `${trade.id}-${trade.ts}-${index}`,
                 side: trade.side,
                 rawSize: trade.size,
-                price: Number.isFinite(trade.price) ? priceFormatter.format(trade.price) : "-",
-                size: Number.isFinite(trade.size) ? sizeFormatter.format(trade.size) : "-",
+                price: Number.isFinite(trade.price) ? priceFormatter.format(trade.price) : "—",
+                size: Number.isFinite(trade.size) ? sizeFormatter.format(trade.size) : "—",
                 time: Number.isFinite(trade.ts) ? timeFormatter.format(new Date(trade.ts)) : "--:--:--",
             })),
         [trades],
@@ -92,7 +92,7 @@ export default function TradesPanel({ showTitle, action }: TradesPanelProps = {}
                     </div>
                 ) : trades.length === 0 ? (
                     <div className="grid h-full place-items-center px-2 py-3 text-data text-text-muted">
-                        Waiting for trades...
+                        No trades yet
                     </div>
                 ) : (
                     <table className="w-full table-fixed border-collapse font-mono text-data tabular-nums">

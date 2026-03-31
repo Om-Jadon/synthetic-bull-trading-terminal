@@ -124,7 +124,14 @@ export function useWebSocket({
         // Collapse all book frames — only the last one matters visually
         const lastBook = [...drained].reverse().find((m) => m.type === "book");
 
-        for (const message of drained) {
+        // Process snapshot first — ensures aggregator is seeded before any trades
+        // in the same batch (backend may send trades before snapshot due to timing)
+        const snapshotIdx = drained.findIndex((m) => m.type === "snapshot");
+        const sorted = snapshotIdx <= 0
+          ? drained
+          : [drained[snapshotIdx], ...drained.slice(0, snapshotIdx), ...drained.slice(snapshotIdx + 1)];
+
+        for (const message of sorted) {
           switch (message.type) {
             case "snapshot": {
               seedFromSnapshot(message);
@@ -150,8 +157,10 @@ export function useWebSocket({
               const isHuman = store.knownOrderIds.has(message.order_id);
               store.onOrderUpdate(message);
               if (isHuman) {
-                if (message.status === "filled") sounds.orderFill();
-                else if (message.status === "cancelled") sounds.orderCancel();
+                if (message.status === "filled") {
+                  sounds.orderFill();
+                  store.addToast(`${message.side.toUpperCase()} · Filled`, true);
+                } else if (message.status === "cancelled") sounds.orderCancel();
                 // "partial" status intentionally plays no sound to avoid audio spam on highly fragmented fills
               }
               break;

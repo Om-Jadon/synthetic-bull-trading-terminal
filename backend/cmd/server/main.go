@@ -184,6 +184,9 @@ func main() {
 					"ts":             stats.Ts,
 				})
 				wsHub.Broadcast(msg)
+				// Broadcast portfolio so unrealized P&L updates with live price every second
+				pmsg, _ := json.Marshal(portfolio.State(stats.LastPrice))
+				wsHub.Broadcast(pmsg)
 			}
 		}
 	}()

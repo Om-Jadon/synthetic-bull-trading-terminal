@@ -19,14 +19,14 @@ export default function SessionStats({ variant = "header" }: SessionStatsProps) 
         return (
             <span className="flex items-center gap-2 text-label text-text-muted">
                 <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-brand" />
-                Connecting to market
+                Connecting
             </span>
         );
     }
 
     if (variant === "fullscreen") {
         return (
-            <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted">
+            <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-xs border border-border bg-bg-panel/85 px-2 py-1 font-mono text-micro uppercase tracking-[0.08em] text-text-muted">
                 H <span className="text-text-primary">{sessionHigh.toFixed(4)}</span>
                 <span className="mx-2 text-border">|</span>
                 L <span className="text-text-primary">{sessionLow.toFixed(4)}</span>

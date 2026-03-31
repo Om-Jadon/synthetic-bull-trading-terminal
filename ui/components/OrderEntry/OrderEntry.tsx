@@ -167,12 +167,10 @@ export default function OrderEntry() {
           const orders = [...openOrdersRef.current.values()];
           if (orders.length === 0) break;
           flash("cancel");
-          void Promise.all(orders.map((o) => cancelOrder(o.order_id)));
           const n = orders.length;
-          pushToastRef.current(
-            `Cancelling ${n} order${n !== 1 ? "s" : ""}`,
-            false,
-          );
+          Promise.all(orders.map((o) => cancelOrder(o.order_id)))
+            .then(() => pushToastRef.current(`${n} order${n !== 1 ? "s" : ""} cancelled`, false))
+            .catch(() => pushToastRef.current("Cancel failed", false));
           break;
         }
       }
@@ -199,7 +197,7 @@ export default function OrderEntry() {
       trackOrderId(response.order_id);
       sounds.orderSubmit();
       setErrorMsg(null);
-      pushToast(`${side.toUpperCase()} accepted`, true);
+      pushToast(`${side.toUpperCase()} · Order placed`, true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Order rejected";
       setErrorMsg(msg);
@@ -282,7 +280,7 @@ export default function OrderEntry() {
 
         <form ref={formRef} className="space-y-2 sm:space-y-2.5" onSubmit={submitOrder}>
           {type === "limit" && (
-            <label className="block text-body text-text-muted">
+            <label className="block text-label text-text-muted">
               Price
               <input
                 value={price}
@@ -309,7 +307,7 @@ export default function OrderEntry() {
             </div>
           )}
 
-          <label className="block text-body text-text-muted">
+          <label className="block text-label text-text-muted">
             Size
             <input
               value={size}
@@ -334,7 +332,7 @@ export default function OrderEntry() {
                 type="button"
                 onClick={() => setSize(quick)}
                 aria-label={`Set size to ${quick}`}
-                className={`order-chip relative h-7 max-sm:h-11 rounded-xs border border-border bg-bg-row px-1 text-data text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:-inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
+                className={`order-chip relative h-7 max-sm:h-11 rounded-xs border border-border bg-bg-row px-1 text-data text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
               >
                 {quick}
               </button>
@@ -389,7 +387,7 @@ export default function OrderEntry() {
           </button>
 
           {errorMsg && (
-            <p role="alert" className="text-body text-bear">
+            <p role="alert" className="font-mono text-label text-bear">
               {errorMsg}
             </p>
           )}

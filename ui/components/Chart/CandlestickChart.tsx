@@ -267,10 +267,12 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             const last = aggregated[aggregated.length - 1];
             const lastColor = last.close >= last.open ? bull : bear;
 
-            // Full redraw: on first load, reconnect reset, or timeframe change
+            // Full redraw: on first load, reconnect reset, timeframe change,
+            // or snapshot arriving after pre-snapshot trades (candles jump by >1)
             const needsFullRedraw =
                 prevCandles.length === 0 ||
                 candles.length < prevCandles.length ||
+                candles.length - prevCandles.length > 1 ||
                 timeframe !== prevTimeframe;
 
             if (needsFullRedraw) {
@@ -389,7 +391,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                             type="button"
                             onClick={() => setChartTimeframe(tf.seconds)}
                             aria-pressed={tf.seconds === chartTimeframe}
-                            className={`touch-target-compact flex h-7 max-sm:h-8 min-w-[32px] items-center justify-center rounded-xs px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
+                            className={`touch-target-compact flex h-7 max-sm:h-8 min-w-[32px] items-center justify-center rounded-xs px-2 py-1 font-mono text-micro uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
                                 ? "border border-border bg-bg-row text-text-primary"
                                 : "border border-transparent text-text-muted hover:text-text-primary"
                                 }`}
@@ -428,7 +430,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                     className="h-full w-full"
                 />
                 {!snapshotReady && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-bg-row/80 text-[11px] uppercase tracking-[0.12em] text-text-muted">
+                    <div className="absolute inset-0 flex items-center justify-center bg-bg-row/80 text-label uppercase tracking-[0.12em] text-text-muted">
                         Connecting
                     </div>
                 )}

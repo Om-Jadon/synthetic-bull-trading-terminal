@@ -48,21 +48,21 @@ export default function PortfolioWidget() {
                 <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Equity</span>
                     <span ref={equityRef} className="text-text-primary">
-                        {portfolio ? portfolio.equity.toFixed(2) : "--"}
+                        {portfolio ? portfolio.equity.toFixed(2) : "—"}
                     </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Cash</span>
-                    <span className="text-text-primary">{portfolio ? portfolio.cash.toFixed(2) : "--"}</span>
+                    <span className="text-text-primary">{portfolio ? portfolio.cash.toFixed(2) : "—"}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>{portfolio ? positionLabel(portfolio.holdings) : "POS"}</span>
-                    <span className="text-text-primary">{portfolio ? portfolio.holdings.toFixed(4) : "--"}</span>
+                    <span className="text-text-primary">{portfolio ? portfolio.holdings.toFixed(4) : "—"}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xs border border-border/70 bg-bg-row px-2 py-1 text-text-muted">
                     <span>Avg Entry</span>
                     <span className="text-text-primary">
-                        {portfolio && portfolio.avg_entry > 0 ? portfolio.avg_entry.toFixed(4) : "--"}
+                        {portfolio && portfolio.avg_entry > 0 ? portfolio.avg_entry.toFixed(4) : "—"}
                     </span>
                 </div>
                 <div
@@ -74,7 +74,7 @@ export default function PortfolioWidget() {
                         <span className={unrealizedPnl > 0 ? "text-bull" : unrealizedPnl < 0 ? "text-bear" : "text-text-muted"}>
                             {portfolio
                                 ? `${unrealizedPnl > 0 ? "+" : ""}${unrealizedPnl.toFixed(2)}`
-                                : "--"}
+                                : "—"}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -82,7 +82,7 @@ export default function PortfolioWidget() {
                         <span className={realizedPnl > 0 ? "text-bull" : realizedPnl < 0 ? "text-bear" : "text-text-muted"}>
                             {portfolio
                                 ? `${realizedPnl > 0 ? "+" : ""}${realizedPnl.toFixed(2)}`
-                                : "--"}
+                                : "—"}
                         </span>
                     </div>
                 </div>
