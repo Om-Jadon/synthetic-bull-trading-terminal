@@ -173,32 +173,27 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
 
     if (mode === "stacked") {
         return (
-            <section className="grid h-full min-h-0 grid-rows-[40px_minmax(0,3fr)_minmax(0,2fr)] gap-2">
-                <div className="flex h-10 items-center justify-end rounded-[2px] border border-border bg-bg-panel px-2">
-                    {modeButtons}
+            <section className="grid h-full min-h-0 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
+                <div className="min-h-0">
+                    <OrderBookPanel showTitle action={modeButtons} />
                 </div>
                 <div className="min-h-0">
-                    <OrderBookPanel />
-                </div>
-                <div className="min-h-0">
-                    <TradesPanel />
+                    <TradesPanel showTitle />
                 </div>
             </section>
         );
     }
 
     return (
-        <section className="grid h-full min-h-0 grid-rows-[40px_minmax(0,1fr)] gap-2">
-            <div className="flex h-10 items-center justify-end rounded-[2px] border border-border bg-bg-panel px-2">
-                {modeButtons}
+        <section className="flex h-full min-h-0 flex-col gap-2">
+            <div className="flex min-h-[36px] shrink-0 items-center rounded-xs border border-border bg-bg-panel px-3">
+                <h2 className="flex-1 text-label font-medium text-text-primary">Order Book</h2>
+                <h2 className="text-label font-medium text-text-primary">Trades</h2>
+                <span className="ml-1">{modeButtons}</span>
             </div>
-            <div className="grid min-h-0 grid-cols-1 gap-2 lg:grid-cols-2">
-                <div className="min-h-0">
-                    <OrderBookPanel />
-                </div>
-                <div className="min-h-0">
-                    <TradesPanel />
-                </div>
+            <div className="grid flex-1 min-h-0 grid-cols-1 gap-2 lg:grid-cols-2 lg:grid-rows-[1fr]">
+                <OrderBookPanel />
+                <TradesPanel />
             </div>
         </section>
     );

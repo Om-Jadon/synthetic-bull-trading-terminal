@@ -209,7 +209,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         }, 0);
 
         const volumeSeries = chart.addSeries(HistogramSeries, {
-            priceScaleId: "right",
+            priceScaleId: "vol",
             priceFormat: { type: "volume" },
             base: 0,
             color: hex8(colors.bull, 0.33),
@@ -226,6 +226,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             scaleMargins: { top: 0.14, bottom: 0 },
             visible: false,
         });
+        // Note: "vol" is isolated from "right" so hiding it does not affect the candlestick price axis.
 
         candleSeriesRef.current = candleSeries;
         volumeSeriesRef.current = volumeSeries;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
     getGroupedMap,
@@ -13,7 +13,12 @@ import { useTradingStore } from "@/store/tradingStore";
 import OrderRow from "./OrderRow";
 import SpreadRow from "./SpreadRow";
 
-export default function OrderBookPanel() {
+type OrderBookPanelProps = {
+    showTitle?: boolean;
+    action?: React.ReactNode;
+};
+
+export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProps = {}) {
     const bids = useTradingStore((state) => state.bids);
     const asks = useTradingStore((state) => state.asks);
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
@@ -75,7 +80,13 @@ export default function OrderBookPanel() {
 
     return (
         <section className="panel relative flex h-full min-h-0 flex-col">
-            <div className="grid h-full min-h-0 grid-rows-[auto_1fr]">
+            {showTitle && (
+                <div className="panel-title flex h-9 shrink-0 items-center justify-between border-b border-border bg-bg-panel px-3">
+                    <h2 className="text-label font-medium text-text-primary">Order Book</h2>
+                    {action}
+                </div>
+            )}
+            <div className="grid flex-1 min-h-0 grid-rows-[auto_1fr]">
                 {/* Column header + group selector */}
                 <div className="flex h-7 items-center border-b border-border/70 px-2">
                     <div className="grid flex-1 grid-cols-3 text-label text-text-muted">

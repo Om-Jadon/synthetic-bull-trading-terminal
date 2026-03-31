@@ -80,21 +80,31 @@ describe("OrderBook view modes", () => {
         render(<MarketPanel mode="stacked" onModeChange={vi.fn()} />);
 
         expect(screen.queryByRole("tablist", { name: /order book and trades view/i })).not.toBeInTheDocument();
-        expect(screen.getByText("Total")).toBeInTheDocument(); // from OrderBookPanel
-        expect(screen.getByRole("columnheader", { name: /time/i })).toBeInTheDocument(); // from TradesPanel
-        expect(screen.getAllByText("Price")).not.toHaveLength(0); // Appears in both
+        expect(screen.getByRole("heading", { name: /order book/i })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: /^trades$/i })).toBeInTheDocument();
+        expect(screen.getByText("Total")).toBeInTheDocument();
+        expect(screen.getByRole("columnheader", { name: /time/i })).toBeInTheDocument();
+        expect(screen.getAllByText("Price")).not.toHaveLength(0);
     });
 
     it("large mode keeps both panels and mode switch control works", () => {
         const onModeChange = vi.fn();
         render(<MarketPanel mode="large" onModeChange={onModeChange} />);
 
+        expect(screen.getByRole("heading", { name: /order book/i })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: /^trades$/i })).toBeInTheDocument();
         expect(screen.getByText("Total")).toBeInTheDocument();
         expect(screen.getByRole("columnheader", { name: /time/i })).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole("button", { name: /layout options/i }));
         fireEvent.click(screen.getByRole("menuitem", { name: /tab/i }));
-        
+
         expect(onModeChange).toHaveBeenCalledWith("tab");
+    });
+
+    it("no panel headings in tab mode", () => {
+        render(<MarketPanel mode="tab" onModeChange={vi.fn()} />);
+        expect(screen.queryByRole("heading", { name: /order book/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole("heading", { name: /^trades$/i })).not.toBeInTheDocument();
     });
 });

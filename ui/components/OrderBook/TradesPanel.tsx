@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 
 import { useTradingStore } from "@/store/tradingStore";
 
@@ -21,7 +21,12 @@ const timeFormatter = new Intl.DateTimeFormat("en-GB", {
     second: "2-digit",
 });
 
-export default function TradesPanel() {
+type TradesPanelProps = {
+    showTitle?: boolean;
+    action?: React.ReactNode;
+};
+
+export default function TradesPanel({ showTitle, action }: TradesPanelProps = {}) {
     const trades = useTradingStore((state) => state.trades);
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -60,9 +65,15 @@ export default function TradesPanel() {
 
     return (
         <section className="panel flex h-full min-h-0 flex-col">
+            {showTitle && (
+                <div className="panel-title flex h-9 shrink-0 items-center justify-between border-b border-border bg-bg-panel px-3">
+                    <h2 className="text-label font-medium text-text-primary">Trades</h2>
+                    {action}
+                </div>
+            )}
             <div
                 ref={containerRef}
-                className="panel-scroller top-fade h-full min-h-0 overflow-y-auto overflow-x-hidden"
+                className="panel-scroller top-fade flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
                 aria-busy={!snapshotReady}
                 onMouseEnter={() => {
                     pauseAutoScrollRef.current = true;
