@@ -109,7 +109,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
     if (mode === "tab") {
         return (
             <section className="panel relative grid h-full min-h-0 grid-rows-[auto_1fr]">
-                <div className="flex h-10 max-sm:h-14 items-center justify-between gap-2 border-b border-border px-2">
+                <div className="flex h-10 max-sm:h-11 items-center justify-between gap-2 border-b border-border px-2">
                     <div className="grid flex-1 grid-cols-2 gap-1 py-1" role="tablist" aria-label="Order book and trades view">
                         <button
                             id="market-tab-book"
@@ -120,7 +120,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                             tabIndex={activeTab === "book" ? 0 : -1}
                             onClick={() => setActiveTab("book")}
                             onKeyDown={onTabKeyDown}
-                            className={`h-8 max-sm:h-11 rounded-xs border px-3 text-label ${activeTab === "book"
+                            className={`h-8 max-sm:h-9 rounded-xs border px-3 text-label ${activeTab === "book"
                                 ? "border-brand bg-brand/10 text-brand font-medium"
                                 : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                                 }`}
@@ -136,7 +136,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                             tabIndex={activeTab === "trades" ? 0 : -1}
                             onClick={() => setActiveTab("trades")}
                             onKeyDown={onTabKeyDown}
-                            className={`h-8 max-sm:h-11 rounded-xs border px-3 text-label ${activeTab === "trades"
+                            className={`h-8 max-sm:h-9 rounded-xs border px-3 text-label ${activeTab === "trades"
                                 ? "border-brand bg-brand/10 text-brand font-medium"
                                 : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                                 }`}
@@ -191,7 +191,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                 <h2 className="text-label font-medium text-text-primary">Trades</h2>
                 <span className="ml-1">{modeButtons}</span>
             </div>
-            <div className="grid flex-1 min-h-0 grid-cols-1 gap-2 lg:grid-cols-2 lg:grid-rows-[1fr]">
+            <div className="grid flex-1 min-h-0 grid-cols-1 gap-2 md:grid-cols-2 lg:grid-rows-[1fr]">
                 <OrderBookPanel />
                 <TradesPanel />
             </div>

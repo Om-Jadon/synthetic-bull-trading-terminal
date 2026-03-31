@@ -11,6 +11,9 @@
 .idea/
 .vscode/
 
+# Dependencies
+node_modules/
+
 # Backend build/test artifacts
 backend/server
 backend/*.test

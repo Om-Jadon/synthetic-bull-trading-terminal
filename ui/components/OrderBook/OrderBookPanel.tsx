@@ -81,18 +81,18 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
     return (
         <section className="panel relative flex h-full min-h-0 flex-col">
             {showTitle && (
-                <div className="panel-title flex h-9 shrink-0 items-center justify-between border-b border-border bg-bg-panel px-3">
+                <div className="panel-title flex h-9 shrink-0 items-center justify-between border-b border-border bg-bg-panel px-3 max-sm:px-2">
                     <h2 className="text-label font-medium text-text-primary">Order Book</h2>
                     {action}
                 </div>
             )}
             <div className="grid flex-1 min-h-0 grid-rows-[auto_1fr]">
                 {/* Column header + group selector */}
-                <div className="flex h-7 items-center border-b border-border/70 px-2">
+                <div className="flex h-7 max-md:h-8 items-center border-b border-border/70 px-2 max-sm:px-1">
                     <div className="grid flex-1 grid-cols-3 text-label text-text-muted">
                         <span>Price</span>
                         <span className="text-right">Size</span>
-                        <span className="text-right">Total</span>
+                        <span className="text-right max-sm:text-[9px]">Total</span>
                     </div>
 
                     {/* Premium Grouping Selector */}

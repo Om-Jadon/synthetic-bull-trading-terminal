@@ -150,7 +150,7 @@ export default function TradingTerminal() {
 
             <AssetBar priceRef={priceRef} priceFlashRef={priceFlashRef} directionRef={directionRef} />
 
-            <div ref={fullscreenHostRef} className="min-h-0 flex-1 min-w-0 w-full flex flex-col">
+            <div ref={fullscreenHostRef} className="min-h-0 flex-1 min-w-0 w-full flex flex-col overflow-y-auto lg:overflow-hidden">
                 {chartFullscreen ? (
                     <div className="relative h-full">
                         <SessionStats variant="fullscreen" />
@@ -167,17 +167,17 @@ export default function TradingTerminal() {
                     </div>
                 ) : (
                     <main
-                        className="relative z-10 flex min-h-0 h-full flex-1 flex-col gap-2 overflow-hidden p-2 sm:p-3 md:grid md:grid-cols-[1fr_30%] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-2 lg:flex lg:flex-row lg:gap-2.5 lg:p-3"
+                        className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 p-1.5 sm:p-3 md:grid md:grid-cols-[1fr_30%] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-2 lg:h-full lg:overflow-hidden lg:flex lg:flex-row lg:gap-2.5 lg:p-3"
                         role="main"
                     >
                 {/* Chart + status strip */}
-                        <section className="terminal-panel panel-delay-2 grid min-h-96 min-w-0 grid-rows-[1fr_auto] md:col-start-1 md:row-start-1 md:col-span-1 md:row-span-1 lg:flex-1 lg:min-w-0 lg:h-full">
+                        <section className="terminal-panel panel-delay-2 grid min-h-[clamp(200px,42vh,400px)] min-w-0 grid-rows-[1fr_auto] md:col-start-1 md:row-start-1 md:col-span-1 md:row-span-1 lg:min-h-0 lg:flex-1 lg:min-w-0 lg:h-full">
                             <CandlestickChart
                                 onPaletteOpen={() => setPaletteOpen(true)}
                                 onFullscreenToggle={handleFullscreenToggle}
                             />
                     {/* Bottom status strip — compact session snapshot */}
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-bg-panel px-3 py-1.5 font-mono text-[12px]">
+                            <div className="max-md:hidden flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-bg-panel px-3 py-1.5 font-mono text-[12px]">
                                 <span className="text-text-muted">
                                     Cash{" "}
                                     <span className="font-medium text-text-primary">
@@ -202,7 +202,7 @@ export default function TradingTerminal() {
 
                 {/* Order book + trade tape */}
                         <section
-                            className="terminal-panel panel-delay-3 min-h-96 min-w-0 md:col-start-2 md:row-start-1 md:col-span-1 md:row-span-2 lg:shrink-0 lg:min-h-0 lg:h-full"
+                            className="terminal-panel panel-delay-3 min-h-[clamp(240px,48vh,480px)] min-w-0 max-lg:w-auto! max-lg:basis-auto! md:col-start-2 md:row-start-1 md:col-span-1 md:row-span-2 lg:shrink-0 lg:min-h-0 lg:h-full"
                             style={{ flexBasis: bookColumnPct, width: bookColumnPct } as React.CSSProperties}
                         >
                             <MarketPanel mode={mode} onModeChange={setMode} />
@@ -210,7 +210,7 @@ export default function TradingTerminal() {
 
                 {/* Order entry + workbench */}
                         <section
-                            className="terminal-panel panel-delay-4 grid min-h-96 min-w-0 grid-rows-[auto_minmax(0,1fr)] md:col-start-1 md:row-start-2 md:col-span-1 md:row-span-1 lg:shrink-0 lg:h-full"
+                            className="terminal-panel panel-delay-4 grid min-h-[clamp(220px,38vh,420px)] min-w-0 max-lg:w-auto! max-lg:basis-auto! grid-rows-[auto_minmax(0,1fr)] md:col-start-1 md:row-start-2 md:col-span-1 md:row-span-1 lg:shrink-0 lg:h-full"
                             style={{ flexBasis: orderColumnPct, width: orderColumnPct } as React.CSSProperties}
                         >
                             <OrderEntry />

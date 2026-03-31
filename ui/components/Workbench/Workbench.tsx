@@ -78,7 +78,7 @@ export default function Workbench() {
                             tabIndex={activeTab === tab ? 0 : -1}
                             onClick={() => handleTabChange(tab)}
                             onKeyDown={(e) => onTabKeyDown(e, tab)}
-                            className={`h-7 max-sm:h-11 rounded-xs px-3 text-label transition-colors border btn-tactile ${
+                            className={`h-7 max-sm:h-9 rounded-xs px-3 text-label transition-colors border btn-tactile ${
                                 activeTab === tab
                                     ? "border-brand bg-brand/10 text-brand font-medium"
                                     : "border-transparent text-text-muted hover:border-border hover:bg-bg-row hover:text-text-primary"

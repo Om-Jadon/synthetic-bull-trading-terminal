@@ -86,7 +86,7 @@ export default function HelpModal() {
           </button>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto p-4 scrollbar-hide">
+        <div className="max-h-[calc(100dvh-80px)] overflow-y-auto p-4 scrollbar-hide">
           <div className="space-y-6">
             {SHORTCUTS.map((section) => (
               <div key={section.category}>

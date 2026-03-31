@@ -380,8 +380,8 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     }, []);
 
     return (
-        <section className="panel grid h-full min-w-0 min-h-[clamp(300px,52vh,480px)] grid-rows-[auto_1fr]">
-            <div className="panel-title flex items-center justify-between border-b border-border bg-bg-panel px-3 py-1.5 min-h-[36px]">
+        <section className="panel grid h-full min-w-0 min-h-[clamp(200px,52vh,480px)] grid-rows-[auto_1fr]">
+            <div className="panel-title flex items-center justify-between border-b border-border bg-bg-panel px-3 py-1.5 min-h-[36px] max-sm:px-2 max-sm:py-1">
                 <div className="flex gap-0.5" role="group" aria-label="Chart timeframe">
                     {TIMEFRAMES.map((tf) => (
                         <button
@@ -389,7 +389,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                             type="button"
                             onClick={() => setChartTimeframe(tf.seconds)}
                             aria-pressed={tf.seconds === chartTimeframe}
-                            className={`touch-target-compact flex h-7 min-w-[32px] items-center justify-center rounded-xs px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
+                            className={`touch-target-compact flex h-7 max-sm:h-8 min-w-[32px] items-center justify-center rounded-xs px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
                                 ? "border border-border bg-bg-row text-text-primary"
                                 : "border border-transparent text-text-muted hover:text-text-primary"
                                 }`}
@@ -404,7 +404,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                             type="button"
                             aria-label="Command palette"
                             onClick={onPaletteOpen}
-                            className="touch-target-compact inline-flex h-6 w-6 items-center justify-center rounded-xs border border-border bg-bg-row text-[12px] text-text-muted hover:text-text-primary transition-colors duration-100"
+                            className="touch-target-compact inline-flex h-6 w-6 max-sm:h-7 max-sm:w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-[12px] text-text-muted hover:text-text-primary transition-colors duration-100"
                         >
                             ⌘
                         </button>
@@ -413,7 +413,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                         type="button"
                         aria-label={chartFullscreen ? "Exit fullscreen chart" : "Toggle fullscreen chart"}
                         onClick={handleFullscreenToggle}
-                        className="touch-target-compact inline-flex h-6 w-6 items-center justify-center rounded-xs border border-border bg-bg-row text-[12px] text-text-muted hover:text-text-primary transition-colors duration-100"
+                        className="touch-target-compact inline-flex h-6 w-6 max-sm:h-7 max-sm:w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-[12px] text-text-muted hover:text-text-primary transition-colors duration-100"
                     >
                         {chartFullscreen ? "✕" : "⛶"}
                     </button>

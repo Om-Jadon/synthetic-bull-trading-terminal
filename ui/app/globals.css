@@ -146,6 +146,13 @@ textarea:focus-visible,
   height: 8px;
 }
 
+@media (max-width: 767px) {
+  .panel-scroller::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+}
+
 .panel-scroller::-webkit-scrollbar-thumb {
   background: color-mix(
     in oklab,
@@ -616,6 +623,13 @@ textarea:focus-visible,
     min-width: 44px;
     min-height: 44px;
     padding: 0.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .touch-target-compact {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 

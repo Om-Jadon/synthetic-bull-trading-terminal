@@ -39,7 +39,7 @@ export default function SessionStats({ variant = "header" }: SessionStatsProps) 
     }
 
     return (
-        <div key="live" className="stats-reveal flex items-center gap-4 text-data text-text-muted">
+        <div key="live" className="stats-reveal flex items-center gap-3 sm:gap-4 text-data text-text-muted">
             <span className="text-text-muted">
                 H <span className="text-text-primary">{sessionHigh.toFixed(4)}</span>
             </span>

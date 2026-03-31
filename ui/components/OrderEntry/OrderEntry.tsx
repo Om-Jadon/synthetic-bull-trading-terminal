@@ -280,7 +280,7 @@ export default function OrderEntry() {
           ))}
         </div>
 
-        <form ref={formRef} className="space-y-2.5" onSubmit={submitOrder}>
+        <form ref={formRef} className="space-y-2 sm:space-y-2.5" onSubmit={submitOrder}>
           {type === "limit" && (
             <label className="block text-body text-text-muted">
               Price
@@ -321,7 +321,7 @@ export default function OrderEntry() {
             />
           </label>
 
-          <div className="font-mono text-micro text-text-muted">
+          <div className="font-mono text-micro max-sm:text-[11px] text-text-muted">
             {equityPct !== null && notional > 0
               ? `~${equityPct.toFixed(1)}% of capital  ·  $${moneyFormatter.format(notional)} notional  ·  Fee ~$${(notional * 0.001).toFixed(2)}`
               : "—"}
@@ -334,7 +334,7 @@ export default function OrderEntry() {
                 type="button"
                 onClick={() => setSize(quick)}
                 aria-label={`Set size to ${quick}`}
-                className={`order-chip relative h-7 max-sm:h-10 rounded-xs border border-border bg-bg-row px-1 text-data text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:-inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
+                className={`order-chip relative h-7 max-sm:h-11 rounded-xs border border-border bg-bg-row px-1 text-data text-text-muted transition-shadow duration-150 after:absolute after:-inset-y-1 after:-inset-x-0 sm:after:hidden ${ringClass(`size-${i + 1}`)}`}
               >
                 {quick}
               </button>

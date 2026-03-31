@@ -10,7 +10,7 @@ export default function ToastManager() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col gap-2"
+      className="pointer-events-none fixed bottom-4 right-4 max-sm:bottom-3 max-sm:right-3 z-50 flex flex-col gap-2 max-w-sm max-sm:max-w-[calc(100vw-24px)]"
     >
       {toasts.map((toast) => (
         <div
