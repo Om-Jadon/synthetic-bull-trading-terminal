@@ -55,6 +55,7 @@ type TradingStore = {
   setBookGroupTick: (tick: number) => void;
   setBookMode: (mode: BookMode) => void;
   setChartTimeframe: (seconds: number) => void;
+  hydrateFromStorage: () => void;
   addToast: (message: string, ok: boolean) => void;
   removeToast: (id: number) => void;
   setBidAsks: (bids: [number, number][], asks: [number, number][]) => void;
@@ -123,7 +124,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   asks: [],
   trades: [],
   candles: [],
-  chartTimeframe: lsGet(LS_KEYS.chartTimeframe, 1),
+  chartTimeframe: 1,
   vwap: 0,
   tradeCount: 0,
   lastPrice: 0,
@@ -139,8 +140,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   isHelpOpen: false,
   connectionStatus: "connecting",
   wsStats: { msgsPerSec: 0, latencyMs: 0 },
-  bookGroupTick: lsGet(LS_KEYS.bookGroupTick, 0.01),
-  bookMode: lsGet<BookMode>(LS_KEYS.bookMode, "tab"),
+  bookGroupTick: 0.01,
+  bookMode: "tab" as BookMode,
   toasts: [],
   pendingPriceFill: null,
 
@@ -189,6 +190,14 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   setChartTimeframe: (chartTimeframe) => {
     lsSet(LS_KEYS.chartTimeframe, chartTimeframe);
     set({ chartTimeframe });
+  },
+
+  hydrateFromStorage: () => {
+    set({
+      chartTimeframe: lsGet(LS_KEYS.chartTimeframe, 1),
+      bookGroupTick: lsGet(LS_KEYS.bookGroupTick, 0.01),
+      bookMode: lsGet<BookMode>(LS_KEYS.bookMode, "tab"),
+    });
   },
 
   setBidAsks: (bids, asks) => set({ bids, asks }),

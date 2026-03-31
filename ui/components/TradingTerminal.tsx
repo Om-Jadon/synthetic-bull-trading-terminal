@@ -27,6 +27,11 @@ export default function TradingTerminal() {
 
     useWebSocket({ priceRef, priceFlashRef, directionRef });
 
+    // Hydrate localStorage preferences after mount to avoid SSR/client hydration mismatch
+    useEffect(() => {
+        useTradingStore.getState().hydrateFromStorage();
+    }, []);
+
     // Bootstrap AudioContext on first user gesture (browser autoplay policy)
     useEffect(() => {
         const init = () => {
