@@ -156,6 +156,8 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         const colors = paletteRef.current;
         const chart = createChart(container, {
             layout: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ...({ attributionLogo: false } as any),
                 background: { type: ColorType.Solid, color: colors.bg },
                 textColor: colors.textMuted,
                 fontFamily: "var(--font-jetbrains)",
