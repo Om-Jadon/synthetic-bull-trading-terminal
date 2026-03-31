@@ -16,7 +16,7 @@ import {
     type UTCTimestamp,
 } from "lightweight-charts";
 
-import { useTradingStore } from "@/store/tradingStore";
+import { useTradingStore, type TradingStore } from "@/store/tradingStore";
 import type { Candle } from "@/types/ws";
 
 // ─── Timeframe config ────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         chart.applyOptions({
             watermark: {
                 visible: true,
-                text: "NEXTBULL",
+                text: "SYNTHETIC-BULL",
                 color: "rgba(200,151,42,0.06)",
                 fontSize: 36,
                 horzAlign: "center",
@@ -246,7 +246,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     useEffect(() => {
         const { bull, bear } = paletteRef.current;
 
-        const syncData = (state: any, prevState: any) => {
+        const syncData = (state: TradingStore, prevState: TradingStore) => {
             const candleSeries = candleSeriesRef.current;
             const volumeSeries = volumeSeriesRef.current;
             if (!candleSeries || !volumeSeries) return;
@@ -307,7 +307,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         };
 
         const currentState = useTradingStore.getState();
-        syncData(currentState, { candles: [], chartTimeframe: currentState.chartTimeframe });
+        syncData(currentState, { candles: [], chartTimeframe: currentState.chartTimeframe } as unknown as TradingStore);
 
         const unsubscribe = useTradingStore.subscribe(syncData);
 
@@ -318,7 +318,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     useEffect(() => {
         let vwapLine: IPriceLine | null = null;
 
-        const syncVwap = (state: any, prevState: any = {}) => {
+        const syncVwap = (state: TradingStore, prevState: TradingStore) => {
             if (
                 prevState &&
                 state.vwap === prevState.vwap
@@ -345,7 +345,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             }
         };
 
-        syncVwap(useTradingStore.getState());
+        syncVwap(useTradingStore.getState(), {} as TradingStore);
         const unsubscribe = useTradingStore.subscribe(syncVwap);
         
         return () => { unsubscribe(); };
@@ -355,12 +355,12 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     useEffect(() => {
         const { bull, bear } = paletteRef.current;
 
-        const syncMarkers = (state: any, prevState: any) => {
+        const syncMarkers = (state: TradingStore, prevState: TradingStore) => {
             if (prevState.fills && state.fills === prevState.fills) return;
             const markerApi = markerApiRef.current;
             if (!markerApi) return;
 
-            const markers: SeriesMarker<Time>[] = state.fills.map((fill: any) => ({
+            const markers: SeriesMarker<Time>[] = state.fills.map((fill) => ({
                 time: fill.time,
                 position: fill.side === "buy" ? "belowBar" : "aboveBar",
                 color: fill.side === "buy" ? bull : bear,
@@ -371,7 +371,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             markerApi.setMarkers(markers);
         };
 
-        syncMarkers(useTradingStore.getState(), {});
+        syncMarkers(useTradingStore.getState(), {} as TradingStore);
         const unsubscribe = useTradingStore.subscribe(syncMarkers);
 
         return () => { unsubscribe(); };

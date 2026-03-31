@@ -20,7 +20,7 @@ export type Toast = {
   ok: boolean;
 };
 
-type TradingStore = {
+export type TradingStore = {
   fills: FillMarker[];
   equityHistory: EquityPoint[];
   chartFullscreen: boolean;

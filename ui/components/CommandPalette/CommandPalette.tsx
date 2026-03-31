@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cancelOrder, placeOrder } from "@/lib/api";
 import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
+import type { BookMode } from "@/store/tradingStore";
 import type { OrderRequest } from "@/types/ws";
 
 const TIMEFRAME_MAP: Record<string, number> = {
@@ -102,7 +103,7 @@ function parseCommand(raw: string): ParsedCommand | null {
   if (tfMatch) return { kind: "timeframe", value: tfMatch[1].toLowerCase() };
 
   const layoutMatch = s.match(/^layout\s+(tab|stacked|large)$/i);
-  if (layoutMatch) return { kind: "layout", value: layoutMatch[1].toLowerCase() as any };
+  if (layoutMatch) return { kind: "layout", value: layoutMatch[1].toLowerCase() as BookMode };
 
   if (/^help$/i.test(s)) return { kind: "help" };
 
@@ -458,7 +459,7 @@ export default function CommandPalette({ open, onClose }: Props) {
           />
 
           {busy && (
-            <span className="shrink-0 animate-pulse font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">
+            <span className="shrink-0 animate-pulse font-mono text-micro uppercase tracking-[0.12em] text-text-muted">
               sending
             </span>
           )}
@@ -590,7 +591,7 @@ export default function CommandPalette({ open, onClose }: Props) {
 
         {/* ── Footer keyboard hints ── */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="flex items-center gap-3 border-t border-border px-3 py-1.5 font-mono text-[10px] text-text-muted">
+          <div className="flex items-center gap-3 border-t border-border px-3 py-1.5 font-mono text-micro text-text-muted">
             <span>
               <kbd className="rounded-xs border border-border px-1 text-[9px]">
                 ↑↓

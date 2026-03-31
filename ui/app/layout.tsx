@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,11 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "SYNTHETIC-BULL Trading Terminal",
   description: "Hyperliquid-inspired trading desk for OpenSoft 2026",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

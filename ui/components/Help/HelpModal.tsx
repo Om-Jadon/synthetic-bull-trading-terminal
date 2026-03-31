@@ -77,6 +77,7 @@ export default function HelpModal() {
             Terminal Shortcuts
           </h2>
           <button
+            type="button"
             onClick={() => setHelpOpen(false)}
             className="flex h-6 w-6 items-center justify-center rounded-xs text-text-muted transition-colors hover:bg-bg-primary hover:text-text-primary"
             aria-label="Close help"
@@ -112,7 +113,7 @@ export default function HelpModal() {
 
         <div className="border-t border-border bg-bg-row/50 px-4 py-3 text-center">
           <p className="font-mono text-[10px] text-text-muted/60">
-            NextBull Trading Terminal v0.1.0
+            SYNTHETIC-BULL Trading Terminal v0.1.0
           </p>
         </div>
       </div>
