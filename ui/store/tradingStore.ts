@@ -212,10 +212,17 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
 
   setEquityHistory: (points) =>
     set({
-      equityHistory: points.map((p) => ({
-        time: toUtcTimestamp(p.ts),
-        value: p.value,
-      })),
+      equityHistory: (() => {
+        // Deduplicate by second — keep last value per second to satisfy
+        // lightweight-charts requirement of strictly increasing timestamps
+        const seen = new Map<number, number>();
+        for (const p of points) {
+          seen.set(toUtcTimestamp(p.ts), p.value);
+        }
+        return Array.from(seen.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([time, value]) => ({ time: time as UTCTimestamp, value }));
+      })(),
     }),
 
   setFills: (fills) =>

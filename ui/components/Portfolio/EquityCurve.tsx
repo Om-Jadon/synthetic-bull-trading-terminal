@@ -28,6 +28,8 @@ export default function EquityCurve() {
 
         const chart = createChart(container, {
             layout: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ...({ attributionLogo: false } as any),
                 background: { type: ColorType.Solid, color: "transparent" },
                 textColor: C.textMuted,
                 fontFamily: "var(--font-jetbrains)",
@@ -111,8 +113,8 @@ export default function EquityCurve() {
             <div className="relative h-full min-h-[60px]">
                 <div ref={containerRef} className="h-full w-full" />
                 {!snapshotReady && (
-                    <div className="absolute inset-0 grid place-items-center bg-bg-panel/80 font-mono text-[10px] uppercase tracking-[0.1em] text-text-muted">
-                        Waiting
+                    <div className="absolute inset-0 grid place-items-center bg-bg-panel/80 font-mono text-micro uppercase tracking-widest text-text-muted">
+                        Connecting
                     </div>
                 )}
             </div>
