@@ -27,7 +27,7 @@ ui/                         Next.js 15 frontend — trading terminal UI
   types/ws.ts               TypeScript types for all WS messages
   README.md                 Frontend documentation
 
-compose.yaml                Docker Compose — runs both services
+docker-compose.yaml         Docker Compose — runs both services
 .env.example                Environment variable template
 docs/                       Design documents and specs
 CLAUDE.md                   AI context for this codebase
@@ -39,7 +39,7 @@ CLAUDE.md                   AI context for this codebase
 
 ```bash
 cp .env.example .env
-docker compose up --build
+docker-compose up --build
 ```
 
 - Frontend: `http://localhost:3000`

@@ -54,7 +54,7 @@ Run from the repository root (not from the `backend` folder):
 
 ```bash
 cp .env.example .env
-docker compose up --build backend
+docker-compose up --build backend
 ```
 
 What this does:
@@ -387,13 +387,13 @@ Why this is good practice:
 - fewer unnecessary tools in runtime container
 - non-root runtime user by default
 
-The project-level `compose.yaml` defines a `backend` service and reads environment variables from `.env`.
+The project-level `docker-compose.yaml` defines a `backend` service and reads environment variables from `.env`.
 
 ## Troubleshooting
 
 ### Port 8080 already in use
 
-Set a different host port mapping in `compose.yaml` or stop the process using 8080.
+Set a different host port mapping in `docker-compose.yaml` or stop the process using 8080.
 
 ### Health endpoint returns `503 not ready`
 

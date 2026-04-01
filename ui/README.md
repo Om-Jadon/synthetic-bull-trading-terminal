@@ -5,8 +5,8 @@ Next.js 15 frontend for the NEXTBULL trading terminal. Hyperliquid-inspired layo
 ## Quick Start
 
 ```bash
-# From repository root (recommended — uses compose.yaml)
-docker compose up --build
+# From repository root (recommended)
+docker-compose up --build
 
 # Local dev
 cd ui
@@ -44,13 +44,18 @@ Single Zustand store for all live market state. Key slices:
 | `botEquityHistory` | `Map<string, EquityPoint[]>` | Per-bot equity curves (capped at 600 each) |
 | `candles` | `CandleData[]` | 1 s OHLCV candles |
 
+Key actions beyond simple setters:
+
+- **`seedBotSnapshots(portfolios, histories)`** — atomically hydrates both `botPortfolios` and `botEquityHistory` from snapshot data on connect/reconnect. Normalizes timestamps and caps histories at 600 points.
+- **`setBotPortfolio(p)`** — deduplicates equity points and appends live portfolio updates.
+
 **Hot path rule:** price tickers and order book updates use DOM refs (`useRef`) and direct DOM mutation — never `setState`. Avoids React re-render on every WebSocket tick.
 
 ### WebSocket — `hooks/useWebSocket.ts`
 
 Single persistent connection. Reconnects automatically on close. Handles two message categories:
 
-1. **`snapshot`** (on connect) — bulk-sets all initial state in one store update
+1. **`snapshot`** (on connect) — bulk-sets all initial state, then calls `seedBotSnapshots(bot_portfolios, bot_equity_history)` so bot equity curves are immediately populated after refresh/reconnect
 2. **Live messages** — routed by `type`:
    - `book` → `setOrderBook`
    - `trade` → `addTrade`
@@ -64,7 +69,7 @@ Single persistent connection. Reconnects automatically on close. Handles two mes
 
 All WebSocket message shapes as TypeScript types. Key types:
 
-- `SnapshotMsg` — full initial state on connect
+- `SnapshotMsg` — full initial state on connect; includes optional `bot_portfolios?: PortfolioMsg[]` and `bot_equity_history?: Record<string, WsEquityPoint[]>` for bot hydration
 - `OrderBookMsg` — `bids`/`asks` as `[price, size][]`
 - `PortfolioMsg` — includes `user_id`, `recent_fills`, `fill_count`
 - `BotFill` — `{ts, price, side, size}` — bot fill records
