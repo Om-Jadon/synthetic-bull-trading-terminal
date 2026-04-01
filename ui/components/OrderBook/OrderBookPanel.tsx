@@ -57,21 +57,21 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
         const askLadder = generateLadder(roundedMid, bookGroupTick, TARGET_ROWS, 1).reverse();
         const bidLadder = generateLadder(roundedMid, bookGroupTick, TARGET_ROWS, -1);
 
-        let runningAskTotal = 0;
-        const asksWithTotal = askLadder.map((price) => {
+        const asksWithTotal = askLadder.reduce<{ price: number; size: number; total: number }[]>((rows, price) => {
             const size = askMap.get(price) || 0;
-            runningAskTotal += size;
-            return { price, size, total: runningAskTotal };
-        });
+            const prevTotal = rows.length > 0 ? rows[rows.length - 1].total : 0;
+            return [...rows, { price, size, total: prevTotal + size }];
+        }, []);
 
-        let runningBidTotal = 0;
-        const bidsWithTotal = bidLadder.map((price) => {
+        const bidsWithTotal = bidLadder.reduce<{ price: number; size: number; total: number }[]>((rows, price) => {
             const size = bidMap.get(price) || 0;
-            runningBidTotal += size;
-            return { price, size, total: runningBidTotal };
-        });
+            const prevTotal = rows.length > 0 ? rows[rows.length - 1].total : 0;
+            return [...rows, { price, size, total: prevTotal + size }];
+        }, []);
 
-        const mTotal = Math.max(1, runningAskTotal, runningBidTotal);
+        const finalAskTotal = asksWithTotal.length > 0 ? asksWithTotal[asksWithTotal.length - 1].total : 0;
+        const finalBidTotal = bidsWithTotal.length > 0 ? bidsWithTotal[bidsWithTotal.length - 1].total : 0;
+        const mTotal = Math.max(1, finalAskTotal, finalBidTotal);
 
         return { askRows: asksWithTotal, bidRows: bidsWithTotal, maxTotal: mTotal };
     }, [bids, asks, bestBid, bestAsk, bookGroupTick]);
@@ -100,10 +100,10 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
                         <button
                             type="button"
                             onClick={() => setIsGroupOpen(!isGroupOpen)}
-                            aria-label="Grouping selector"
+                            aria-label="Order book price grouping"
                             aria-haspopup="listbox"
                             aria-expanded={isGroupOpen}
-                            className="flex items-center gap-1 px-1.5 py-0.5 font-mono text-xs font-medium text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none"
+                            className="touch-target-compact flex items-center gap-1 px-1.5 py-0.5 font-mono text-xs font-medium text-text-muted transition-colors hover:text-text-primary"
                         >
                             <span>{bookGroupTick.toFixed(2)}</span>
                             <svg
@@ -133,11 +133,10 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
                                             setBookGroupTick(tick);
                                             setIsGroupOpen(false);
                                         }}
-                                        className={`flex w-full items-center justify-end rounded-xs px-2 py-1.5 font-mono text-micro transition-colors ${
-                                            bookGroupTick === tick
-                                                ? "bg-brand/10 text-brand font-semibold"
-                                                : "text-text-muted hover:bg-bg-row hover:text-text-primary"
-                                        }`}
+                                        className={`touch-target-compact flex w-full items-center justify-end rounded-xs px-2 py-1.5 font-mono text-micro transition-colors ${bookGroupTick === tick
+                                            ? "bg-brand/10 text-brand font-semibold"
+                                            : "text-text-muted hover:bg-bg-row hover:text-text-primary"
+                                            }`}
                                     >
                                         {tick.toFixed(2)}
                                     </button>

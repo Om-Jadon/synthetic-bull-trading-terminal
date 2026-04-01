@@ -102,6 +102,8 @@ export type SnapshotMsg = {
   book: { bids: [number, number][]; asks: [number, number][]; ts: number };
   candles: Candle[] | null;
   portfolio: PortfolioMsg;
+  bot_portfolios?: PortfolioMsg[] | null;
+  bot_equity_history?: Record<string, WsEquityPoint[]> | null;
   stats: StatsMsg | null;
   recent_trades: RecentTrade[] | null;
   equity_history: WsEquityPoint[] | null;

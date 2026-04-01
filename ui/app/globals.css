@@ -286,7 +286,6 @@ textarea:focus-visible,
   animation: slide-in 80ms cubic-bezier(0.25, 0, 0.1, 1);
 }
 
-
 .book-row-exit {
   animation: book-row-exit 400ms ease-out forwards;
   pointer-events: none;
@@ -570,9 +569,20 @@ textarea:focus-visible,
   }
 }
 
+@keyframes market-open-life {
+  0%,
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .market-flash-scanning {
   position: relative;
   overflow: hidden;
+  animation: market-open-life 2400ms cubic-bezier(0.25, 0, 0.1, 1) forwards;
 }
 
 .market-flash-scanning::after {
@@ -594,7 +604,10 @@ textarea:focus-visible,
 
 .btn-tactile {
   cursor: pointer;
-  transition: all 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-property:
+    transform, opacity, background-color, color, border-color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .btn-tactile:active {
@@ -632,4 +645,3 @@ textarea:focus-visible,
     min-height: 44px;
   }
 }
-

@@ -105,6 +105,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     const setChartTimeframe = useTradingStore((state) => state.setChartTimeframe);
     const chartFullscreen = useTradingStore((state) => state.chartFullscreen);
     const paletteRef = useRef<ChartPalette>(DEFAULT_PALETTE);
+    type ChartOptionsArg = Parameters<IChartApi["applyOptions"]>[0];
 
     const handleFullscreenToggle = () => {
         if (onFullscreenToggle) {
@@ -114,9 +115,9 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
         // Fallback keeps the control functional in isolated renders/tests.
         if (chartFullscreen) {
-            document.exitFullscreen?.().catch(() => {});
+            document.exitFullscreen?.().catch(() => { });
         } else {
-            document.documentElement.requestFullscreen?.().catch(() => {});
+            document.documentElement.requestFullscreen?.().catch(() => { });
         }
     };
 
@@ -198,7 +199,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                 horzAlign: "center",
                 vertAlign: "center",
             },
-        } as any);
+        } as ChartOptionsArg);
 
         const candleSeries = chart.addSeries(CandlestickSeries, {
             upColor: colors.bull,
@@ -334,7 +335,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
             const vwap = state.vwap > 0 ? state.vwap : null;
             if (vwap === null) return;
-            
+
             if (!vwapLine) {
                 vwapLine = candleSeries.createPriceLine({
                     price: vwap,
@@ -351,7 +352,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
         syncVwap(useTradingStore.getState(), {} as TradingStore);
         const unsubscribe = useTradingStore.subscribe(syncVwap);
-        
+
         return () => { unsubscribe(); };
     }, []);
 
@@ -383,7 +384,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
     return (
         <section className="panel grid h-full min-w-0 min-h-[clamp(200px,52vh,480px)] grid-rows-[auto_1fr]">
-            <div className="panel-title flex items-center justify-between border-b border-border bg-bg-panel px-3 py-1.5 min-h-[36px] max-sm:px-2 max-sm:py-1">
+            <div className="panel-title flex items-center justify-between border-b border-border bg-bg-panel px-3 py-1.5 min-h-9 max-sm:px-2 max-sm:py-1">
                 <div className="flex gap-0.5" role="group" aria-label="Chart timeframe">
                     {TIMEFRAMES.map((tf) => (
                         <button
@@ -391,7 +392,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                             type="button"
                             onClick={() => setChartTimeframe(tf.seconds)}
                             aria-pressed={tf.seconds === chartTimeframe}
-                            className={`touch-target-compact flex h-7 max-sm:h-8 min-w-[32px] items-center justify-center rounded-xs px-2 py-1 font-mono text-micro uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
+                            className={`touch-target-compact flex h-7 max-sm:h-8 min-w-8 items-center justify-center rounded-xs px-2 py-1 font-mono text-micro uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
                                 ? "border border-border bg-bg-row text-text-primary"
                                 : "border border-transparent text-text-muted hover:text-text-primary"
                                 }`}

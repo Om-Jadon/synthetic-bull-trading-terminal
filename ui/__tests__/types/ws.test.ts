@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { BookMsg, Candle, TradeMsg, StatsMsg, PortfolioMsg, OrderUpdateMsg } from "@/types/ws";
+import type {
+  BookMsg,
+  Candle,
+  TradeMsg,
+  StatsMsg,
+  PortfolioMsg,
+  OrderUpdateMsg,
+  SnapshotMsg,
+} from "@/types/ws";
 
 describe("WebSocket message shapes", () => {
   it("keeps candle time in seconds", () => {
@@ -21,8 +29,14 @@ describe("WebSocket message shapes", () => {
   it("matches book and trade type definitions", () => {
     const book: BookMsg = {
       type: "book",
-      bids: [[100, 5], [99.5, 10]],
-      asks: [[100.5, 3], [101, 7]],
+      bids: [
+        [100, 5],
+        [99.5, 10],
+      ],
+      asks: [
+        [100.5, 3],
+        [101, 7],
+      ],
       ts: Date.now(),
     };
 
@@ -56,6 +70,7 @@ describe("WebSocket message shapes", () => {
 
     const portfolio: PortfolioMsg = {
       type: "portfolio",
+      user_id: "human",
       cash: 10000,
       holdings: 50,
       avg_entry: 100,
@@ -67,7 +82,54 @@ describe("WebSocket message shapes", () => {
 
     expect(stats.type).toBe("stats");
     expect(portfolio.type).toBe("portfolio");
-    expect(portfolio.equity).toBe(portfolio.cash + portfolio.holdings * 105 - 10000 + 10000); // just dummy check
+    expect(portfolio.equity).toBe(
+      portfolio.cash + portfolio.holdings * 105 - 10000 + 10000,
+    ); // just dummy check
+  });
+
+  it("supports bot snapshot hydration fields", () => {
+    const snapshot: SnapshotMsg = {
+      type: "snapshot",
+      book: { bids: [[100, 1]], asks: [[101, 1]], ts: Date.now() },
+      candles: [],
+      portfolio: {
+        type: "portfolio",
+        user_id: "human",
+        cash: 100000,
+        holdings: 0,
+        avg_entry: 0,
+        unrealized_pnl: 0,
+        realized_pnl: 0,
+        equity: 100000,
+        ts: Date.now(),
+      },
+      bot_portfolios: [
+        {
+          type: "portfolio",
+          user_id: "market_maker",
+          cash: 99900,
+          holdings: 1,
+          avg_entry: 100,
+          unrealized_pnl: 5,
+          realized_pnl: 10,
+          equity: 100005,
+          ts: Date.now(),
+        },
+      ],
+      bot_equity_history: {
+        market_maker: [{ ts: Date.now(), value: 100005 }],
+      },
+      stats: null,
+      recent_trades: null,
+      equity_history: null,
+      fills: null,
+      activity_log: null,
+      open_orders: null,
+      ts: Date.now(),
+    };
+
+    expect(snapshot.bot_portfolios?.[0].user_id).toBe("market_maker");
+    expect(snapshot.bot_equity_history?.market_maker?.length).toBe(1);
   });
 
   it("matches order update type definitions", () => {

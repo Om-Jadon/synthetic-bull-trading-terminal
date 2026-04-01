@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useTradingStore } from "@/store/tradingStore";
 import type { PortfolioMsg } from "@/types/ws";
 
@@ -18,14 +18,26 @@ type BotCardProps = {
 
 function BotCard({ config, portfolio, isLast }: BotCardProps) {
   const prevEquityRef = useRef<number | null>(null);
+  const equityElRef = useRef<HTMLDivElement | null>(null);
   const equity = portfolio?.equity ?? null;
 
-  let flashClass = "";
-  if (equity !== null && prevEquityRef.current !== null) {
-    if (equity > prevEquityRef.current) flashClass = "flash-up";
-    else if (equity < prevEquityRef.current) flashClass = "flash-down";
-  }
-  if (equity !== null) prevEquityRef.current = equity;
+  useEffect(() => {
+    if (equity === null) return;
+    const previous = prevEquityRef.current;
+    prevEquityRef.current = equity;
+
+    if (previous === null) return;
+    const el = equityElRef.current;
+    if (!el) return;
+
+    const flashClass = equity > previous ? "flash-up" : equity < previous ? "flash-down" : "";
+    if (!flashClass) return;
+
+    el.classList.remove("flash-up", "flash-down");
+    // Force reflow so repeated same-direction moves can retrigger the animation class.
+    void el.offsetWidth;
+    el.classList.add(flashClass);
+  }, [equity]);
 
   const rpnl = portfolio?.realized_pnl ?? null;
   const upnl = portfolio?.unrealized_pnl ?? null;
@@ -45,7 +57,7 @@ function BotCard({ config, portfolio, isLast }: BotCardProps) {
           {config.label}
         </span>
       </div>
-      <div className={`ticker-flash font-mono text-data text-text-primary ${flashClass}`}>
+      <div ref={equityElRef} className="ticker-flash font-mono text-data text-text-primary">
         {equity !== null ? `$${equity.toFixed(2)}` : "—"}
       </div>
       <div className="grid grid-cols-2 gap-x-2 font-mono text-micro">

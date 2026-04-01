@@ -76,6 +76,10 @@ export type TradingStore = {
   botPortfolios: Map<string, PortfolioMsg>;
   botEquityHistory: Map<string, EquityPoint[]>;
   setBotPortfolio: (p: PortfolioMsg) => void;
+  seedBotSnapshots: (
+    portfolios: PortfolioMsg[],
+    histories: Record<string, WsEquityPoint[]>,
+  ) => void;
   toggleChartFullscreen: () => void;
   seedOpenOrders: (orders: WsActivityRecord[]) => void;
   trackOrderId: (orderId: string) => void;
@@ -93,6 +97,16 @@ function toUtcTimestamp(ts: number): UTCTimestamp {
   const seconds =
     ts > 1_000_000_000_000 ? Math.floor(ts / 1000) : Math.floor(ts);
   return seconds as UTCTimestamp;
+}
+
+function normalizeEquityPoints(points: WsEquityPoint[]): EquityPoint[] {
+  const seen = new Map<number, number>();
+  for (const p of points) {
+    seen.set(toUtcTimestamp(p.ts), p.value);
+  }
+  return Array.from(seen.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([time, value]) => ({ time: time as UTCTimestamp, value }));
 }
 
 const LS_KEYS = {
@@ -177,7 +191,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 
   setSnapshotReady: (snapshotReady) =>
-    set((state) =>
+    set(() =>
       snapshotReady
         ? { snapshotReady }
         : {
@@ -217,17 +231,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
 
   setEquityHistory: (points) =>
     set({
-      equityHistory: (() => {
-        // Deduplicate by second — keep last value per second to satisfy
-        // lightweight-charts requirement of strictly increasing timestamps
-        const seen = new Map<number, number>();
-        for (const p of points) {
-          seen.set(toUtcTimestamp(p.ts), p.value);
-        }
-        return Array.from(seen.entries())
-          .sort((a, b) => a[0] - b[0])
-          .map(([time, value]) => ({ time: time as UTCTimestamp, value }));
-      })(),
+      equityHistory: normalizeEquityPoints(points),
     }),
 
   setFills: (fills) =>
@@ -307,7 +311,6 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       };
     }),
 
-
   setBotPortfolio: (p) =>
     set((state) => {
       const botPortfolios = new Map(state.botPortfolios);
@@ -326,6 +329,21 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
         next = [...prev, point];
       }
       botEquityHistory.set(p.user_id, next.slice(-600));
+
+      return { botPortfolios, botEquityHistory };
+    }),
+
+  seedBotSnapshots: (portfolios, histories) =>
+    set(() => {
+      const botPortfolios = new Map<string, PortfolioMsg>();
+      for (const p of portfolios) {
+        botPortfolios.set(p.user_id, p);
+      }
+
+      const botEquityHistory = new Map<string, EquityPoint[]>();
+      for (const [userId, points] of Object.entries(histories)) {
+        botEquityHistory.set(userId, normalizeEquityPoints(points).slice(-600));
+      }
 
       return { botPortfolios, botEquityHistory };
     }),
@@ -398,6 +416,6 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       };
     });
   },
-  setPendingPriceFill: (price, side) => set({ pendingPriceFill: { price, side } }),
+  setPendingPriceFill: (price, side) =>
+    set({ pendingPriceFill: { price, side } }),
 }));
-

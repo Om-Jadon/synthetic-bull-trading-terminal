@@ -21,10 +21,14 @@ import (
 
 func main() {
 	cfg := generator.Config{
-		S0:     envFloat("GBM_S0", 100.0),
-		Mu:     envFloat("GBM_MU", 0.0),
-		Sigma:  envFloat("GBM_SIGMA", 0.02),
-		TickMs: envInt("GBM_TICK_MS", 50),
+		S0:               envFloat("GBM_S0", 100.0),
+		Mu:               envFloat("GBM_MU", 0.0),
+		Sigma:            envFloat("GBM_SIGMA", 0.015),
+		TickMs:           envInt("GBM_TICK_MS", 10),
+		TargetMsgsPerSec: envInt("GBM_TARGET_MSGS_PER_SEC", 200),
+		CancelShare:      envFloat("GBM_CANCEL_SHARE", 0.10),
+		MarketOrderShare: envFloat("GBM_MARKET_ORDER_SHARE", 0.05),
+		MaxResting:       envInt("GBM_MAX_RESTING", 600),
 	}
 	port := envStr("BACKEND_PORT", "8080")
 
@@ -49,6 +53,15 @@ func main() {
 		bids, asks := matcher.Depth(150)
 		currentStats := candleStore.Stats()
 		humanPortfolio := registry.Get("human")
+		botPortfolios := make([]map[string]any, 0, 2)
+		botEquityHistory := make(map[string]any, 2)
+		for userID, p := range registry.All() {
+			if userID == "human" {
+				continue
+			}
+			botPortfolios = append(botPortfolios, p.State(currentStats.LastPrice))
+			botEquityHistory[userID] = p.EquityHistory()
+		}
 		snap := map[string]any{
 			"type": "snapshot",
 			"book": map[string]any{
@@ -72,6 +85,8 @@ func main() {
 			},
 			"recent_trades":  candleStore.RecentTrades(),
 			"equity_history": humanPortfolio.EquityHistory(),
+			"bot_portfolios": botPortfolios,
+			"bot_equity_history": botEquityHistory,
 			"fills":          humanPortfolio.FillLog(),
 			"activity_log":   humanPortfolio.ActivityLog(),
 			"open_orders":    matcher.OpenHumanOrders(),

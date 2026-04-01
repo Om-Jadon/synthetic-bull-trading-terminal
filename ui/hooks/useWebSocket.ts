@@ -79,6 +79,12 @@ function seedFromSnapshot(snapshot: SnapshotMsg): void {
   if (snapshot.open_orders?.length) {
     store.seedOpenOrders(snapshot.open_orders);
   }
+  if (snapshot.bot_portfolios?.length || snapshot.bot_equity_history) {
+    store.seedBotSnapshots(
+      snapshot.bot_portfolios ?? [],
+      snapshot.bot_equity_history ?? {},
+    );
+  }
   store.setSnapshotReady(true);
 }
 
@@ -130,9 +136,14 @@ export function useWebSocket({
         // Process snapshot first — ensures aggregator is seeded before any trades
         // in the same batch (backend may send trades before snapshot due to timing)
         const snapshotIdx = drained.findIndex((m) => m.type === "snapshot");
-        const sorted = snapshotIdx <= 0
-          ? drained
-          : [drained[snapshotIdx], ...drained.slice(0, snapshotIdx), ...drained.slice(snapshotIdx + 1)];
+        const sorted =
+          snapshotIdx <= 0
+            ? drained
+            : [
+                drained[snapshotIdx],
+                ...drained.slice(0, snapshotIdx),
+                ...drained.slice(snapshotIdx + 1),
+              ];
 
         for (const message of sorted) {
           switch (message.type) {
@@ -151,7 +162,13 @@ export function useWebSocket({
               break;
             case "stats":
               store.setStats(message);
-              syncTickerDom(message, previousPriceRef, priceRef, priceFlashRef, directionRef);
+              syncTickerDom(
+                message,
+                previousPriceRef,
+                priceRef,
+                priceFlashRef,
+                directionRef,
+              );
               break;
             case "portfolio":
               if (!message.user_id || message.user_id === "human") {
@@ -166,7 +183,10 @@ export function useWebSocket({
               if (isHuman) {
                 if (message.status === "filled") {
                   sounds.orderFill();
-                  store.addToast(`${message.side.toUpperCase()} · Filled`, true);
+                  store.addToast(
+                    `${message.side.toUpperCase()} · Filled`,
+                    true,
+                  );
                 } else if (message.status === "cancelled") sounds.orderCancel();
                 // "partial" status intentionally plays no sound to avoid audio spam on highly fragmented fills
               }
@@ -243,10 +263,12 @@ export function useWebSocket({
 
     return () => {
       cancelled = true;
-      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
-      if (reconnectRef.current !== null) window.clearTimeout(reconnectRef.current);
+      if (frameRef.current !== null)
+        window.cancelAnimationFrame(frameRef.current);
+      if (reconnectRef.current !== null)
+        window.clearTimeout(reconnectRef.current);
       if (statsTimerRef.current !== null) clearInterval(statsTimerRef.current);
       socket?.close();
     };
-  }, [aggregator]); // priceRef, priceFlashRef, and directionRef are stable refs and don't need to be in deps
+  }, [aggregator, directionRef, priceFlashRef, priceRef]);
 }

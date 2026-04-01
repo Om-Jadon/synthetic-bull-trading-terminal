@@ -11,14 +11,16 @@ This README is written for readers who are new to Docker and Go.
 
 ## What You Are Running
 
-When the backend starts, four main parts run together:
+When the backend starts, six main parts run together:
 
 1. HTTP server on port 8080 by default
 2. WebSocket hub for real-time broadcasting to clients
 3. Matching engine loop (single goroutine)
-4. GBM generator that injects synthetic buy/sell limit orders
+4. GBM generator that injects synthetic limit, cancel, and market-order flow
+5. Market Maker bot (inventory-skewed quote placement)
+6. Alpha Bot (EMA trend-confirmation strategy gated by RSI momentum)
 
-All orders (from users and from the generator) are pushed into one shared channel and processed in sequence by the matcher.
+All orders (from the human user, the generator, and both bots) are pushed into one shared channel and processed in sequence by the matcher. Each participant has an isolated portfolio. See [`internal/bots/README.md`](internal/bots/README.md) for full bot documentation.
 
 ## Prerequisites
 
@@ -96,33 +98,16 @@ Expected response:
 ## Architecture (Code-Verified)
 
 ```text
-            +-----------------------------+
-            |  GBM Generator (goroutine) |
-            +--------------+--------------+
-                           |
-                           v
-      +-------------------------------------------+
-      | inChan (buffered channel, size = 1024)    |
-      +-------------------+-----------------------+
-                          |
-                          v
-            +-----------------------------+
-            | Matcher (single goroutine)  |
-            | owns OrderBook + matching   |
-            +-------------+---------------+
-                          |
-                          v
-            +-----------------------------+
-            | WebSocket Hub               |
-            | broadcasts pre-serialized   |
-            | JSON messages to clients    |
-            +-----------------------------+
-
-HTTP POST /orders and DELETE /orders/{id}
-also push into the same inChan.
+  GBM Generator ──┐
+  Market Maker  ──┼──► inChan (buffered, 1024) ──► Matcher ──► WebSocket Hub
+  Alpha Bot     ──┤                                    │
+  HTTP /orders  ──┘                                    │
+                                                       ▼
+                                              PortfolioRegistry
+                                          (human / market_maker / alpha_bot)
 ```
 
-Design note: the matcher is intentionally single-threaded for deterministic price-time priority and to avoid lock contention on the hot path.
+Design note: the matcher is intentionally single-threaded for deterministic price-time priority and to avoid lock contention on the hot path. Bots run in their own goroutines and communicate only through `inChan`.
 
 ## Folder Layout
 
@@ -131,6 +116,12 @@ backend/
 ├── cmd/server/main.go
 ├── internal/
 │   ├── api/handlers.go
+│   ├── bots/
+│   │   ├── alpha_bot.go
+│   │   ├── indicators.go
+│   │   ├── indicators_test.go
+│   │   ├── market_maker.go
+│   │   └── README.md          ← bot documentation
 │   ├── engine/
 │   │   ├── candles.go
 │   │   ├── candles_test.go
@@ -140,6 +131,8 @@ backend/
 │   │   ├── orderbook_test.go
 │   │   ├── portfolio.go
 │   │   ├── portfolio_test.go
+│   │   ├── registry.go
+│   │   ├── registry_test.go
 │   │   └── types.go
 │   ├── generator/gbm.go
 │   └── hub/hub.go
@@ -265,11 +258,14 @@ Contains initial state:
 - `book`: top bids/asks
 - `candles`: recent candles (up to 300)
 - `portfolio`: human portfolio snapshot
+- `bot_portfolios`: latest bot portfolio snapshots (`market_maker`, `alpha_bot`)
 - `stats`: current session stats (same shape as a `stats` message; prevents 0-flash on reconnect)
 - `recent_trades`: last up to 50 trades (same fields as `trade` messages, no `id`)
 - `equity_history`: up to 600 equity curve points (`{ts, value}`)
-- `fills`: up to 200 human fill records (`{ts, price, side}`)
+- `bot_equity_history`: per-bot equity history map (`user_id -> [{ts, value}]`)
+- `fills`: up to 200 human fill records (`{ts, price, side, size}`)
 - `activity_log`: up to 200 order lifecycle records (same fields as `order_update` messages)
+- `open_orders`: currently open human orders
 
 ### 2. `book` (every 100ms)
 
@@ -314,16 +310,21 @@ Statuses used by the matcher:
 
 Emitted for both taker fills (immediate) and maker fills (when a resting human order is hit by a system taker). Cancel updates include the original `price` and `side` of the order.
 
-### 6. `portfolio` (after human fills)
+### 6. `portfolio` (every second + after human fills)
+
+Broadcast for all three participants (`human`, `market_maker`, `alpha_bot`). Route by `user_id`.
 
 Includes:
 
+- `user_id` — `"human"`, `"market_maker"`, or `"alpha_bot"`
 - `cash`
 - `holdings` — positive for long positions, negative for short positions, zero when flat
 - `avg_entry`
 - `unrealized_pnl`
 - `realized_pnl`
 - `equity`
+- `recent_fills` — last 15 fills `[{ts, price, side, size}]`
+- `fill_count` — lifetime fill count (not capped)
 
 Time fields:
 
@@ -334,13 +335,17 @@ Time fields:
 
 These backend variables are consumed by `cmd/server/main.go`:
 
-| Variable       | Default | Meaning                                 |
-| -------------- | ------- | --------------------------------------- |
-| `BACKEND_PORT` | `8080`  | HTTP/WS listen port                     |
-| `GBM_S0`       | `100.0` | Initial synthetic price                 |
-| `GBM_MU`       | `0.0`   | GBM drift                               |
-| `GBM_SIGMA`    | `0.02`  | GBM volatility                          |
-| `GBM_TICK_MS`  | `50`    | Generator tick interval in milliseconds |
+| Variable                  | Default | Meaning                                        |
+| ------------------------- | ------- | ---------------------------------------------- |
+| `BACKEND_PORT`            | `8080`  | HTTP/WS listen port                            |
+| `GBM_S0`                  | `100.0` | Initial synthetic price                        |
+| `GBM_MU`                  | `0.0`   | GBM drift baseline (neutral by default)        |
+| `GBM_SIGMA`               | `0.015` | GBM volatility                                 |
+| `GBM_TICK_MS`             | `10`    | Generator tick interval in milliseconds        |
+| `GBM_TARGET_MSGS_PER_SEC` | `200`   | Total synthetic message budget per second      |
+| `GBM_CANCEL_SHARE`        | `0.10`  | Share of synthetic flow used for cancels       |
+| `GBM_MARKET_ORDER_SHARE`  | `0.05`  | Share of synthetic flow used for market orders |
+| `GBM_MAX_RESTING`         | `600`   | Cap for tracked synthetic resting IDs          |
 
 The repository root `.env.example` already includes these values.
 
@@ -366,6 +371,8 @@ Current test files in this folder cover:
 - portfolio behaviors (long/short positions, P&L, position reversals, equity, equity history, fill log, activity log)
 - candle store behaviors (VWAP computation, trade count)
 - API handlers (cash validation, short selling)
+- GBM generator behaviors (target msg rate, cancel/market flow presence)
+- alpha signal behaviors (trend/momentum triggers and guard conditions)
 
 ## Docker Notes (Beginner-Friendly)
 

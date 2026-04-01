@@ -152,6 +152,8 @@ export default function CommandPalette({ open, onClose }: Props) {
 
   const suggestions = filterSuggestions(query);
   const parsed = parseCommand(query);
+  const effectiveSelectedIdx =
+    suggestions.length === 0 ? 0 : Math.min(selectedIdx, suggestions.length - 1);
 
   // Clear any pending close timer on unmount
   useEffect(() => {
@@ -160,7 +162,7 @@ export default function CommandPalette({ open, onClose }: Props) {
     };
   }, []);
 
-  // On open: save focus, reset state, focus input. On close: restore focus.
+  // On open: save focus and focus input. On close: restore focus.
   useEffect(() => {
     if (!open) {
       previousFocusRef.current?.focus();
@@ -170,10 +172,6 @@ export default function CommandPalette({ open, onClose }: Props) {
 
     previousFocusRef.current = document.activeElement as HTMLElement;
 
-    setQuery("");
-    setSelectedIdx(0);
-    setFeedback(null);
-    setBusy(false);
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
 
     requestAnimationFrame(() => inputRef.current?.focus());
@@ -191,13 +189,6 @@ export default function CommandPalette({ open, onClose }: Props) {
     };
   }, [open]);
 
-  // Clamp selected index when suggestion list length changes
-  useEffect(() => {
-    setSelectedIdx((i) =>
-      suggestions.length === 0 ? 0 : Math.min(i, suggestions.length - 1),
-    );
-  }, [suggestions.length]);
-
   // Scroll selected item into view on arrow navigation
   useEffect(() => {
     if (!listRef.current) return;
@@ -205,7 +196,7 @@ export default function CommandPalette({ open, onClose }: Props) {
       '[aria-selected="true"]',
     );
     el?.scrollIntoView({ block: "nearest" });
-  }, [selectedIdx]);
+  }, [effectiveSelectedIdx]);
 
   const scheduleClose = useCallback(
     (delay: number) => {
@@ -327,7 +318,7 @@ export default function CommandPalette({ open, onClose }: Props) {
   ]);
 
   const fillSelected = useCallback(() => {
-    const sug = suggestions[selectedIdx];
+    const sug = suggestions[effectiveSelectedIdx];
     if (!sug) return;
     setQuery(syntaxBase(sug));
     requestAnimationFrame(() => {
@@ -336,7 +327,7 @@ export default function CommandPalette({ open, onClose }: Props) {
       input.focus();
       input.setSelectionRange(input.value.length, input.value.length);
     });
-  }, [suggestions, selectedIdx]);
+  }, [suggestions, effectiveSelectedIdx]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -348,7 +339,7 @@ export default function CommandPalette({ open, onClose }: Props) {
 
         case "ArrowDown":
           e.preventDefault();
-          setSelectedIdx((i) => Math.min(i + 1, suggestions.length - 1));
+          setSelectedIdx((i) => Math.min(i + 1, Math.max(0, suggestions.length - 1)));
           break;
 
         case "ArrowUp":
@@ -366,14 +357,14 @@ export default function CommandPalette({ open, onClose }: Props) {
           e.preventDefault();
           if (parsed) {
             void execute();
-          } else if (suggestions[selectedIdx]) {
+          } else if (suggestions[effectiveSelectedIdx]) {
             // Fill the selected suggestion into the input
-            setQuery(syntaxBase(suggestions[selectedIdx]));
+            setQuery(syntaxBase(suggestions[effectiveSelectedIdx]));
           }
           break;
       }
     },
-    [onClose, suggestions, parsed, selectedIdx, fillSelected, execute],
+    [onClose, suggestions, parsed, effectiveSelectedIdx, fillSelected, execute],
   );
 
   if (!open) return null;
@@ -450,12 +441,12 @@ export default function CommandPalette({ open, onClose }: Props) {
             aria-haspopup="listbox"
             aria-controls="palette-list"
             aria-activedescendant={
-              suggestions[selectedIdx]
-                ? `palette-item-${selectedIdx}`
+              suggestions[effectiveSelectedIdx]
+                ? `palette-item-${effectiveSelectedIdx}`
                 : undefined
             }
             aria-label="Trading command input"
-            className="min-w-0 flex-1 bg-transparent font-mono text-body text-text-primary placeholder:text-text-muted/50 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent font-mono text-body text-text-primary placeholder:text-text-muted/50"
           />
 
           {busy && (
@@ -552,7 +543,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                   key={cmd.syntax}
                   id={`palette-item-${i}`}
                   role="option"
-                  aria-selected={i === selectedIdx}
+                  aria-selected={i === effectiveSelectedIdx}
                   onClick={() => {
                     // "help" has no args — treat click as execute
                     const p = parseCommand(cmd.syntax);
@@ -565,7 +556,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                     }
                     inputRef.current?.focus();
                   }}
-                  className={`flex cursor-pointer select-none items-center justify-between px-3 py-2 transition-colors duration-75 ${i === selectedIdx
+                  className={`flex cursor-pointer select-none items-center justify-between px-3 py-2 transition-colors duration-75 ${i === effectiveSelectedIdx
                     ? "border-l-2 border-bull bg-neutral-hover"
                     : "border-l-2 border-transparent hover:bg-hover-overlay"
                     }`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
@@ -19,11 +19,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     const connectionStatus = useTradingStore((state) => state.connectionStatus);
     const wsStats = useTradingStore((state) => state.wsStats);
 
-    const [muted, setMutedState] = useState(false);
-
-    useEffect(() => {
-        setMutedState(sounds.loadMutePreference());
-    }, []);
+    const [muted, setMutedState] = useState(() => sounds.loadMutePreference());
 
     const toggleMute = () => {
         const next = !muted;
@@ -142,13 +138,12 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         className={`inline-flex items-center gap-1.5 rounded-xs border border-border bg-bg-row px-2 py-0.5 text-micro uppercase tracking-widest ${statusTone}`}
                     >
                         <span
-                            className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${
-                                connectionStatus === "open"
+                            className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${connectionStatus === "open"
                                     ? "bg-bull"
                                     : connectionStatus === "closed"
                                         ? "bg-bear"
                                         : "bg-text-muted"
-                            }`}
+                                }`}
                         />
                         {connectionStatus}
                     </span>

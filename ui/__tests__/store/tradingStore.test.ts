@@ -72,6 +72,38 @@ describe("tradingStore", () => {
     expect(useTradingStore.getState().openOrders.size).toBe(1);
   });
 
+  it("hydrates bot portfolios and equity history from snapshot payload", () => {
+    const store = useTradingStore.getState();
+
+    store.seedBotSnapshots(
+      [
+        {
+          type: "portfolio",
+          user_id: "market_maker",
+          cash: 99500,
+          holdings: 5,
+          avg_entry: 100,
+          unrealized_pnl: 10,
+          realized_pnl: 20,
+          equity: 100010,
+          fill_count: 15,
+          ts: 1_710_000_002_000,
+        },
+      ],
+      {
+        market_maker: [
+          { ts: 1_710_000_000_000, value: 100000 },
+          { ts: 1_710_000_001_000, value: 100005 },
+          { ts: 1_710_000_002_000, value: 100010 },
+        ],
+      },
+    );
+
+    const next = useTradingStore.getState();
+    expect(next.botPortfolios.get("market_maker")?.equity).toBe(100010);
+    expect(next.botEquityHistory.get("market_maker")?.length).toBe(3);
+  });
+
   describe("VWAP from backend stats", () => {
     it("is 0 initially", () => {
       expect(useTradingStore.getState().vwap).toBe(0);
@@ -94,7 +126,11 @@ describe("tradingStore", () => {
     });
 
     it("resets to 0 on disconnect", () => {
-      useTradingStore.setState({ vwap: 103.5, tradeCount: 10, snapshotReady: true });
+      useTradingStore.setState({
+        vwap: 103.5,
+        tradeCount: 10,
+        snapshotReady: true,
+      });
       useTradingStore.getState().setSnapshotReady(false);
       const s = useTradingStore.getState();
       expect(s.vwap).toBe(0);

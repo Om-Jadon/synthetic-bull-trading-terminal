@@ -13,11 +13,11 @@ const (
 	abFastPeriod  = 9
 	abSlowPeriod  = 21
 	abRSIPeriod   = 14
-	abBufferSize  = 50
+	abBufferSize  = 35
 	abTradeSize   = 50.0
 	abMaxPosition = 200.0
-	abRSIBuyGate  = 45.0
-	abRSISellGate = 55.0
+	abRSIBuyGate  = 52.0
+	abRSISellGate = 48.0
 	abUserID      = "alpha_bot"
 )
 
@@ -58,14 +58,13 @@ func RunAlphaBot(
 			}
 			position := portfolio.Holdings()
 
-			bullishCross := prevFast != 0 && prevFast < prevSlow && fast > slow
-			bearishCross := prevFast != 0 && prevFast > prevSlow && fast < slow
+			side, shouldTrade := alphaSignal(prevFast, prevSlow, fast, slow, rsi, position, portfolio.Cash(), candle.Close)
 
-			if bullishCross && rsi < abRSIBuyGate && position < abMaxPosition && portfolio.Cash() >= candle.Close*abTradeSize {
+			if shouldTrade && side == engine.Buy {
 				order := &engine.Order{
 					ID:        fmt.Sprintf("ab_%s", uuid.NewString()[:8]),
 					Type:      engine.TypeMarket,
-					Side:      engine.Buy,
+					Side:      side,
 					Size:      abTradeSize,
 					Remaining: abTradeSize,
 					UserID:    abUserID,
@@ -75,11 +74,11 @@ func RunAlphaBot(
 				case inChan <- order:
 				default:
 				}
-			} else if bearishCross && rsi > abRSISellGate && position > -abMaxPosition {
+			} else if shouldTrade && side == engine.Sell {
 				order := &engine.Order{
 					ID:        fmt.Sprintf("ab_%s", uuid.NewString()[:8]),
 					Type:      engine.TypeMarket,
-					Side:      engine.Sell,
+					Side:      side,
 					Size:      abTradeSize,
 					Remaining: abTradeSize,
 					UserID:    abUserID,
@@ -94,4 +93,26 @@ func RunAlphaBot(
 			prevFast, prevSlow = fast, slow
 		}
 	}
+}
+
+func alphaSignal(
+	prevFast float64,
+	prevSlow float64,
+	fast float64,
+	slow float64,
+	rsi float64,
+	position float64,
+	cash float64,
+	close float64,
+) (engine.Side, bool) {
+	bullishTrend := fast > slow
+	bearishTrend := fast < slow
+
+	if bullishTrend && rsi >= abRSIBuyGate && position+abTradeSize <= abMaxPosition && cash >= close*abTradeSize {
+		return engine.Buy, true
+	}
+	if bearishTrend && rsi <= abRSISellGate && position-abTradeSize >= -abMaxPosition {
+		return engine.Sell, true
+	}
+	return "", false
 }
