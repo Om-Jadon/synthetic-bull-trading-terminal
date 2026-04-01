@@ -51,10 +51,10 @@ type Trade struct {
 	Size          float64
 	BuyOrderID    string
 	SellOrderID   string
-	AggressorSide Side  // taker side — used for trade tape color
-	HumanInvolved bool  // true if either party is the human user
-	HumanIsBuyer  bool  // true if human is the buyer side
-	Ts            int64 // Unix milliseconds
+	AggressorSide Side   // taker side — used for trade tape color
+	BuyerUserID   string // userID of the buyer
+	SellerUserID  string // userID of the seller
+	Ts            int64  // Unix milliseconds
 }
 
 // OrderStatus values for order_update messages
@@ -87,6 +87,7 @@ type FillRecord struct {
 	Ts    int64   `json:"ts"`
 	Price float64 `json:"price"`
 	Side  Side    `json:"side"`
+	Size  float64 `json:"size"`
 }
 
 // ActivityRecord is one entry in the human order activity log.

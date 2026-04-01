@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/nextbull/trading-terminal/internal/api"
+	"github.com/nextbull/trading-terminal/internal/bots"
 	"github.com/nextbull/trading-terminal/internal/engine"
 	"github.com/nextbull/trading-terminal/internal/generator"
 	"github.com/nextbull/trading-terminal/internal/hub"
@@ -31,20 +32,23 @@ func main() {
 	defer cancel()
 
 	inChan := make(chan *engine.Order, 1024)
+	mmPriceCh := make(chan float64, 1)
+	abCandleCh := make(chan engine.Candle, 10)
 
 	matcher := engine.NewMatcher()
 	candleStore := engine.NewCandleStore(cfg.S0)
-	portfolio := engine.NewPortfolio(100_000.0) // $100k starting capital
+	registry := engine.NewRegistry("human", "market_maker", "alpha_bot")
 	wsHub := hub.New()
 
 	var ready atomic.Bool
 
-	handlers := api.New(inChan, portfolio, func() float64 { return candleStore.Stats().LastPrice })
+	handlers := api.New(inChan, registry.Get("human"), func() float64 { return candleStore.Stats().LastPrice })
 
 	// Snapshot function — called on each new WS connection
 	snapshotFn := func() []byte {
 		bids, asks := matcher.Depth(150)
 		currentStats := candleStore.Stats()
+		humanPortfolio := registry.Get("human")
 		snap := map[string]any{
 			"type": "snapshot",
 			"book": map[string]any{
@@ -53,7 +57,7 @@ func main() {
 				"ts":   time.Now().UnixMilli(),
 			},
 			"candles":   candleStore.Snapshot(300),
-			"portfolio": portfolio.State(currentStats.LastPrice),
+			"portfolio": humanPortfolio.State(currentStats.LastPrice),
 			"stats": map[string]any{
 				"type":           "stats",
 				"session_open":   currentStats.SessionOpen,
@@ -67,9 +71,9 @@ func main() {
 				"ts":             currentStats.Ts,
 			},
 			"recent_trades":  candleStore.RecentTrades(),
-			"equity_history": portfolio.EquityHistory(),
-			"fills":          portfolio.FillLog(),
-			"activity_log":   portfolio.ActivityLog(),
+			"equity_history": humanPortfolio.EquityHistory(),
+			"fills":          humanPortfolio.FillLog(),
+			"activity_log":   humanPortfolio.ActivityLog(),
 			"open_orders":    matcher.OpenHumanOrders(),
 			"ts":             time.Now().UnixMilli(),
 		}
@@ -114,7 +118,12 @@ func main() {
 				trades, updates := matcher.Process(o)
 				for _, t := range trades {
 					candleStore.OnTrade(t.Price, t.Size, string(t.AggressorSide))
-					portfolio.OnTrade(t)
+					if p := registry.Get(t.BuyerUserID); p != nil {
+						p.OnTrade(t, true)
+					}
+					if p := registry.Get(t.SellerUserID); p != nil {
+						p.OnTrade(t, false)
+					}
 					msg, _ := json.Marshal(map[string]any{
 						"type":  "trade",
 						"id":    t.ID,
@@ -125,6 +134,7 @@ func main() {
 					})
 					wsHub.Broadcast(msg)
 				}
+				humanPortfolio := registry.Get("human")
 				for _, u := range updates {
 					msg, _ := json.Marshal(map[string]any{
 						"type":           "order_update",
@@ -138,7 +148,7 @@ func main() {
 					})
 					wsHub.Broadcast(msg)
 					// record every human order lifecycle event for the activity log
-					portfolio.RecordActivity(engine.ActivityRecord{
+					humanPortfolio.RecordActivity(engine.ActivityRecord{
 						OrderID:       u.OrderID,
 						Status:        u.Status,
 						FilledSize:    u.FilledSize,
@@ -147,11 +157,11 @@ func main() {
 						Side:          u.Side,
 						Ts:            u.Ts,
 					})
-					// Send portfolio update after fills
+					// Send human portfolio update after fills
 					if u.Status == engine.StatusPartial || u.Status == engine.StatusFilled {
-						portfolio.RecordEquity(candleStore.Stats().LastPrice)
-						pState := portfolio.State(candleStore.Stats().LastPrice)
-						pmsg, _ := json.Marshal(pState)
+						lastPrice := candleStore.Stats().LastPrice
+						humanPortfolio.RecordEquity(lastPrice)
+						pmsg, _ := json.Marshal(humanPortfolio.State(lastPrice))
 						wsHub.Broadcast(pmsg)
 					}
 				}
@@ -171,7 +181,19 @@ func main() {
 
 			case <-statsTicker.C:
 				stats := candleStore.Stats()
-				portfolio.RecordEquity(stats.LastPrice)
+				// Fan out price to market maker
+				select {
+				case mmPriceCh <- stats.LastPrice:
+				default:
+				}
+				// Fan out completed candle to alpha bot
+				if snaps := candleStore.Snapshot(1); len(snaps) > 0 {
+					select {
+					case abCandleCh <- snaps[0]:
+					default:
+					}
+				}
+				// Broadcast stats
 				msg, _ := json.Marshal(map[string]any{
 					"type":           "stats",
 					"session_open":   stats.SessionOpen,
@@ -185,9 +207,12 @@ func main() {
 					"ts":             stats.Ts,
 				})
 				wsHub.Broadcast(msg)
-				// Broadcast portfolio so unrealized P&L updates with live price every second
-				pmsg, _ := json.Marshal(portfolio.State(stats.LastPrice))
-				wsHub.Broadcast(pmsg)
+				// Broadcast all 3 portfolio states
+				for _, p := range registry.All() {
+					p.RecordEquity(stats.LastPrice)
+					pmsg, _ := json.Marshal(p.State(stats.LastPrice))
+					wsHub.Broadcast(pmsg)
+				}
 			}
 		}
 	}()
@@ -196,9 +221,13 @@ func main() {
 	gen := generator.New(cfg, inChan)
 	go gen.Run(ctx)
 
-	// 4. HTTP server
+	// 4. Bot goroutines
+	go bots.RunMarketMaker(ctx, inChan, mmPriceCh, registry)
+	go bots.RunAlphaBot(ctx, inChan, abCandleCh, registry)
+
+	// 5. HTTP server
 	go func() {
-			log.Printf("SYNTHETIC-BULL backend listening on :%s", port)
+		log.Printf("SYNTHETIC-BULL backend listening on :%s", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("http server error: %v", err)
 		}

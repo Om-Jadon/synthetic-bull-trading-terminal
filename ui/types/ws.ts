@@ -27,14 +27,24 @@ export type StatsMsg = {
   ts: number;
 };
 
+export type BotFill = {
+  ts: number;
+  price: number;
+  side: "buy" | "sell";
+  size: number;
+};
+
 export type PortfolioMsg = {
   type: "portfolio";
+  user_id: string;
   cash: number;
   holdings: number;
   avg_entry: number;
   unrealized_pnl: number;
   realized_pnl: number;
   equity: number;
+  recent_fills?: BotFill[];
+  fill_count?: number;
   ts: number;
 };
 
@@ -74,6 +84,7 @@ export type WsFillRecord = {
   ts: number;
   price: number;
   side: "buy" | "sell";
+  size: number;
 };
 
 export type WsActivityRecord = {

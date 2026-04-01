@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
+import BotButton from "@/components/Bots/BotButton";
 import SessionStats from "./SessionStats";
 
 type AssetBarProps = {
@@ -101,6 +102,8 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                             <span className="text-text-primary">{wsStats.msgsPerSec}/s</span>
                         </span>
                     )}
+
+                    <BotButton />
 
                     {/* Interactive Help toggle */}
                     <button

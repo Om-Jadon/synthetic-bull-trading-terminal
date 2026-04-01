@@ -154,7 +154,11 @@ export function useWebSocket({
               syncTickerDom(message, previousPriceRef, priceRef, priceFlashRef, directionRef);
               break;
             case "portfolio":
-              store.setPortfolio(message);
+              if (!message.user_id || message.user_id === "human") {
+                store.setPortfolio(message);
+              } else {
+                store.setBotPortfolio(message);
+              }
               break;
             case "order_update": {
               const isHuman = store.knownOrderIds.has(message.order_id);

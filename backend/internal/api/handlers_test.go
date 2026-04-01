@@ -12,7 +12,7 @@ import (
 
 func newTestHandlers(cash float64) (*Handlers, chan *engine.Order) {
 	inChan := make(chan *engine.Order, 10)
-	p := engine.NewPortfolio(cash)
+	p := engine.NewPortfolio("human", cash)
 	h := New(inChan, p, func() float64 { return 100.0 })
 	return h, inChan
 }

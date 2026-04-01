@@ -2,18 +2,19 @@ package engine
 
 import "testing"
 
-func makeTrade(price, size float64, humanIsBuyer bool) *Trade {
+func makeTrade(price, size float64) *Trade {
 	return &Trade{
-		Price:         price,
-		Size:          size,
-		HumanInvolved: true,
-		HumanIsBuyer:  humanIsBuyer,
+		Price:        price,
+		Size:         size,
+		BuyerUserID:  "human",
+		SellerUserID: "system",
+		Ts:           1000,
 	}
 }
 
 func TestPortfolio_Buy_UpdatesCashAndHoldings(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true))
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true)
 	s := p.State(100.0)
 	if s["cash"].(float64) != 99_000.0 {
 		t.Fatalf("expected cash 99000, got %v", s["cash"])
@@ -27,9 +28,9 @@ func TestPortfolio_Buy_UpdatesCashAndHoldings(t *testing.T) {
 }
 
 func TestPortfolio_LongSell_RealizesProfit(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true))  // buy 10 @ 100
-	p.OnTrade(makeTrade(110.0, 10.0, false)) // sell 10 @ 110
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true)  // buy 10 @ 100
+	p.OnTrade(makeTrade(110.0, 10.0), false) // sell 10 @ 110
 	s := p.State(110.0)
 	if s["realized_pnl"].(float64) != 100.0 {
 		t.Fatalf("expected realized_pnl 100, got %v", s["realized_pnl"])
@@ -40,9 +41,9 @@ func TestPortfolio_LongSell_RealizesProfit(t *testing.T) {
 }
 
 func TestPortfolio_LongSell_RealizesLoss(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true)) // buy 10 @ 100
-	p.OnTrade(makeTrade(90.0, 10.0, false)) // sell 10 @ 90
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true) // buy 10 @ 100
+	p.OnTrade(makeTrade(90.0, 10.0), false) // sell 10 @ 90
 	s := p.State(90.0)
 	if s["realized_pnl"].(float64) != -100.0 {
 		t.Fatalf("expected realized_pnl -100, got %v", s["realized_pnl"])
@@ -50,8 +51,8 @@ func TestPortfolio_LongSell_RealizesLoss(t *testing.T) {
 }
 
 func TestPortfolio_ShortSell_NegativeHoldings(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100
 	s := p.State(100.0)
 	if s["holdings"].(float64) != -10.0 {
 		t.Fatalf("expected holdings -10, got %v", s["holdings"])
@@ -66,9 +67,9 @@ func TestPortfolio_ShortSell_NegativeHoldings(t *testing.T) {
 }
 
 func TestPortfolio_ShortCover_RealizesProfit(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100
-	p.OnTrade(makeTrade(90.0, 10.0, true))   // cover 10 @ 90
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100
+	p.OnTrade(makeTrade(90.0, 10.0), true)   // cover 10 @ 90
 	s := p.State(90.0)
 	if s["realized_pnl"].(float64) != 100.0 {
 		t.Fatalf("expected realized_pnl 100, got %v", s["realized_pnl"])
@@ -79,9 +80,9 @@ func TestPortfolio_ShortCover_RealizesProfit(t *testing.T) {
 }
 
 func TestPortfolio_ShortCover_RealizesLoss(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100
-	p.OnTrade(makeTrade(110.0, 10.0, true))  // cover 10 @ 110 (loss)
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100
+	p.OnTrade(makeTrade(110.0, 10.0), true)  // cover 10 @ 110 (loss)
 	s := p.State(110.0)
 	if s["realized_pnl"].(float64) != -100.0 {
 		t.Fatalf("expected realized_pnl -100, got %v", s["realized_pnl"])
@@ -89,9 +90,9 @@ func TestPortfolio_ShortCover_RealizesLoss(t *testing.T) {
 }
 
 func TestPortfolio_LongToShortFlip_CorrectPnL(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true))  // buy 10 @ 100
-	p.OnTrade(makeTrade(105.0, 20.0, false)) // sell 20 @ 105 (close 10 long + open 10 short)
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true)  // buy 10 @ 100
+	p.OnTrade(makeTrade(105.0, 20.0), false) // sell 20 @ 105 (close 10 long + open 10 short)
 	s := p.State(105.0)
 	// realized: (105-100)*10 = +50
 	if s["realized_pnl"].(float64) != 50.0 {
@@ -107,9 +108,9 @@ func TestPortfolio_LongToShortFlip_CorrectPnL(t *testing.T) {
 }
 
 func TestPortfolio_ShortToLongFlip_CorrectPnL(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100
-	p.OnTrade(makeTrade(90.0, 20.0, true))   // buy 20 @ 90 (cover 10 short + open 10 long)
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100
+	p.OnTrade(makeTrade(90.0, 20.0), true)   // buy 20 @ 90 (cover 10 short + open 10 long)
 	s := p.State(90.0)
 	// realized: (100-90)*10 = +100
 	if s["realized_pnl"].(float64) != 100.0 {
@@ -125,9 +126,9 @@ func TestPortfolio_ShortToLongFlip_CorrectPnL(t *testing.T) {
 }
 
 func TestPortfolio_AvgEntry_MultipleBuilds(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true)) // buy 10 @ 100
-	p.OnTrade(makeTrade(110.0, 10.0, true)) // buy 10 @ 110
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true) // buy 10 @ 100
+	p.OnTrade(makeTrade(110.0, 10.0), true) // buy 10 @ 110
 	s := p.State(100.0)
 	// avg = (100*10 + 110*10) / 20 = 105
 	if s["avg_entry"].(float64) != 105.0 {
@@ -139,9 +140,9 @@ func TestPortfolio_AvgEntry_MultipleBuilds(t *testing.T) {
 }
 
 func TestPortfolio_AvgEntry_AddsToShort(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 5.0, false)) // short 5 @ 100
-	p.OnTrade(makeTrade(110.0, 5.0, false)) // short 5 more @ 110
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 5.0), false) // short 5 @ 100
+	p.OnTrade(makeTrade(110.0, 5.0), false) // short 5 more @ 110
 	s := p.State(100.0)
 	// avg short = (100*5 + 110*5) / 10 = 105
 	if s["avg_entry"].(float64) != 105.0 {
@@ -153,8 +154,8 @@ func TestPortfolio_AvgEntry_AddsToShort(t *testing.T) {
 }
 
 func TestPortfolio_UnrealizedPnL_Long(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true)) // buy 10 @ 100
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true) // buy 10 @ 100
 	s := p.State(110.0)
 	// unrealized = (110 - 100) * 10 = +100
 	if s["unrealized_pnl"].(float64) != 100.0 {
@@ -163,8 +164,8 @@ func TestPortfolio_UnrealizedPnL_Long(t *testing.T) {
 }
 
 func TestPortfolio_UnrealizedPnL_Short(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100
 	s := p.State(90.0)
 	// unrealized = (100 - 90) * 10 = +100
 	if s["unrealized_pnl"].(float64) != 100.0 {
@@ -173,8 +174,8 @@ func TestPortfolio_UnrealizedPnL_Short(t *testing.T) {
 }
 
 func TestPortfolio_UnrealizedPnL_ShortLoss(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100
 	s := p.State(110.0)
 	// unrealized = (100 - 110) * 10 = -100
 	if s["unrealized_pnl"].(float64) != -100.0 {
@@ -183,8 +184,8 @@ func TestPortfolio_UnrealizedPnL_ShortLoss(t *testing.T) {
 }
 
 func TestPortfolio_Equity_Long(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, true)) // buy 10 @ 100, cash = 99000
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), true) // buy 10 @ 100, cash = 99000
 	s := p.State(110.0)
 	// equity = cash + holdings * price = 99000 + 10*110 = 100100
 	if s["equity"].(float64) != 100_100.0 {
@@ -193,8 +194,8 @@ func TestPortfolio_Equity_Long(t *testing.T) {
 }
 
 func TestPortfolio_Equity_Short(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(makeTrade(100.0, 10.0, false)) // short 10 @ 100, cash = 101000
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 10.0), false) // short 10 @ 100, cash = 101000
 	s := p.State(90.0)
 	// equity = cash + holdings * price = 101000 + (-10)*90 = 101000 - 900 = 100100
 	if s["equity"].(float64) != 100_100.0 {
@@ -202,25 +203,23 @@ func TestPortfolio_Equity_Short(t *testing.T) {
 	}
 }
 
-func TestPortfolio_NonHumanTrade_Ignored(t *testing.T) {
-	p := NewPortfolio(100_000)
-	p.OnTrade(&Trade{Price: 100.0, Size: 10.0, HumanInvolved: false})
+func TestPortfolio_FreshPortfolio_ZeroState(t *testing.T) {
+	p := NewPortfolio("human", 100_000)
 	s := p.State(100.0)
 	if s["holdings"].(float64) != 0.0 {
-		t.Fatalf("non-human trade should not affect portfolio")
+		t.Fatal("fresh portfolio should have zero holdings")
 	}
 	if s["cash"].(float64) != 100_000.0 {
-		t.Fatalf("non-human trade should not affect cash")
+		t.Fatalf("expected cash 100000, got %v", s["cash"])
 	}
 }
 
 func TestPortfolio_EquityHistory(t *testing.T) {
-	p := NewPortfolio(100_000.0)
+	p := NewPortfolio("human", 100_000.0)
 	if len(p.EquityHistory()) != 0 {
 		t.Fatal("expected empty initial equity history")
 	}
-	trade := &Trade{HumanInvolved: true, HumanIsBuyer: true, Price: 100.0, Size: 10.0, Ts: 1000}
-	p.OnTrade(trade)
+	p.OnTrade(makeTrade(100.0, 10.0), true)
 	p.RecordEquity(100.0)
 	history := p.EquityHistory()
 	if len(history) != 1 {
@@ -229,12 +228,11 @@ func TestPortfolio_EquityHistory(t *testing.T) {
 }
 
 func TestPortfolio_FillLog(t *testing.T) {
-	p := NewPortfolio(100_000.0)
+	p := NewPortfolio("human", 100_000.0)
 	if len(p.FillLog()) != 0 {
 		t.Fatal("expected empty initial fill log")
 	}
-	trade := &Trade{HumanInvolved: true, HumanIsBuyer: true, Price: 100.0, Size: 10.0, Ts: 1234567890000}
-	p.OnTrade(trade)
+	p.OnTrade(makeTrade(100.0, 10.0), true)
 	fills := p.FillLog()
 	if len(fills) != 1 {
 		t.Fatalf("expected 1 fill, got %d", len(fills))
@@ -245,7 +243,7 @@ func TestPortfolio_FillLog(t *testing.T) {
 }
 
 func TestPortfolio_ActivityLog(t *testing.T) {
-	p := NewPortfolio(100_000.0)
+	p := NewPortfolio("human", 100_000.0)
 	if len(p.ActivityLog()) != 0 {
 		t.Fatal("expected empty initial activity log")
 	}
@@ -257,5 +255,23 @@ func TestPortfolio_ActivityLog(t *testing.T) {
 	}
 	if log[0].OrderID != "o_1" {
 		t.Fatalf("unexpected order id: %s", log[0].OrderID)
+	}
+}
+
+func TestPortfolio_State_EmbedsUserID(t *testing.T) {
+	p := NewPortfolio("market_maker", 100_000)
+	s := p.State(100.0)
+	if s["user_id"] != "market_maker" {
+		t.Fatalf("expected user_id 'market_maker', got %v", s["user_id"])
+	}
+}
+
+func TestPortfolio_FillCount_Increments(t *testing.T) {
+	p := NewPortfolio("human", 100_000)
+	p.OnTrade(makeTrade(100.0, 5.0), true)
+	p.OnTrade(makeTrade(110.0, 5.0), false)
+	s := p.State(110.0)
+	if s["fill_count"].(int) != 2 {
+		t.Fatalf("expected fill_count 2, got %v", s["fill_count"])
 	}
 }

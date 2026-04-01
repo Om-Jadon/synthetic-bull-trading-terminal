@@ -12,6 +12,11 @@ import type {
   WsActivityRecord,
 } from "@/types/ws";
 
+export type EquityPoint = {
+  time: UTCTimestamp;
+  value: number;
+};
+
 export type BookMode = "tab" | "stacked" | "large";
 
 export type Toast = {
@@ -68,6 +73,9 @@ export type TradingStore = {
   upsertCandle: (candle: Candle) => void;
   setStats: (stats: StatsMsg) => void;
   setPortfolio: (portfolio: PortfolioMsg) => void;
+  botPortfolios: Map<string, PortfolioMsg>;
+  botEquityHistory: Map<string, EquityPoint[]>;
+  setBotPortfolio: (p: PortfolioMsg) => void;
   toggleChartFullscreen: () => void;
   seedOpenOrders: (orders: WsActivityRecord[]) => void;
   trackOrderId: (orderId: string) => void;
@@ -79,11 +87,6 @@ type FillMarker = {
   time: UTCTimestamp;
   price: number;
   side: "buy" | "sell";
-};
-
-type EquityPoint = {
-  time: UTCTimestamp;
-  value: number;
 };
 
 function toUtcTimestamp(ts: number): UTCTimestamp {
@@ -134,6 +137,8 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
   sessionLow: 0,
   sessionVolume: 0,
   portfolio: null,
+  botPortfolios: new Map(),
+  botEquityHistory: new Map(),
   openOrders: new Map(),
   orderHistory: [],
   knownOrderIds: new Set(),
@@ -302,6 +307,28 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       };
     }),
 
+
+  setBotPortfolio: (p) =>
+    set((state) => {
+      const botPortfolios = new Map(state.botPortfolios);
+      botPortfolios.set(p.user_id, p);
+
+      const botEquityHistory = new Map(state.botEquityHistory);
+      const prev = botEquityHistory.get(p.user_id) ?? [];
+      const point = { time: toUtcTimestamp(p.ts), value: p.equity };
+      const last = prev[prev.length - 1];
+      let next: EquityPoint[];
+      if (last && last.time === point.time && last.value === point.value) {
+        next = prev;
+      } else if (last && last.time === point.time) {
+        next = [...prev.slice(0, -1), point];
+      } else {
+        next = [...prev, point];
+      }
+      botEquityHistory.set(p.user_id, next.slice(-600));
+
+      return { botPortfolios, botEquityHistory };
+    }),
 
   toggleChartFullscreen: () =>
     set((state) => ({ chartFullscreen: !state.chartFullscreen })),
