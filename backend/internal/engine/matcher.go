@@ -47,6 +47,11 @@ func (m *Matcher) handleCancel(o *Order) ([]*Trade, []*OrderUpdate) {
 	if !isTracked {
 		return nil, nil
 	}
+	// If a requester is provided, only the owning session may cancel.
+	// Empty UserID is allowed for internal bot/system cancel flow.
+	if o.UserID != "" && o.UserID != orig.UserID {
+		return nil, nil
+	}
 	filled := m.filledSizes[o.ID]
 	ok := m.ob.Cancel(o.ID)
 	delete(m.filledSizes, o.ID)

@@ -88,10 +88,12 @@ func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ensure a portfolio exists for this session before any order reaches the matcher.
+	p := h.registry.GetOrCreate(sessionID)
+
 	// Validate cash for limit buy orders. Short selling is permitted (PS line 96)
 	// so sell orders and market buy orders (no price) are not restricted.
 	if side == engine.Buy && typ == engine.TypeLimit {
-		p := h.registry.GetOrCreate(sessionID)
 		snap := p.State(h.lastPrice())
 		cash, ok := snap["cash"].(float64)
 		if !ok {
@@ -128,6 +130,16 @@ func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) DeleteOrder(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.Header.Get("X-Session-ID")
+	if sessionID == "" {
+		http.Error(w, "missing X-Session-ID header", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(sessionID); err != nil {
+		http.Error(w, "invalid session ID", http.StatusBadRequest)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing order id", http.StatusBadRequest)
@@ -136,6 +148,7 @@ func (h *Handlers) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	cancel := &engine.Order{
 		ID:   id,
 		Type: engine.TypeCancel,
+		UserID: sessionID,
 	}
 	select {
 	case h.inChan <- cancel:

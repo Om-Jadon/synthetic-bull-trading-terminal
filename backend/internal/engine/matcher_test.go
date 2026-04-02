@@ -124,6 +124,22 @@ func TestMatcher_CancelOrder_PreservesOriginalMetadata(t *testing.T) {
 	}
 }
 
+func TestMatcher_CancelOrder_WrongOwnerDenied(t *testing.T) {
+	m := NewMatcher()
+	m.Process(newOrder("bid1", TypeLimit, Buy, 99.0, 10.0, "11111111-1111-1111-1111-111111111111"))
+
+	// Different session attempts cancel.
+	cancel := &Order{ID: "bid1", Type: TypeCancel, UserID: "22222222-2222-2222-2222-222222222222"}
+	_, updates := m.Process(cancel)
+
+	if len(updates) != 0 {
+		t.Fatalf("expected no updates for unauthorized cancel, got %d", len(updates))
+	}
+	if m.ob.BestBid() == nil {
+		t.Fatal("order should remain in book when cancel owner mismatches")
+	}
+}
+
 func TestMatcher_CancelSystemOrder_DoesNotRemoveFromBook(t *testing.T) {
 	m := NewMatcher()
 	m.Process(newOrder("sys_1", TypeLimit, Sell, 100.0, 5.0, "system"))

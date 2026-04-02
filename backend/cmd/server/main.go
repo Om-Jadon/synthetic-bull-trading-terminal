@@ -58,12 +58,11 @@ func main() {
 			sessionPortfolio := registry.GetOrCreate(sessionID)
 			botPortfolios := make([]map[string]any, 0, 2)
 			botEquityHistory := make(map[string]any, 2)
-			for userID, p := range registry.All() {
-				if userID == sessionID {
-					continue
+			for _, botID := range []string{"market_maker", "alpha_bot"} {
+				if p := registry.Get(botID); p != nil {
+					botPortfolios = append(botPortfolios, p.State(currentStats.LastPrice))
+					botEquityHistory[botID] = p.EquityHistory()
 				}
-				botPortfolios = append(botPortfolios, p.State(currentStats.LastPrice))
-				botEquityHistory[userID] = p.EquityHistory()
 			}
 			snap := map[string]any{
 				"type": "snapshot",

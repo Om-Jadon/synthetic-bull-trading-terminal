@@ -41,6 +41,21 @@ func (s *stubRegistry) GetOrCreate(userID string) *engine.Portfolio {
 	return s.p
 }
 
+type spyRegistry struct {
+	calls int
+	last  string
+	p     *engine.Portfolio
+}
+
+func (s *spyRegistry) GetOrCreate(userID string) *engine.Portfolio {
+	s.calls++
+	s.last = userID
+	if s.p == nil {
+		s.p = engine.NewPortfolio(userID, 100_000)
+	}
+	return s.p
+}
+
 func postOrder(t *testing.T, h *Handlers, body map[string]any) *httptest.ResponseRecorder {
 	t.Helper()
 	b, _ := json.Marshal(body)
@@ -49,6 +64,18 @@ func postOrder(t *testing.T, h *Handlers, body map[string]any) *httptest.Respons
 	req.Header.Set("X-Session-ID", testSessionID)
 	w := httptest.NewRecorder()
 	h.PostOrder(w, req)
+	return w
+}
+
+func deleteOrder(t *testing.T, h *Handlers, orderID string, sessionID string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest("DELETE", "/orders/"+orderID, nil)
+	req.SetPathValue("id", orderID)
+	if sessionID != "" {
+		req.Header.Set("X-Session-ID", sessionID)
+	}
+	w := httptest.NewRecorder()
+	h.DeleteOrder(w, req)
 	return w
 }
 
@@ -91,5 +118,59 @@ func TestPostOrder_MarketBuy_NoValidation_Accepted(t *testing.T) {
 	})
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 for market buy (no price to validate), got %d", w.Code)
+	}
+}
+
+func TestPostOrder_MarketBuy_CreatesSessionPortfolio(t *testing.T) {
+	inChan := make(chan *engine.Order, 1)
+	spy := &spyRegistry{}
+	h := New(inChan, spy, func() float64 { return 100.0 })
+
+	w := postOrder(t, h, map[string]any{
+		"type": "market", "side": "buy", "size": 1.0,
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	if spy.calls == 0 {
+		t.Fatal("expected GetOrCreate to be called for market order")
+	}
+	if spy.last != testSessionID {
+		t.Fatalf("expected GetOrCreate called with session id, got %q", spy.last)
+	}
+}
+
+func TestDeleteOrder_MissingSessionHeader_Returns400(t *testing.T) {
+	h, _ := newTestHandlers(100_000)
+	w := deleteOrder(t, h, "o_1", "")
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for missing session header, got %d", w.Code)
+	}
+}
+
+func TestDeleteOrder_InvalidSessionHeader_Returns400(t *testing.T) {
+	h, _ := newTestHandlers(100_000)
+	w := deleteOrder(t, h, "o_1", "not-a-uuid")
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid session header, got %d", w.Code)
+	}
+}
+
+func TestDeleteOrder_EnqueuesCancelWithSessionID(t *testing.T) {
+	h, inChan := newTestHandlers(100_000)
+	w := deleteOrder(t, h, "o_1", testSessionID)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", w.Code)
+	}
+	select {
+	case o := <-inChan:
+		if o.Type != engine.TypeCancel {
+			t.Fatalf("expected cancel order, got %s", o.Type)
+		}
+		if o.UserID != testSessionID {
+			t.Fatalf("expected cancel order user id %q, got %q", testSessionID, o.UserID)
+		}
+	default:
+		t.Fatal("expected cancel order to be enqueued")
 	}
 }
