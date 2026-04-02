@@ -1,4 +1,5 @@
 export const THEME_STORAGE_KEY = "nb_theme";
+export const THEME_CHANGE_EVENT = "nb-theme-change";
 
 export type ThemeMode = "dark" | "light";
 
@@ -24,7 +25,17 @@ export function getPreferredTheme(): ThemeMode {
 
 export function applyTheme(theme: ThemeMode): void {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.theme = theme;
+
+  const root = document.documentElement;
+  if (root.dataset.theme === theme) return;
+
+  root.dataset.theme = theme;
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(THEME_CHANGE_EVENT, { detail: { theme } }),
+    );
+  }
 }
 
 export function persistTheme(theme: ThemeMode): void {

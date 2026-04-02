@@ -62,12 +62,12 @@ export default function HelpModal() {
   if (!isHelpOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-bg-primary/60 backdrop-blur-sm animate-in fade-in duration-200" />
-      
+
       {/* Modal Content */}
-      <div 
+      <div
         ref={modalRef}
         className="modal-enter relative w-full max-w-md overflow-hidden rounded-xs border border-border bg-bg-panel shadow-2xl"
       >
@@ -78,7 +78,7 @@ export default function HelpModal() {
           <button
             type="button"
             onClick={() => setHelpOpen(false)}
-            className="flex h-6 w-6 items-center justify-center rounded-xs text-text-muted transition-colors hover:bg-bg-primary hover:text-text-primary"
+            className="touch-target-compact inline-flex h-7 w-7 items-center justify-center rounded-xs text-text-muted transition-colors hover:bg-bg-primary hover:text-text-primary"
             aria-label="Close help"
           >
             ✕
@@ -94,12 +94,12 @@ export default function HelpModal() {
                 </h3>
                 <div className="grid gap-2">
                   {section.items.map((item) => (
-                    <div 
-                      key={item.key} 
+                    <div
+                      key={item.key}
                       className="flex items-center justify-between rounded-xs border border-transparent bg-bg-row/40 px-3 py-2 transition-colors hover:border-border hover:bg-bg-row"
                     >
                       <span className="text-body text-text-muted">{item.desc}</span>
-                      <kbd className="min-w-[40px] rounded-xs border border-border bg-bg-panel px-1.5 py-0.5 text-center font-mono text-micro text-text-primary shadow-xs">
+                      <kbd className="min-w-10 rounded-xs border border-border bg-bg-panel px-1.5 py-0.5 text-center font-mono text-micro text-text-primary shadow-xs">
                         {item.key}
                       </kbd>
                     </div>

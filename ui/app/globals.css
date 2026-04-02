@@ -20,6 +20,7 @@
 
   /* ── Brand (amber gold — header only, unchanged) ── */
   --color-brand: oklch(75% 0.13 68);
+  --color-brand-watermark: rgba(200, 151, 42, 0.06);
 
   /* ── Text ── */
   --color-text-primary: oklch(91% 0.006 60);
@@ -42,7 +43,9 @@
   --color-chart-vwap-hex: #8791a3;
   --color-bull-hex: #11b34a;
   --color-bear-hex: #df202e;
-  --color-text-muted-hex: #746d6a;
+  --color-text-muted-hex: #7f7672;
+  --color-bot-mm-hex: #6366f1;
+  --color-bot-alpha-hex: #f59e0b;
 
   /* ── Focus (amber-tinted, matches brand warmth) ── */
   --color-focus-ring: oklch(72% 0.14 68);
@@ -51,6 +54,35 @@
 
   --font-sans: var(--font-jakarta);
   --font-mono: var(--font-jetbrains);
+}
+
+:root[data-theme="light"] {
+  --color-bg-primary: oklch(97% 0.004 40);
+  --color-top-fade: oklch(97% 0.004 40 / 0.8);
+  --color-bg-panel: oklch(99% 0.003 40);
+  --color-bg-row: oklch(95% 0.006 40);
+  --color-spread-bg: oklch(95% 0.006 40);
+
+  --color-text-primary: oklch(20% 0.01 40);
+  --color-text-muted: oklch(48% 0.01 40);
+
+  --color-border: oklch(84% 0.01 40);
+  --color-spread: oklch(78% 0.012 40);
+  --color-neutral-hover: oklch(90% 0.01 40);
+  --color-hover-overlay: oklch(0% 0 0 / 0.04);
+
+  --color-chart-bg: oklch(96% 0.004 40);
+  --color-chart-grid: oklch(88% 0.01 40);
+  --color-chart-crosshair: oklch(74% 0.01 40);
+  --color-chart-bg-hex: #f8f7f6;
+  --color-chart-grid-hex: #ddd8d4;
+  --color-chart-crosshair-hex: #bdb5af;
+  --color-text-muted-hex: #756c67;
+  --color-bot-mm-hex: #6366f1;
+  --color-bot-alpha-hex: #f59e0b;
+  --color-brand-watermark: rgba(200, 151, 42, 0.08);
+
+  --shadow-overlay: 0 24px 64px oklch(0% 0 0 / 0.2);
 }
 
 /* ── Typography Scale ── */

@@ -32,17 +32,17 @@ npm run build   # Next.js production build
 
 Single Zustand store for all live market state. Key slices:
 
-| Slice | Type | Description |
-|-------|------|-------------|
-| `orderBook` | `OrderBookMsg` | Top 20 bids/asks |
-| `trades` | `TradeMsg[]` | Trade tape (capped at 100) |
-| `stats` | `StatsMsg` | Session OHLCV, VWAP, change % |
-| `portfolio` | `PortfolioMsg` | Human cash, holdings, P&L |
-| `openOrders` | `OrderUpdateMsg[]` | Active human orders |
-| `equityHistory` | `EquityPoint[]` | Human equity curve (capped at 600) |
-| `botPortfolios` | `Map<string, PortfolioMsg>` | `market_maker` and `alpha_bot` portfolios |
+| Slice              | Type                         | Description                                |
+| ------------------ | ---------------------------- | ------------------------------------------ |
+| `orderBook`        | `OrderBookMsg`               | Top 20 bids/asks                           |
+| `trades`           | `TradeMsg[]`                 | Trade tape (capped at 100)                 |
+| `stats`            | `StatsMsg`                   | Session OHLCV, VWAP, change %              |
+| `portfolio`        | `PortfolioMsg`               | Human cash, holdings, P&L                  |
+| `openOrders`       | `OrderUpdateMsg[]`           | Active human orders                        |
+| `equityHistory`    | `EquityPoint[]`              | Human equity curve (capped at 600)         |
+| `botPortfolios`    | `Map<string, PortfolioMsg>`  | `market_maker` and `alpha_bot` portfolios  |
 | `botEquityHistory` | `Map<string, EquityPoint[]>` | Per-bot equity curves (capped at 600 each) |
-| `candles` | `CandleData[]` | 1 s OHLCV candles |
+| `candles`          | `CandleData[]`               | 1 s OHLCV candles                          |
 
 Key actions beyond simple setters:
 
@@ -80,7 +80,7 @@ All WebSocket message shapes as TypeScript types. Key types:
 
 ## Component Map
 
-```
+```text
 components/
 ├── Header/
 │   ├── AssetBar.tsx        Ticker strip — live price, change %, OHLCV stats + BotButton
@@ -114,6 +114,7 @@ The **Bots** components surface the Market Maker and Alpha Bot live state:
 **`BotEquityCurve` re-render note:** subscribes via `useTradingStore.subscribe` (not `useEffect` with selector). This means chart updates bypass React's render cycle entirely — the chart series is updated directly via Lightweight Charts API.
 
 **Bot colors:**
+
 - Market Maker: `#6366f1` (indigo)
 - Alpha Bot: `#f59e0b` (amber)
 
@@ -121,16 +122,30 @@ The **Bots** components surface the Market Maker and Alpha Bot live state:
 
 ## Design System
 
-Theme and tokens are locked — do not change these:
+Theme now supports two modes with a dark default:
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| Background | `#0e1117` | Page background |
-| Panel | `#1a1d29` | All panel backgrounds |
-| Border | `#1e222d` | Panel dividers |
-| Bull / bid | `#26a69a` | Buy prices, positive P&L |
-| Bear / ask | `#ef5350` | Sell prices, negative P&L |
+- Supported modes: `dark`, `light`
+- Default when unset: `dark`
+- Persistence key: `nb_theme`
+- Runtime source of truth: `document.documentElement.dataset.theme`
+
+Core semantic color meanings remain locked across both themes:
+
+| Token      | Value                            | Usage                                          |
+| ---------- | -------------------------------- | ---------------------------------------------- |
+| Bull / bid | `#26a69a`                        | Buy prices, positive P&L                       |
+| Bear / ask | `#ef5350`                        | Sell prices, negative P&L                      |
 | Brand gold | `oklch(75% 0.13 68)` ≈ `#c8972a` | NEXTBULL wordmark only — never near price data |
+
+Dark palette anchor values:
+
+| Token      | Value     | Usage                 |
+| ---------- | --------- | --------------------- |
+| Background | `#0e1117` | Page background       |
+| Panel      | `#1a1d29` | All panel backgrounds |
+| Border     | `#1e222d` | Panel dividers        |
+
+Chart theming uses CSS hex bridge tokens (`--color-*-hex`) resolved by `ui/lib/chartTheme.ts` so Lightweight Charts can update in real time when theme changes.
 
 Typography: `Plus Jakarta Sans` for UI chrome, `JetBrains Mono` for all prices and numeric data.
 
@@ -140,9 +155,9 @@ Typography: `Plus Jakarta Sans` for UI chrome, `JetBrains Mono` for all prices a
 
 Defined in repository-level `.env` (copied from `.env.example`):
 
-| Variable | Default | Usage |
-|----------|---------|-------|
-| `NEXT_PUBLIC_WS_URL` | `ws://localhost:8080/ws` | WebSocket URL (browser) |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | REST URL (browser) |
-| `FRONTEND_PORT` | `3000` | Container port |
-| `BACKEND_INTERNAL_URL` | `http://backend:8080` | Server-side fetch (Docker internal DNS) |
+| Variable               | Default                  | Usage                                   |
+| ---------------------- | ------------------------ | --------------------------------------- |
+| `NEXT_PUBLIC_WS_URL`   | `ws://localhost:8080/ws` | WebSocket URL (browser)                 |
+| `NEXT_PUBLIC_API_URL`  | `http://localhost:8080`  | REST URL (browser)                      |
+| `FRONTEND_PORT`        | `3000`                   | Container port                          |
+| `BACKEND_INTERNAL_URL` | `http://backend:8080`    | Server-side fetch (Docker internal DNS) |

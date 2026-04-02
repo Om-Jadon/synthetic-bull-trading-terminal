@@ -63,7 +63,7 @@ describe("theme utils", () => {
 
   it("prefers light when matchMedia reports light preference", () => {
     vi.spyOn(window, "matchMedia").mockImplementation(
-      () => ({ matches: true } as MediaQueryList),
+      () => ({ matches: true }) as MediaQueryList,
     );
 
     expect(getPreferredTheme()).toBe("light");
@@ -71,7 +71,7 @@ describe("theme utils", () => {
 
   it("prefers dark when matchMedia reports no light preference", () => {
     vi.spyOn(window, "matchMedia").mockImplementation(
-      () => ({ matches: false } as MediaQueryList),
+      () => ({ matches: false }) as MediaQueryList,
     );
 
     expect(getPreferredTheme()).toBe("dark");

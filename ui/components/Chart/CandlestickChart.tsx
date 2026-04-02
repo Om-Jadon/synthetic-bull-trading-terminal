@@ -19,6 +19,8 @@ import {
 
 import { useTradingStore, type TradingStore } from "@/store/tradingStore";
 import type { Candle } from "@/types/ws";
+import { readChartPalette, type ChartPalette } from "@/lib/chartTheme";
+import { useThemeRevision } from "@/hooks/useThemeRevision";
 
 // ─── Timeframe config ────────────────────────────────────────────────────────
 
@@ -30,26 +32,6 @@ const TIMEFRAMES: { label: string; seconds: number }[] = [
     { label: "1m", seconds: 60 },
     { label: "5m", seconds: 300 },
 ];
-
-type ChartPalette = {
-    bg: string;
-    textMuted: string;
-    grid: string;
-    crosshair: string;
-    bull: string;
-    bear: string;
-    vwap: string;
-};
-
-const DEFAULT_PALETTE: ChartPalette = {
-    bg: "#060403",
-    textMuted: "#746d6a",
-    grid: "#1a1513",
-    crosshair: "#292220",
-    bull: "#11b34a",
-    bear: "#df202e",
-    vwap: "#8791a3",
-};
 
 // ─── Aggregation ─────────────────────────────────────────────────────────────
 
@@ -81,12 +63,6 @@ function hex8(hex: string, alpha: number): string {
     return `${hex}${Math.round(alpha * 255).toString(16).padStart(2, "0")}`;
 }
 
-function readHexColorVar(name: string, fallback: string): string {
-    if (typeof window === "undefined") return fallback;
-    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value) ? value : fallback;
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 type CandlestickChartProps = {
@@ -100,12 +76,14 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
     const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
     const markerApiRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+    const vwapLineRef = useRef<IPriceLine | null>(null);
 
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
     const chartTimeframe = useTradingStore((state) => state.chartTimeframe);
     const setChartTimeframe = useTradingStore((state) => state.setChartTimeframe);
     const chartFullscreen = useTradingStore((state) => state.chartFullscreen);
-    const paletteRef = useRef<ChartPalette>(DEFAULT_PALETTE);
+    const paletteRef = useRef<ChartPalette>(readChartPalette());
+    const themeRevision = useThemeRevision();
     type ChartOptionsArg = Parameters<IChartApi["applyOptions"]>[0];
 
     const handleFullscreenToggle = () => {
@@ -121,19 +99,6 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             document.documentElement.requestFullscreen?.().catch(() => { });
         }
     };
-
-    useEffect(() => {
-        const palette = {
-            bg: readHexColorVar("--color-chart-bg-hex", DEFAULT_PALETTE.bg),
-            textMuted: readHexColorVar("--color-text-muted-hex", DEFAULT_PALETTE.textMuted),
-            grid: readHexColorVar("--color-chart-grid-hex", DEFAULT_PALETTE.grid),
-            crosshair: readHexColorVar("--color-chart-crosshair-hex", DEFAULT_PALETTE.crosshair),
-            bull: readHexColorVar("--color-bull-hex", DEFAULT_PALETTE.bull),
-            bear: readHexColorVar("--color-bear-hex", DEFAULT_PALETTE.bear),
-            vwap: readHexColorVar("--color-chart-vwap-hex", DEFAULT_PALETTE.vwap),
-        };
-        paletteRef.current = palette;
-    }, []);
 
     useEffect(() => {
         if (onFullscreenToggle) return;
@@ -155,7 +120,8 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
         const container = containerRef.current;
         if (!container) return;
 
-        const colors = paletteRef.current;
+        const colors = readChartPalette();
+        paletteRef.current = colors;
         const chart = createChart(container, {
             layout: {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -206,7 +172,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             watermark: {
                 visible: true,
                 text: "SYNTHETIC-BULL",
-                color: "rgba(200,151,42,0.06)",
+                color: colors.watermark,
                 fontSize: 36,
                 horzAlign: "center",
                 vertAlign: "center",
@@ -254,17 +220,108 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             candleSeriesRef.current = null;
             volumeSeriesRef.current = null;
             markerApiRef.current = null;
+            vwapLineRef.current = null;
         };
     }, []);
 
+    // Live-apply theme options without recreating chart so data and zoom state are preserved.
+    useEffect(() => {
+        const chart = chartRef.current;
+        const candleSeries = candleSeriesRef.current;
+        const volumeSeries = volumeSeriesRef.current;
+        if (!chart || !candleSeries || !volumeSeries) return;
+
+        const colors = readChartPalette();
+        paletteRef.current = colors;
+
+        chart.applyOptions({
+            layout: {
+                background: { type: ColorType.Solid, color: colors.bg },
+                textColor: colors.textMuted,
+                panes: {
+                    separatorColor: colors.grid,
+                    separatorHoverColor: colors.crosshair,
+                    enableResize: false,
+                },
+            },
+            rightPriceScale: {
+                borderColor: colors.grid,
+            },
+            grid: {
+                vertLines: { color: colors.grid },
+                horzLines: { color: colors.grid },
+            },
+            timeScale: {
+                borderColor: colors.grid,
+            },
+            crosshair: {
+                vertLine: { color: colors.crosshair },
+                horzLine: { color: colors.crosshair },
+            },
+        });
+
+        chart.applyOptions({
+            watermark: {
+                visible: true,
+                text: "SYNTHETIC-BULL",
+                color: colors.watermark,
+                fontSize: 36,
+                horzAlign: "center",
+                vertAlign: "center",
+            },
+        } as ChartOptionsArg);
+
+        candleSeries.applyOptions({
+            upColor: colors.bull,
+            downColor: colors.bear,
+            borderUpColor: colors.bull,
+            borderDownColor: colors.bear,
+            wickUpColor: colors.bull,
+            wickDownColor: colors.bear,
+        });
+
+        volumeSeries.priceScale().applyOptions({
+            borderColor: colors.grid,
+            scaleMargins: { top: 0.14, bottom: 0 },
+            visible: false,
+        });
+
+        const state = useTradingStore.getState();
+        const aggregated = aggregateCandles(state.candles, state.chartTimeframe);
+        volumeSeries.setData(
+            aggregated.map((c) => ({
+                time: c.time as UTCTimestamp,
+                value: c.volume,
+                color: c.close >= c.open ? hex8(colors.bull, 0.33) : hex8(colors.bear, 0.33),
+            })),
+        );
+
+        const vwap = state.vwap > 0 ? state.vwap : null;
+        if (vwap !== null && vwapLineRef.current) {
+            vwapLineRef.current.applyOptions({ price: vwap, color: colors.vwap });
+        }
+
+        const markerApi = markerApiRef.current;
+        if (markerApi) {
+            const markers: SeriesMarker<Time>[] = state.fills.map((fill) => ({
+                time: fill.time,
+                position: fill.side === "buy" ? "belowBar" : "aboveBar",
+                color: fill.side === "buy" ? colors.bull : colors.bear,
+                shape: fill.side === "buy" ? "arrowUp" : "arrowDown",
+                text: fill.side === "buy" ? `BUY ${fill.price.toFixed(4)}` : `SELL ${fill.price.toFixed(4)}`,
+            }));
+            markerApi.setMarkers(markers);
+        }
+    }, [themeRevision]);
+
     // Subscribe to candle + timeframe changes and update chart
     useEffect(() => {
-        const { bull, bear } = paletteRef.current;
-
         const syncData = (state: TradingStore, prevState: TradingStore) => {
             const candleSeries = candleSeriesRef.current;
             const volumeSeries = volumeSeriesRef.current;
             if (!candleSeries || !volumeSeries) return;
+
+            const { bull, bear } = paletteRef.current;
 
             const candles = state.candles;
             const prevCandles = prevState.candles || [];
@@ -333,8 +390,6 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
     // Subscribe to VWAP and maintain price line
     useEffect(() => {
-        let vwapLine: IPriceLine | null = null;
-
         const syncVwap = (state: TradingStore, prevState: TradingStore) => {
             if (
                 prevState &&
@@ -348,8 +403,8 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
             const vwap = state.vwap > 0 ? state.vwap : null;
             if (vwap === null) return;
 
-            if (!vwapLine) {
-                vwapLine = candleSeries.createPriceLine({
+            if (!vwapLineRef.current) {
+                vwapLineRef.current = candleSeries.createPriceLine({
                     price: vwap,
                     color: paletteRef.current.vwap,
                     lineWidth: 1,
@@ -358,7 +413,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                     title: "",
                 });
             } else {
-                vwapLine.applyOptions({ price: vwap });
+                vwapLineRef.current.applyOptions({ price: vwap, color: paletteRef.current.vwap });
             }
         };
 
@@ -370,12 +425,12 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
 
     // Subscribe to human fill markers and redraw full marker set
     useEffect(() => {
-        const { bull, bear } = paletteRef.current;
-
         const syncMarkers = (state: TradingStore, prevState: TradingStore) => {
             if (prevState.fills && state.fills === prevState.fills) return;
             const markerApi = markerApiRef.current;
             if (!markerApi) return;
+
+            const { bull, bear } = paletteRef.current;
 
             const markers: SeriesMarker<Time>[] = state.fills.map((fill) => ({
                 time: fill.time,

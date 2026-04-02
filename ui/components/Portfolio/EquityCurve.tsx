@@ -10,28 +10,28 @@ import {
 } from "lightweight-charts";
 
 import { useTradingStore } from "@/store/tradingStore";
-
-const C = {
-    textMuted: "#746d6a",  // oklch(54% 0.01 50)
-    bull: "#11b34a",       // oklch(67% 0.19 148)
-    bear: "#df202e",       // oklch(58% 0.22 25)
-} as const;
+import { readChartPalette } from "@/lib/chartTheme";
+import { useThemeRevision } from "@/hooks/useThemeRevision";
 
 export default function EquityCurve() {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
     const lineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
     const snapshotReady = useTradingStore((state) => state.snapshotReady);
+    const themeRevision = useThemeRevision();
 
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
+
+        const colors = readChartPalette();
 
         const chart = createChart(container, {
             layout: {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ...({ attributionLogo: false } as any),
                 background: { type: ColorType.Solid, color: "transparent" },
-                textColor: C.textMuted,
+                textColor: colors.textMuted,
                 fontFamily: "var(--font-jetbrains)",
             },
             rightPriceScale: {
@@ -58,7 +58,7 @@ export default function EquityCurve() {
         });
 
         const lineSeries = chart.addSeries(LineSeries, {
-            color: C.bull,
+            color: colors.bull,
             lineWidth: 2,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -66,17 +66,45 @@ export default function EquityCurve() {
         });
 
         lineSeriesRef.current = lineSeries;
+        chartRef.current = chart;
 
         return () => {
             chart.remove();
+            chartRef.current = null;
             lineSeriesRef.current = null;
         };
     }, []);
 
     useEffect(() => {
+        const chart = chartRef.current;
+        const lineSeries = lineSeriesRef.current;
+        if (!chart || !lineSeries) return;
+
+        const colors = readChartPalette();
+        chart.applyOptions({
+            layout: {
+                background: { type: ColorType.Solid, color: "transparent" },
+                textColor: colors.textMuted,
+                fontFamily: "var(--font-jetbrains)",
+            },
+        });
+
+        const history = useTradingStore.getState().equityHistory;
+        if (history.length >= 2) {
+            const first = history[0].value;
+            const last = history[history.length - 1].value;
+            lineSeries.applyOptions({ color: last >= first ? colors.bull : colors.bear });
+        } else {
+            lineSeries.applyOptions({ color: colors.bull });
+        }
+    }, [themeRevision]);
+
+    useEffect(() => {
         const renderHistory = (history: Array<{ time: UTCTimestamp; value: number }>) => {
             const lineSeries = lineSeriesRef.current;
             if (!lineSeries) return;
+
+            const colors = readChartPalette();
 
             if (history.length === 0) {
                 lineSeries.setData([]);
@@ -85,7 +113,7 @@ export default function EquityCurve() {
 
             const first = history[0].value;
             const last = history[history.length - 1].value;
-            lineSeries.applyOptions({ color: last >= first ? C.bull : C.bear });
+            lineSeries.applyOptions({ color: last >= first ? colors.bull : colors.bear });
 
             lineSeries.setData(
                 history.map((point) => ({
@@ -110,7 +138,7 @@ export default function EquityCurve() {
     return (
         <section className="panel relative grid h-full grid-rows-[auto_1fr]">
             <div className="panel-title">Equity Curve</div>
-            <div className="relative h-full min-h-[60px]">
+            <div className="relative h-full min-h-15">
                 <div ref={containerRef} className="h-full w-full" />
                 {!snapshotReady && (
                     <div className="absolute inset-0 grid place-items-center bg-bg-panel/80 font-mono text-micro uppercase tracking-widest text-text-muted">
