@@ -15,7 +15,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SYNTHETIC-BULL Trading Terminal",
+  title: "SYNTHETIC-BULL",
   description: "Hyperliquid-inspired trading desk for OpenSoft 2026",
 };
 
