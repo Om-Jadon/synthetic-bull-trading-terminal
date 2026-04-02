@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/nextbull/trading-terminal/internal/api"
 	"github.com/nextbull/trading-terminal/internal/bots"
 	"github.com/nextbull/trading-terminal/internal/engine"
@@ -41,59 +42,62 @@ func main() {
 
 	matcher := engine.NewMatcher()
 	candleStore := engine.NewCandleStore(cfg.S0)
-	registry := engine.NewRegistry("human", "market_maker", "alpha_bot")
+	// Only bot portfolios are pre-seeded; session portfolios are created on first connect.
+	registry := engine.NewRegistry("market_maker", "alpha_bot")
 	wsHub := hub.New()
 
 	var ready atomic.Bool
 
-	handlers := api.New(inChan, registry.Get("human"), func() float64 { return candleStore.Stats().LastPrice })
+	handlers := api.New(inChan, registry, func() float64 { return candleStore.Stats().LastPrice })
 
-	// Snapshot function — called on each new WS connection
-	snapshotFn := func() []byte {
-		bids, asks := matcher.Depth(150)
-		currentStats := candleStore.Stats()
-		humanPortfolio := registry.Get("human")
-		botPortfolios := make([]map[string]any, 0, 2)
-		botEquityHistory := make(map[string]any, 2)
-		for userID, p := range registry.All() {
-			if userID == "human" {
-				continue
+	// makeSnapshotFn returns a per-session snapshot function called once on WS connect.
+	makeSnapshotFn := func(sessionID string) func() []byte {
+		return func() []byte {
+			bids, asks := matcher.Depth(150)
+			currentStats := candleStore.Stats()
+			sessionPortfolio := registry.GetOrCreate(sessionID)
+			botPortfolios := make([]map[string]any, 0, 2)
+			botEquityHistory := make(map[string]any, 2)
+			for userID, p := range registry.All() {
+				if userID == sessionID {
+					continue
+				}
+				botPortfolios = append(botPortfolios, p.State(currentStats.LastPrice))
+				botEquityHistory[userID] = p.EquityHistory()
 			}
-			botPortfolios = append(botPortfolios, p.State(currentStats.LastPrice))
-			botEquityHistory[userID] = p.EquityHistory()
+			snap := map[string]any{
+				"type": "snapshot",
+				"book": map[string]any{
+					"bids": bids,
+					"asks": asks,
+					"ts":   time.Now().UnixMilli(),
+				},
+				"candles":          candleStore.Snapshot(1000),
+				"portfolio":        sessionPortfolio.State(currentStats.LastPrice),
+				"stats": map[string]any{
+					"type":           "stats",
+					"session_open":   currentStats.SessionOpen,
+					"session_high":   currentStats.SessionHigh,
+					"session_low":    currentStats.SessionLow,
+					"last_price":     currentStats.LastPrice,
+					"session_volume": currentStats.SessionVolume,
+					"change_pct":     currentStats.ChangePct,
+					"trade_count":    currentStats.TradeCount,
+					"vwap":           currentStats.VWAP,
+					"ts":             currentStats.Ts,
+				},
+				"recent_trades":      candleStore.RecentTrades(),
+				"equity_history":     sessionPortfolio.EquityHistory(),
+				"bot_portfolios":     botPortfolios,
+				"bot_equity_history": botEquityHistory,
+				"fills":              sessionPortfolio.FillLog(),
+				"activity_log":       sessionPortfolio.ActivityLog(),
+				"open_orders":        matcher.OpenSessionOrders(sessionID),
+				"ts":                 time.Now().UnixMilli(),
+			}
+			b, _ := json.Marshal(snap)
+			return b
 		}
-		snap := map[string]any{
-			"type": "snapshot",
-			"book": map[string]any{
-				"bids": bids,
-				"asks": asks,
-				"ts":   time.Now().UnixMilli(),
-			},
-			"candles":   candleStore.Snapshot(1000),
-			"portfolio": humanPortfolio.State(currentStats.LastPrice),
-			"stats": map[string]any{
-				"type":           "stats",
-				"session_open":   currentStats.SessionOpen,
-				"session_high":   currentStats.SessionHigh,
-				"session_low":    currentStats.SessionLow,
-				"last_price":     currentStats.LastPrice,
-				"session_volume": currentStats.SessionVolume,
-				"change_pct":     currentStats.ChangePct,
-				"trade_count":    currentStats.TradeCount,
-				"vwap":           currentStats.VWAP,
-				"ts":             currentStats.Ts,
-			},
-			"recent_trades":  candleStore.RecentTrades(),
-			"equity_history": humanPortfolio.EquityHistory(),
-			"bot_portfolios": botPortfolios,
-			"bot_equity_history": botEquityHistory,
-			"fills":          humanPortfolio.FillLog(),
-			"activity_log":   humanPortfolio.ActivityLog(),
-			"open_orders":    matcher.OpenHumanOrders(),
-			"ts":             time.Now().UnixMilli(),
-		}
-		b, _ := json.Marshal(snap)
-		return b
 	}
 
 	// HTTP router
@@ -105,7 +109,17 @@ func main() {
 	}))
 	mux.HandleFunc("GET /health", api.HealthHandler(func() bool { return ready.Load() }))
 	mux.HandleFunc("GET /ws", func(w http.ResponseWriter, r *http.Request) {
-		wsHub.ServeWS(w, r, snapshotFn)
+		sessionID := r.URL.Query().Get("session")
+		if sessionID == "" {
+			http.Error(w, "missing session query param", http.StatusBadRequest)
+			return
+		}
+		if _, err := uuid.Parse(sessionID); err != nil {
+			http.Error(w, "invalid session ID", http.StatusBadRequest)
+			return
+		}
+		registry.GetOrCreate(sessionID) // ensure portfolio exists before snapshot
+		wsHub.ServeWS(w, r, sessionID, makeSnapshotFn(sessionID))
 	})
 
 	srv := &http.Server{
@@ -149,7 +163,6 @@ func main() {
 					})
 					wsHub.Broadcast(msg)
 				}
-				humanPortfolio := registry.Get("human")
 				for _, u := range updates {
 					msg, _ := json.Marshal(map[string]any{
 						"type":           "order_update",
@@ -161,29 +174,30 @@ func main() {
 						"side":           u.Side,
 						"ts":             u.Ts,
 					})
-					wsHub.Broadcast(msg)
-					// record every human order lifecycle event for the activity log
-					humanPortfolio.RecordActivity(engine.ActivityRecord{
-						OrderID:       u.OrderID,
-						Status:        u.Status,
-						FilledSize:    u.FilledSize,
-						RemainingSize: u.RemainingSize,
-						Price:         u.Price,
-						Side:          u.Side,
-						Ts:            u.Ts,
-					})
-					// Send human portfolio update after fills
-					if u.Status == engine.StatusPartial || u.Status == engine.StatusFilled {
-						lastPrice := candleStore.Stats().LastPrice
-						humanPortfolio.RecordEquity(lastPrice)
-						pmsg, _ := json.Marshal(humanPortfolio.State(lastPrice))
-						wsHub.Broadcast(pmsg)
+					// order_update and portfolio changes are targeted to the owning session
+					wsHub.Send(u.UserID, msg)
+					if p := registry.Get(u.UserID); p != nil {
+						p.RecordActivity(engine.ActivityRecord{
+							OrderID:       u.OrderID,
+							Status:        u.Status,
+							FilledSize:    u.FilledSize,
+							RemainingSize: u.RemainingSize,
+							Price:         u.Price,
+							Side:          u.Side,
+							Ts:            u.Ts,
+						})
+						if u.Status == engine.StatusPartial || u.Status == engine.StatusFilled {
+							lastPrice := candleStore.Stats().LastPrice
+							p.RecordEquity(lastPrice)
+							pmsg, _ := json.Marshal(p.State(lastPrice))
+							wsHub.Send(u.UserID, pmsg)
+						}
 					}
 				}
 
 			case <-bookTicker.C:
-				if purged := matcher.PurgeStaleHumanOrders(30 * time.Minute); purged > 0 {
-					log.Printf("purged %d stale human orders (no fill/cancel in 30min)", purged)
+				if purged := matcher.PurgeStaleSessionOrders(30 * time.Minute); purged > 0 {
+					log.Printf("purged %d stale session orders (no fill/cancel in 30min)", purged)
 				}
 				bids, asks := matcher.Depth(150)
 				msg, _ := json.Marshal(map[string]any{
@@ -222,11 +236,14 @@ func main() {
 					"ts":             stats.Ts,
 				})
 				wsHub.Broadcast(msg)
-				// Broadcast all 3 portfolio states
-				for _, p := range registry.All() {
+				// Record equity for all portfolios; broadcast only bot portfolio states.
+				// Session portfolio states are pushed on fills only (more meaningful).
+				for userID, p := range registry.All() {
 					p.RecordEquity(stats.LastPrice)
-					pmsg, _ := json.Marshal(p.State(stats.LastPrice))
-					wsHub.Broadcast(pmsg)
+					if userID == "market_maker" || userID == "alpha_bot" {
+						pmsg, _ := json.Marshal(p.State(stats.LastPrice))
+						wsHub.Broadcast(pmsg)
+					}
 				}
 			}
 		}

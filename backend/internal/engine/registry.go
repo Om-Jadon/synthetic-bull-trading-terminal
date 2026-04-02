@@ -29,6 +29,25 @@ func (r *PortfolioRegistry) Get(userID string) *Portfolio {
 	return r.portfolios[userID]
 }
 
+// GetOrCreate returns the Portfolio for userID, creating one with startingCapital if it does not exist.
+// Safe to call concurrently from any goroutine.
+func (r *PortfolioRegistry) GetOrCreate(userID string) *Portfolio {
+	r.mu.RLock()
+	p := r.portfolios[userID]
+	r.mu.RUnlock()
+	if p != nil {
+		return p
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p = r.portfolios[userID]; p != nil {
+		return p
+	}
+	p = NewPortfolio(userID, startingCapital)
+	r.portfolios[userID] = p
+	return p
+}
+
 // All returns a snapshot copy of the portfolios map.
 // Safe to call from any goroutine.
 func (r *PortfolioRegistry) All() map[string]*Portfolio {

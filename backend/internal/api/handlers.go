@@ -11,6 +11,11 @@ import (
 	"github.com/nextbull/trading-terminal/internal/engine"
 )
 
+// registryLookup is the subset of PortfolioRegistry used by handlers.
+type registryLookup interface {
+	GetOrCreate(userID string) *engine.Portfolio
+}
+
 // OrderRequest is the POST /orders JSON body.
 type OrderRequest struct {
 	Type  string  `json:"type"`  // "limit" or "market"
@@ -27,21 +32,26 @@ type OrderResponse struct {
 
 // Handlers holds dependencies for HTTP handlers.
 type Handlers struct {
-	inChan     chan<- *engine.Order
-	portfolio  portfolio
-	lastPrice  func() float64
+	inChan    chan<- *engine.Order
+	registry  registryLookup
+	lastPrice func() float64
 }
 
-// portfolio is the subset of engine.Portfolio used by handlers.
-type portfolio interface {
-	State(lastPrice float64) map[string]any
-}
-
-func New(inChan chan<- *engine.Order, p portfolio, lastPrice func() float64) *Handlers {
-	return &Handlers{inChan: inChan, portfolio: p, lastPrice: lastPrice}
+func New(inChan chan<- *engine.Order, registry registryLookup, lastPrice func() float64) *Handlers {
+	return &Handlers{inChan: inChan, registry: registry, lastPrice: lastPrice}
 }
 
 func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.Header.Get("X-Session-ID")
+	if sessionID == "" {
+		http.Error(w, "missing X-Session-ID header", http.StatusBadRequest)
+		return
+	}
+	if _, err := uuid.Parse(sessionID); err != nil {
+		http.Error(w, "invalid session ID", http.StatusBadRequest)
+		return
+	}
+
 	var req OrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -81,7 +91,8 @@ func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
 	// Validate cash for limit buy orders. Short selling is permitted (PS line 96)
 	// so sell orders and market buy orders (no price) are not restricted.
 	if side == engine.Buy && typ == engine.TypeLimit {
-		snap := h.portfolio.State(h.lastPrice())
+		p := h.registry.GetOrCreate(sessionID)
+		snap := p.State(h.lastPrice())
 		cash, ok := snap["cash"].(float64)
 		if !ok {
 			http.Error(w, "portfolio unavailable", http.StatusInternalServerError)
@@ -101,7 +112,7 @@ func (h *Handlers) PostOrder(w http.ResponseWriter, r *http.Request) {
 		Price:     req.Price,
 		Size:      req.Size,
 		Remaining: req.Size,
-		UserID:    "human",
+		UserID:    sessionID,
 		CreatedAt: time.Now(),
 	}
 
@@ -168,7 +179,7 @@ func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Session-ID")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

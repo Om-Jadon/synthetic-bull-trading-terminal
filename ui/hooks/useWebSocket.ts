@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { createCandleAggregator } from "@/lib/candleAggregator";
+import { getSessionId } from "@/lib/api";
 import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 import type { SnapshotMsg, StatsMsg, WSMessage } from "@/types/ws";
@@ -110,7 +111,8 @@ export function useWebSocket({
   const statsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+    const wsBase = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+    const wsUrl = `${wsBase}?session=${encodeURIComponent(getSessionId())}`;
     let socket: WebSocket | null = null;
     let cancelled = false;
 
@@ -171,10 +173,10 @@ export function useWebSocket({
               );
               break;
             case "portfolio":
-              if (!message.user_id || message.user_id === "human") {
-                store.setPortfolio(message);
-              } else {
+              if (message.user_id === "market_maker" || message.user_id === "alpha_bot") {
                 store.setBotPortfolio(message);
+              } else {
+                store.setPortfolio(message);
               }
               break;
             case "order_update": {

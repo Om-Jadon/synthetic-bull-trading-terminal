@@ -10,11 +10,35 @@ import (
 	"github.com/nextbull/trading-terminal/internal/engine"
 )
 
+const testSessionID = "12345678-1234-1234-1234-123456789abc"
+
 func newTestHandlers(cash float64) (*Handlers, chan *engine.Order) {
 	inChan := make(chan *engine.Order, 10)
-	p := engine.NewPortfolio("human", cash)
-	h := New(inChan, p, func() float64 { return 100.0 })
+	r := engine.NewRegistry()
+	p := r.GetOrCreate(testSessionID)
+	// Seed the portfolio with the desired cash amount by applying a synthetic trade
+	// that adjusts cash. Simpler: use NewRegistry and set cash via a private-package trick.
+	// Since we can't set cash directly, use the registry with the default $100k and
+	// override via a sell trade for tests needing low cash.
+	_ = p
+	// For the cash-limit tests we need a portfolio with specific cash.
+	// Wrap a minimal stub registry instead.
+	reg := &stubRegistry{cash: cash}
+	h := New(inChan, reg, func() float64 { return 100.0 })
 	return h, inChan
+}
+
+// stubRegistry is a test-only registry that always returns a portfolio with preset cash.
+type stubRegistry struct {
+	cash float64
+	p    *engine.Portfolio
+}
+
+func (s *stubRegistry) GetOrCreate(userID string) *engine.Portfolio {
+	if s.p == nil {
+		s.p = engine.NewPortfolio(userID, s.cash)
+	}
+	return s.p
 }
 
 func postOrder(t *testing.T, h *Handlers, body map[string]any) *httptest.ResponseRecorder {
@@ -22,6 +46,7 @@ func postOrder(t *testing.T, h *Handlers, body map[string]any) *httptest.Respons
 	b, _ := json.Marshal(body)
 	req := httptest.NewRequest("POST", "/orders", bytes.NewReader(b))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Session-ID", testSessionID)
 	w := httptest.NewRecorder()
 	h.PostOrder(w, req)
 	return w

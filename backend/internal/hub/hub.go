@@ -12,17 +12,25 @@ import (
 
 const (
 	clientBufSize  = 256
+	directBufSize  = 512
 	writeWait      = 10 * time.Second
 	maxMessageSize = 4096
 )
 
+// DirectMsg is a targeted message for a specific session.
+type DirectMsg struct {
+	sessionID string
+	payload   []byte
+}
+
 // Client represents a connected browser.
 type Client struct {
-	conn   *websocket.Conn
-	send   chan []byte
-	hub    *Hub
-	ctx    context.Context
-	cancel context.CancelFunc
+	conn      *websocket.Conn
+	send      chan []byte
+	hub       *Hub
+	ctx       context.Context
+	cancel    context.CancelFunc
+	sessionID string
 }
 
 // Hub manages all WebSocket clients and broadcasts messages.
@@ -30,6 +38,7 @@ type Hub struct {
 	mu         sync.Mutex
 	clients    map[*Client]struct{}
 	broadcast  chan []byte
+	direct     chan DirectMsg
 	register   chan *Client
 	unregister chan *Client
 }
@@ -38,6 +47,7 @@ func New() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]struct{}),
 		broadcast:  make(chan []byte, 512),
+		direct:     make(chan DirectMsg, directBufSize),
 		register:   make(chan *Client, 16),
 		unregister: make(chan *Client, 16),
 	}
@@ -73,6 +83,21 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 			}
 			h.mu.Unlock()
+		case dm := <-h.direct:
+			h.mu.Lock()
+			for c := range h.clients {
+				if c.sessionID != dm.sessionID {
+					continue
+				}
+				select {
+				case c.send <- dm.payload:
+				default:
+					delete(h.clients, c)
+					close(c.send)
+					c.cancel()
+				}
+			}
+			h.mu.Unlock()
 		}
 	}
 }
@@ -86,10 +111,18 @@ func (h *Hub) Broadcast(msg []byte) {
 	}
 }
 
+// Send delivers a message only to clients with the matching sessionID. Safe from any goroutine.
+func (h *Hub) Send(sessionID string, msg []byte) {
+	select {
+	case h.direct <- DirectMsg{sessionID: sessionID, payload: msg}:
+	default:
+		log.Println("hub: direct channel full, dropping targeted message")
+	}
+}
 
 // ServeWS upgrades an HTTP connection to WebSocket and registers the client.
 // snapshotFn is called once on connect to send the initial snapshot.
-func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, snapshotFn func() []byte) {
+func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, sessionID string, snapshotFn func() []byte) {
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true, // allow any origin (competition demo)
 	})
@@ -100,11 +133,12 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, snapshotFn func() 
 
 	ctx, cancel := context.WithCancel(r.Context())
 	c := &Client{
-		conn:   conn,
-		send:   make(chan []byte, clientBufSize),
-		hub:    h,
-		ctx:    ctx,
-		cancel: cancel,
+		conn:      conn,
+		send:      make(chan []byte, clientBufSize),
+		hub:       h,
+		ctx:       ctx,
+		cancel:    cancel,
+		sessionID: sessionID,
 	}
 	h.register <- c
 
@@ -152,4 +186,3 @@ func (c *Client) writePump() {
 		}
 	}
 }
-

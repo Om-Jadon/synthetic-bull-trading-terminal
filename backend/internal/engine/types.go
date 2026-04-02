@@ -25,7 +25,7 @@ type Order struct {
 	Price     float64 // 0 for market orders
 	Size      float64
 	Remaining float64
-	UserID    string // "system" for GBM orders, "human" for human orders
+	UserID    string // "system" for GBM orders, session UUID for human orders, bot ID for bots
 	CreatedAt time.Time
 }
 
@@ -65,8 +65,9 @@ const (
 	StatusCancelled = "cancelled"
 )
 
-// OrderUpdate is sent to human users when their order state changes
+// OrderUpdate is sent to session users when their order state changes
 type OrderUpdate struct {
+	UserID        string  `json:"-"` // session ID of the order owner — used for routing, not serialized
 	OrderID       string  `json:"order_id"`
 	Status        string  `json:"status"`
 	FilledSize    float64 `json:"filled_size"`

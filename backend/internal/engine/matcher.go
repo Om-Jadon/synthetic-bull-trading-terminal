@@ -54,11 +54,12 @@ func (m *Matcher) handleCancel(o *Order) ([]*Trade, []*OrderUpdate) {
 	if !ok {
 		return nil, nil
 	}
-	// Only emit OrderUpdate for human orders (bots don't consume WS updates)
-	if orig.UserID != "human" {
+	// Only emit OrderUpdate for tracked users (bots don't consume WS updates)
+	if !isTrackedUser(orig.UserID) {
 		return nil, nil
 	}
 	return nil, []*OrderUpdate{{
+		UserID:        orig.UserID,
 		OrderID:       o.ID,
 		Status:        StatusCancelled,
 		FilledSize:    filled,
@@ -72,18 +73,18 @@ func (m *Matcher) handleCancel(o *Order) ([]*Trade, []*OrderUpdate) {
 func (m *Matcher) handleLimit(o *Order) ([]*Trade, []*OrderUpdate) {
 	var trades []*Trade
 	var updates []*OrderUpdate
-	isHuman := o.UserID == "human"
+	isTracked := isTrackedUser(o.UserID)
 
 	// Track all non-system resting orders for cancel support.
 	// System (GBM) orders are never tracked — they cannot be cancelled.
-	isSystem := o.UserID == "system"
-	if !isSystem {
+	if o.UserID != "system" {
 		m.filledSizes[o.ID] = 0
 		m.restingOrders[o.ID] = o
 	}
 
-	if isHuman {
+	if isTracked {
 		updates = append(updates, &OrderUpdate{
+			UserID:        o.UserID,
 			OrderID:       o.ID,
 			Status:        StatusOpen,
 			FilledSize:    0,
@@ -95,9 +96,9 @@ func (m *Matcher) handleLimit(o *Order) ([]*Trade, []*OrderUpdate) {
 	}
 
 	if o.Side == Buy {
-		trades, updates = m.matchAgainstAsks(o, trades, updates, isHuman)
+		trades, updates = m.matchAgainstAsks(o, trades, updates, isTracked)
 	} else {
-		trades, updates = m.matchAgainstBids(o, trades, updates, isHuman)
+		trades, updates = m.matchAgainstBids(o, trades, updates, isTracked)
 	}
 
 	// Rest unmatched remainder in the book
@@ -114,11 +115,11 @@ func (m *Matcher) handleLimit(o *Order) ([]*Trade, []*OrderUpdate) {
 func (m *Matcher) handleMarket(o *Order) ([]*Trade, []*OrderUpdate) {
 	var trades []*Trade
 	var updates []*OrderUpdate
-	isHuman := o.UserID == "human"
+	isTracked := o.UserID == "human"
 	if o.Side == Buy {
-		trades, updates = m.matchAgainstAsks(o, trades, updates, isHuman)
+		trades, updates = m.matchAgainstAsks(o, trades, updates, isTracked)
 	} else {
-		trades, updates = m.matchAgainstBids(o, trades, updates, isHuman)
+		trades, updates = m.matchAgainstBids(o, trades, updates, isTracked)
 	}
 	// Market orders never rest
 	delete(m.filledSizes, o.ID)
@@ -126,7 +127,7 @@ func (m *Matcher) handleMarket(o *Order) ([]*Trade, []*OrderUpdate) {
 	return trades, updates
 }
 
-func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUpdate, isHuman bool) ([]*Trade, []*OrderUpdate) {
+func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUpdate, isTracked bool) ([]*Trade, []*OrderUpdate) {
 	for o.Remaining > 0 {
 		best := m.ob.BestAsk()
 		if best == nil {
@@ -154,7 +155,7 @@ func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUp
 				fillSize = minF(o.Remaining, origRemaining)
 			}
 			fillSize = minF(fillSize, o.Remaining)
-			makerIsHuman := snaps[i].userID == "human"
+			makerIsTracked := isTrackedUser(snaps[i].userID)
 			t := &Trade{
 				ID:           "t_" + uuid.NewString(),
 				Price:        fillPrice,
@@ -168,13 +169,14 @@ func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUp
 			}
 			trades = append(trades, t)
 			o.Remaining -= t.Size
-			if isHuman {
+			if isTracked {
 				m.filledSizes[o.ID] += t.Size
 				status := StatusPartial
 				if o.Remaining <= 0 {
 					status = StatusFilled
 				}
 				updates = append(updates, &OrderUpdate{
+					UserID:        o.UserID,
 					OrderID:       o.ID,
 					Status:        status,
 					FilledSize:    m.filledSizes[o.ID],
@@ -193,13 +195,14 @@ func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUp
 					delete(m.filledSizes, snaps[i].id)
 					delete(m.restingOrders, snaps[i].id)
 				}
-				// Only emit WS update for human makers
-				if makerIsHuman {
+				// Only emit WS update for tracked makers
+				if makerIsTracked {
 					status := StatusPartial
 					if remaining <= 0 {
 						status = StatusFilled
 					}
 					updates = append(updates, &OrderUpdate{
+						UserID:        snaps[i].userID,
 						OrderID:       snaps[i].id,
 						Status:        status,
 						FilledSize:    filled,
@@ -218,7 +221,7 @@ func (m *Matcher) matchAgainstAsks(o *Order, trades []*Trade, updates []*OrderUp
 	return trades, updates
 }
 
-func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUpdate, isHuman bool) ([]*Trade, []*OrderUpdate) {
+func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUpdate, isTracked bool) ([]*Trade, []*OrderUpdate) {
 	for o.Remaining > 0 {
 		best := m.ob.BestBid()
 		if best == nil {
@@ -244,7 +247,7 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 				fillSize = minF(o.Remaining, origRemaining)
 			}
 			fillSize = minF(fillSize, o.Remaining)
-			makerIsHuman := snaps[i].userID == "human"
+			makerIsTracked := isTrackedUser(snaps[i].userID)
 			t := &Trade{
 				ID:           "t_" + uuid.NewString(),
 				Price:        fillPrice,
@@ -258,13 +261,14 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 			}
 			trades = append(trades, t)
 			o.Remaining -= t.Size
-			if isHuman {
+			if isTracked {
 				m.filledSizes[o.ID] += t.Size
 				status := StatusPartial
 				if o.Remaining <= 0 {
 					status = StatusFilled
 				}
 				updates = append(updates, &OrderUpdate{
+					UserID:        o.UserID,
 					OrderID:       o.ID,
 					Status:        status,
 					FilledSize:    m.filledSizes[o.ID],
@@ -283,13 +287,14 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 					delete(m.filledSizes, snaps[i].id)
 					delete(m.restingOrders, snaps[i].id)
 				}
-				// Only emit WS update for human makers
-				if makerIsHuman {
+				// Only emit WS update for tracked makers
+				if makerIsTracked {
 					status := StatusPartial
 					if remaining <= 0 {
 						status = StatusFilled
 					}
 					updates = append(updates, &OrderUpdate{
+						UserID:        snaps[i].userID,
 						OrderID:       snaps[i].id,
 						Status:        status,
 						FilledSize:    filled,
@@ -308,14 +313,14 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 	return trades, updates
 }
 
-// OpenHumanOrders returns all resting human orders as order_update records.
+// OpenSessionOrders returns all resting orders for a given session as order_update records.
 // Used to restore open orders on client reconnect. Safe to call concurrently.
-func (m *Matcher) OpenHumanOrders() []map[string]any {
+func (m *Matcher) OpenSessionOrders(sessionID string) []map[string]any {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	var out []map[string]any
 	for id, o := range m.restingOrders {
-		if o.UserID != "human" {
+		if o.UserID != sessionID {
 			continue
 		}
 		out = append(out, map[string]any{
@@ -339,15 +344,15 @@ func (m *Matcher) Depth(n int) (bids, asks [][2]float64) {
 	return m.ob.Depth(n)
 }
 
-// PurgeStaleHumanOrders cancels and removes tracking for resting human orders
+// PurgeStaleSessionOrders cancels and removes tracking for resting session orders
 // older than maxAge. Call periodically from the matching goroutine.
-func (m *Matcher) PurgeStaleHumanOrders(maxAge time.Duration) int {
+func (m *Matcher) PurgeStaleSessionOrders(maxAge time.Duration) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	cutoff := time.Now().Add(-maxAge)
 	purged := 0
 	for id, o := range m.restingOrders {
-		if o.UserID != "human" {
+		if !isTrackedUser(o.UserID) {
 			continue
 		}
 		if o.CreatedAt.Before(cutoff) {
@@ -358,6 +363,13 @@ func (m *Matcher) PurgeStaleHumanOrders(maxAge time.Duration) int {
 		}
 	}
 	return purged
+}
+
+// isTrackedUser returns true for any user that should receive order updates
+// and have their orders tracked for cancel support.
+// System (GBM) orders and bot orders are excluded.
+func isTrackedUser(userID string) bool {
+	return userID != "system" && userID != "market_maker" && userID != "alpha_bot"
 }
 
 func nowMs() int64 {
