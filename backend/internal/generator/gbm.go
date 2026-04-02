@@ -23,19 +23,6 @@ type Config struct {
 	MaxResting       int     // cap on tracked system resting orders for cancellation
 }
 
-// DefaultConfig matches the spec parameters.
-func DefaultConfig() Config {
-	return Config{
-		S0:               100.0,
-		Mu:               0.0,
-		Sigma:            0.015,
-		TickMs:           10,
-		TargetMsgsPerSec: 200,
-		CancelShare:      0.10,
-		MarketOrderShare: 0.05,
-		MaxResting:       600,
-	}
-}
 
 // Generator runs the GBM process and pushes limit orders into inChan.
 // Call Run in a separate goroutine.
@@ -44,7 +31,6 @@ type Generator struct {
 	inChan          chan<- *engine.Order
 	price           float64
 	anchor          float64
-	t               float64 // accumulated time in seconds
 	seq             int
 	msgBudget       float64
 	restingOrderIDs []string
@@ -97,7 +83,6 @@ func (g *Generator) tick(dt float64) {
 	z := rand.NormFloat64()
 	g.price *= math.Exp((g.cfg.Mu-0.5*g.cfg.Sigma*g.cfg.Sigma)*dt +
 		g.cfg.Sigma*math.Sqrt(dt)*z)
-	g.t += dt
 
 	// Soft anchor prevents sustained one-way drift while keeping each run stochastic.
 	g.anchor = 0.995*g.anchor + 0.005*g.price

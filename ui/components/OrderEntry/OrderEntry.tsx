@@ -295,10 +295,10 @@ export default function OrderEntry() {
           )}
 
           {type === "market" && (
-            <div className="flex items-center justify-between rounded-xs border border-border bg-bg-row px-2 py-2 text-data">
-              <span className="text-text-muted">Est. fill</span>
+            <div className="flex items-center justify-between gap-1 rounded-xs border border-border bg-bg-row px-2 py-2 text-data">
+              <span className="shrink-0 text-text-muted">Est. fill</span>
               {marketEst ? (
-                <span className="text-text-primary">
+                <span className="min-w-0 truncate text-right text-text-primary">
                   {`$${priceFormatter.format(marketEst.avgPrice)} avg (${marketEst.slippage.toFixed(2)}% slip) · ${marketEst.levelsUsed} lvls${marketEst.partial ? " · partial" : ""}`}
                 </span>
               ) : (
@@ -319,7 +319,7 @@ export default function OrderEntry() {
             />
           </label>
 
-          <div className="font-mono text-micro max-sm:text-[11px] text-text-muted">
+          <div className="min-w-0 overflow-hidden font-mono text-micro max-sm:text-[11px] text-text-muted">
             {equityPct !== null && notional > 0
               ? `~${equityPct.toFixed(1)}% of capital  ·  $${moneyFormatter.format(notional)} notional  ·  Fee ~$${(notional * 0.001).toFixed(2)}`
               : "—"}

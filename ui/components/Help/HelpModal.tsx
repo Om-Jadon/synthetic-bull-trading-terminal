@@ -20,7 +20,6 @@ const SHORTCUTS = [
     category: "Navigation",
     items: [
       { key: "← / →", desc: "Switch Panel Tabs" },
-      { key: "F", desc: "Maximize active chart" },
       { key: "Esc", desc: "Exit Fullscreen / Clear Form" },
     ],
   },

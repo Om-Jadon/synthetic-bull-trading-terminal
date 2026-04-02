@@ -1,16 +1,12 @@
 import type { Candle, TradeMsg } from "@/types/ws";
 
-export type CandleAggregator = {
+type CandleAggregator = {
   seed: (candles: Candle[]) => void;
   onTrade: (trade: TradeMsg) => Candle;
 };
 
-export function createCandleAggregator(
-  initialCandles: Candle[] = [],
-): CandleAggregator {
-  let lastCandle: Candle | null = initialCandles.length
-    ? initialCandles[initialCandles.length - 1]
-    : null;
+export function createCandleAggregator(): CandleAggregator {
+  let lastCandle: Candle | null = null;
 
   return {
     seed(candles: Candle[]) {

@@ -41,17 +41,3 @@ export function generateLadder(
     return prices;
 }
 
-export function groupLevels(
-    levels: [number, number][],
-    tick: number,
-): [number, number][] {
-    if (!levels.length || tick <= 0) return levels;
-    const factor = Math.round(1 / tick);
-    const buckets = new Map<number, number>();
-
-    for (const [price, size] of levels) {
-        const key = Math.round(price * factor) / factor;
-        buckets.set(key, (buckets.get(key) ?? 0) + size);
-    }
-    return Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]);
-}

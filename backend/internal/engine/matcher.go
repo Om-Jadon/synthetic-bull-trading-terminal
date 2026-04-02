@@ -289,7 +289,7 @@ func (m *Matcher) matchAgainstBids(o *Order, trades []*Trade, updates []*OrderUp
 					if remaining <= 0 {
 						status = StatusFilled
 					}
-						updates = append(updates, &OrderUpdate{
+					updates = append(updates, &OrderUpdate{
 						OrderID:       snaps[i].id,
 						Status:        status,
 						FilledSize:    filled,

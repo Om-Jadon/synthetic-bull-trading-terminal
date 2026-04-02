@@ -46,9 +46,6 @@ export function setMuted(val: boolean): void {
   }
 }
 
-export function getMuted(): boolean {
-  return _muted;
-}
 
 /** Load persisted mute preference. Call once on client mount. */
 export function loadMutePreference(): boolean {

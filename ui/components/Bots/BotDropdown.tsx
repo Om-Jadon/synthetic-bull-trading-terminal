@@ -12,7 +12,6 @@ const BOT_CONFIGS = [
 type BotCardProps = {
   config: (typeof BOT_CONFIGS)[number];
   portfolio: PortfolioMsg | undefined;
-  onExpand: () => void;
   isLast: boolean;
 };
 
@@ -92,7 +91,6 @@ export default function BotDropdown({ onClose, onExpand }: BotDropdownProps) {
             key={config.userId}
             config={config}
             portfolio={botPortfolios.get(config.userId)}
-            onExpand={onExpand}
             isLast={i === BOT_CONFIGS.length - 1}
           />
         ))}

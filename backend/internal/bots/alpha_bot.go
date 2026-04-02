@@ -60,21 +60,7 @@ func RunAlphaBot(
 
 			side, shouldTrade := alphaSignal(prevFast, prevSlow, fast, slow, rsi, position, portfolio.Cash(), candle.Close)
 
-			if shouldTrade && side == engine.Buy {
-				order := &engine.Order{
-					ID:        fmt.Sprintf("ab_%s", uuid.NewString()[:8]),
-					Type:      engine.TypeMarket,
-					Side:      side,
-					Size:      abTradeSize,
-					Remaining: abTradeSize,
-					UserID:    abUserID,
-					CreatedAt: time.Now(),
-				}
-				select {
-				case inChan <- order:
-				default:
-				}
-			} else if shouldTrade && side == engine.Sell {
+			if shouldTrade {
 				order := &engine.Order{
 					ID:        fmt.Sprintf("ab_%s", uuid.NewString()[:8]),
 					Type:      engine.TypeMarket,

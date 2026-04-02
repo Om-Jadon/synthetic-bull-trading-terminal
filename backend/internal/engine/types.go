@@ -101,17 +101,3 @@ type ActivityRecord struct {
 	Ts            int64   `json:"ts"`
 }
 
-// EventType identifies what happened
-type EventType string
-
-const (
-	EventTrade       EventType = "trade"
-	EventOrderUpdate EventType = "order_update"
-)
-
-// Event flows from the matching engine outChan to the hub
-type Event struct {
-	Type        EventType
-	Trade       *Trade
-	OrderUpdate *OrderUpdate
-}
