@@ -30,7 +30,7 @@ func main() {
 		MarketOrderShare: envFloat("GBM_MARKET_ORDER_SHARE", 0.05),
 		MaxResting:       envInt("GBM_MAX_RESTING", 600),
 	}
-	port := envStr("BACKEND_PORT", "8080")
+	port := envStr("PORT", envStr("BACKEND_PORT", "8080"))
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
