@@ -298,7 +298,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       const last = state.equityHistory[state.equityHistory.length - 1];
       // Replace only if same second AND same value (fill-triggered and stats-triggered updates can share a timestamp)
       if (last && last.time === point.time && last.value === point.value) {
-        equityHistory = state.equityHistory;
+        return { portfolio };
       } else if (last && last.time === point.time) {
         equityHistory = [...state.equityHistory.slice(0, -1), point];
       } else {
@@ -316,18 +316,21 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       const botPortfolios = new Map(state.botPortfolios);
       botPortfolios.set(p.user_id, p);
 
-      const botEquityHistory = new Map(state.botEquityHistory);
-      const prev = botEquityHistory.get(p.user_id) ?? [];
+      const prev = state.botEquityHistory.get(p.user_id) ?? [];
       const point = { time: toUtcTimestamp(p.ts), value: p.equity };
       const last = prev[prev.length - 1];
-      let next: EquityPoint[];
+
       if (last && last.time === point.time && last.value === point.value) {
-        next = prev;
-      } else if (last && last.time === point.time) {
+        return { botPortfolios };
+      }
+
+      let next: EquityPoint[];
+      if (last && last.time === point.time) {
         next = [...prev.slice(0, -1), point];
       } else {
         next = [...prev, point];
       }
+      const botEquityHistory = new Map(state.botEquityHistory);
       botEquityHistory.set(p.user_id, next.slice(-600));
 
       return { botPortfolios, botEquityHistory };

@@ -42,7 +42,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 {/* Left: wordmark + pair + live price */}
                 <div className="flex items-center gap-2 sm:gap-3">
                     <div className="flex items-center gap-1.5 border-r border-border pr-3 font-semibold tracking-[0.18em] text-brand">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
+                        <img src="/bull-icon.svg" alt="" className="h-4 w-4 shrink-0" />
                         <span>SYNTHETIC-BULL</span>
                     </div>
 

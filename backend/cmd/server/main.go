@@ -26,9 +26,9 @@ func main() {
 		Sigma:            envFloat("GBM_SIGMA", 0.015),
 		TickMs:           envInt("GBM_TICK_MS", 10),
 		TargetMsgsPerSec: envInt("GBM_TARGET_MSGS_PER_SEC", 200),
-		CancelShare:      envFloat("GBM_CANCEL_SHARE", 0.10),
+		CancelShare:      envFloat("GBM_CANCEL_SHARE", 0.20),
 		MarketOrderShare: envFloat("GBM_MARKET_ORDER_SHARE", 0.05),
-		MaxResting:       envInt("GBM_MAX_RESTING", 600),
+		MaxResting:       envInt("GBM_MAX_RESTING", 150),
 	}
 	port := envStr("PORT", envStr("BACKEND_PORT", "8080"))
 
@@ -69,7 +69,7 @@ func main() {
 				"asks": asks,
 				"ts":   time.Now().UnixMilli(),
 			},
-			"candles":   candleStore.Snapshot(300),
+			"candles":   candleStore.Snapshot(1000),
 			"portfolio": humanPortfolio.State(currentStats.LastPrice),
 			"stats": map[string]any{
 				"type":           "stats",

@@ -7,6 +7,7 @@ import {
     createSeriesMarkers,
     createChart,
     HistogramSeries,
+    TickMarkType,
     type IChartApi,
     type IPriceLine,
     type ISeriesApi,
@@ -182,6 +183,17 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                 barSpacing: 7,
                 minBarSpacing: 0.6,
                 rightOffset: 4,
+                tickMarkFormatter: (t: UTCTimestamp, type: TickMarkType) => {
+                    const d = new Date(t * 1000);
+                    if (type === TickMarkType.Year) return d.toLocaleDateString([], { year: "numeric" });
+                    if (type === TickMarkType.Month) return d.toLocaleDateString([], { month: "short" });
+                    if (type === TickMarkType.DayOfMonth) return d.toLocaleDateString([], { month: "short", day: "numeric" });
+                    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                },
+            },
+            localization: {
+                timeFormatter: (t: number) =>
+                    new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             },
             crosshair: {
                 vertLine: { color: colors.crosshair },
