@@ -51,10 +51,10 @@ type Trade struct {
 	Size          float64
 	BuyOrderID    string
 	SellOrderID   string
-	AggressorSide Side  // taker side — used for trade tape color
-	HumanInvolved bool  // true if either party is the human user
-	HumanIsBuyer  bool  // true if human is the buyer side
-	Ts            int64 // Unix milliseconds
+	AggressorSide Side   // taker side — used for trade tape color
+	BuyerUserID   string // userID of the buyer
+	SellerUserID  string // userID of the seller
+	Ts            int64  // Unix milliseconds
 }
 
 // OrderStatus values for order_update messages
@@ -76,17 +76,28 @@ type OrderUpdate struct {
 	Ts            int64   `json:"ts"`
 }
 
-// EventType identifies what happened
-type EventType string
-
-const (
-	EventTrade       EventType = "trade"
-	EventOrderUpdate EventType = "order_update"
-)
-
-// Event flows from the matching engine outChan to the hub
-type Event struct {
-	Type        EventType
-	Trade       *Trade
-	OrderUpdate *OrderUpdate
+// EquityPoint is one data point in the equity curve.
+type EquityPoint struct {
+	Ts    int64   `json:"ts"`
+	Value float64 `json:"value"`
 }
+
+// FillRecord is a completed human fill stored for chart markers.
+type FillRecord struct {
+	Ts    int64   `json:"ts"`
+	Price float64 `json:"price"`
+	Side  Side    `json:"side"`
+	Size  float64 `json:"size"`
+}
+
+// ActivityRecord is one entry in the human order activity log.
+type ActivityRecord struct {
+	OrderID       string  `json:"order_id"`
+	Status        string  `json:"status"`
+	FilledSize    float64 `json:"filled_size"`
+	RemainingSize float64 `json:"remaining_size"`
+	Price         float64 `json:"price"`
+	Side          Side    `json:"side"`
+	Ts            int64   `json:"ts"`
+}
+

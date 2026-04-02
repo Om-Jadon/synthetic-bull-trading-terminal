@@ -2,116 +2,137 @@
 
 OpenSoft 2026 — IIT Kharagpur
 
-A real-time trading terminal with a live matching engine, synthetic market generator, and WebSocket data streaming.
+A real-time trading terminal: live matching engine, GBM synthetic market, two autonomous trading bots, and a Hyperliquid-inspired UI with full micro-animation treatment.
 
 ---
 
 ## Repository Structure
 
 ```
-backend/   
-ui/        
+backend/                    Go backend — matching engine, bots, WebSocket hub
+  internal/
+    bots/                   Market Maker + Alpha Bot (README inside)
+    engine/                 Matcher, order book, portfolio, candles
+    generator/              GBM synthetic market generator
+    api/                    REST handlers
+    hub/                    WebSocket broadcast hub
+  cmd/server/main.go        Entry point — wires everything together
+  README.md                 Full backend documentation
+
+ui/                         Next.js 15 frontend — trading terminal UI
+  app/                      Next.js app router entry
+  components/               Panel components (see below)
+  store/tradingStore.ts     Zustand store — all live state
+  hooks/useWebSocket.ts     WebSocket connection + message routing
+  types/ws.ts               TypeScript types for all WS messages
+  README.md                 Frontend documentation
+
+docker-compose.yaml         Docker Compose — runs both services
+.env.example                Environment variable template
+docs/                       Design documents and specs
+CLAUDE.md                   AI context for this codebase
 ```
 
 ---
 
-## Backend
-
-The backend is complete and ready to use. It runs a:
-
-- Price-time priority matching engine
-- GBM-based synthetic market generator (continuous live prices)
-- WebSocket hub streaming order book, trades, stats, and portfolio updates
-- REST API for placing and cancelling orders
-
-Full documentation: [`backend/README.md`](backend/README.md)
-
-### Quick Start
-
-**With Docker (recommended):**
+## Quick Start
 
 ```bash
 cp .env.example .env
-docker compose up --build
+docker-compose up --build
 ```
 
-Backend runs on `http://localhost:8080`
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8080`
 
 **Without Docker:**
 
 ```bash
-cd backend
-go run ./cmd/server
+# Terminal 1 — backend
+cd backend && go run ./cmd/server/
+
+# Terminal 2 — frontend
+cd ui && npm install && npm run dev
 ```
+
+---
+
+## What Is Running
+
+When both services start, the following run together:
+
+| Component        | Role                                                          |
+| ---------------- | ------------------------------------------------------------- |
+| Matching engine  | Price-time priority limit order book                          |
+| GBM generator    | ~100 synthetic orders/second, creates live price action       |
+| Market Maker bot | Inventory-skewed quote placement every 500 ms                 |
+| Alpha Bot        | EMA crossover + RSI strategy, fires market orders on signals  |
+| WebSocket hub    | Streams book, trades, stats, portfolio updates to all clients |
+| HTTP API         | Human order entry, cancellation, candle history               |
+
+All four order sources share a single `inChan`. Each participant has an isolated `$100,000` portfolio.
 
 ---
 
 ## API Reference
 
-### WebSocket
+**WebSocket:** `ws://localhost:8080/ws`
 
-Connect to `ws://localhost:8080/ws`
+| Message        | When                                                               |
+| -------------- | ------------------------------------------------------------------ |
+| `snapshot`     | On connect — book, candles, portfolio, fills, equity history       |
+| `book`         | Every 100 ms — top 20 bids/asks                                    |
+| `trade`        | On match — every executed trade                                    |
+| `stats`        | Every 1 s — OHLCV, VWAP, change %                                  |
+| `portfolio`    | Every 1 s + after fills — cash, holdings, P&L (all 3 participants) |
+| `order_update` | On change — human order lifecycle                                  |
 
-On connect you receive a `snapshot` message with the current order book, last 300 candles, and portfolio state. After that, messages stream in real time:
+**REST:** `http://localhost:8080`
 
-| Message        | Frequency | Description                    |
-| -------------- | --------- | ------------------------------ |
-| `book`         | 100ms     | Top 20 bids and asks           |
-| `trade`        | On match  | Every executed trade           |
-| `stats`        | 1s        | Session OHLCV and price change |
-| `portfolio`    | On fill   | Cash, holdings, P&L            |
-| `order_update` | On change | Order status updates           |
-
-### REST
-
-| Method   | Endpoint             | Description                   |
-| -------- | -------------------- | ----------------------------- |
-| `POST`   | `/orders`            | Place a limit or market order |
-| `DELETE` | `/orders/:id`        | Cancel an open order          |
-| `GET`    | `/candles?limit=300` | Historical 1s candles         |
-| `GET`    | `/health`            | Health check                  |
-
-**Place order:**
-```json
-POST /orders
-{ "type": "limit", "side": "buy", "price": 100.50, "size": 10 }
-```
-
-**Response:**
-```json
-{ "order_id": "abc123", "status": "accepted" }
-```
-
----
-
-## Frontend
-
-Build your UI inside the `ui/` folder on your own branch.
-
-Your frontend just needs to:
-1. Connect to `ws://localhost:8080/ws`
-2. Optionally call `POST /orders` and `DELETE /orders/:id`
-
-Everything else — framework, styling, layout — is your call.
-
-```bash
-git checkout -b ui/your-team-name
-```
+| Method   | Endpoint             | Description                 |
+| -------- | -------------------- | --------------------------- |
+| `POST`   | `/orders`            | Place limit or market order |
+| `DELETE` | `/orders/:id`        | Cancel open order           |
+| `GET`    | `/candles?limit=300` | 1 s candle history          |
+| `GET`    | `/health`            | Health check                |
 
 ---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` before running:
+| Variable                  | Default                  | Description                                           |
+| ------------------------- | ------------------------ | ----------------------------------------------------- |
+| `BACKEND_PORT`            | `8080`                   | Backend HTTP/WS port                                  |
+| `FRONTEND_PORT`           | `3000`                   | Frontend port                                         |
+| `NEXT_PUBLIC_WS_URL`      | `ws://localhost:8080/ws` | Browser WebSocket URL                                 |
+| `NEXT_PUBLIC_API_URL`     | `http://localhost:8080`  | Browser REST URL                                      |
+| `GBM_S0`                  | `100.0`                  | Starting synthetic price                              |
+| `GBM_MU`                  | `0.0`                    | GBM drift (neutral baseline)                          |
+| `GBM_SIGMA`               | `0.015`                  | GBM volatility                                        |
+| `GBM_TICK_MS`             | `10`                     | Generator tick interval                               |
+| `GBM_TARGET_MSGS_PER_SEC` | `200`                    | Synthetic flow budget (limits + cancels + markets)    |
+| `GBM_CANCEL_SHARE`        | `0.10`                   | Fraction of synthetic messages used for cancels       |
+| `GBM_MARKET_ORDER_SHARE`  | `0.05`                   | Fraction of synthetic messages used for market orders |
+| `GBM_MAX_RESTING`         | `600`                    | Cap for tracked synthetic resting orders              |
+
+---
+
+## Documentation Index
+
+| File                                                                 | What it covers                                                                                             |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [`backend/README.md`](backend/README.md)                             | Full backend: API reference, WS message shapes, architecture, environment variables, testing, Docker notes |
+| [`backend/internal/bots/README.md`](backend/internal/bots/README.md) | Bot algorithms, parameters, indicators API, portfolio architecture, concurrency notes                      |
+| [`ui/README.md`](ui/README.md)                                       | Frontend: component map, store architecture, WebSocket routing, bot observability UI, quality checks       |
+
+---
+
+## Testing
 
 ```bash
-cp .env.example .env
-```
+# Backend
+cd backend && go test ./...
 
-| Variable       | Default | Description                     |
-| -------------- | ------- | ------------------------------- |
-| `BACKEND_PORT` | `8080`  | Backend HTTP/WS port            |
-| `GBM_S0`       | `100.0` | Starting price for BULL/USDC    |
-| `GBM_MU`       | `0.0`   | GBM drift                       |
-| `GBM_SIGMA`    | `0.02`  | GBM volatility                  |
-| `GBM_TICK_MS`  | `50`    | Market generator tick rate (ms) |
+# Frontend
+cd ui && npm run test
+```

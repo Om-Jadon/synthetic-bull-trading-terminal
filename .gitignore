@@ -1,59 +1,27 @@
-# ── Environment & secrets ──────────────────────────────────────────────────────
+.worktrees/
 .env
-.env.*
-!.env.example
+.claude
 
-# ── Node / Next.js ─────────────────────────────────────────────────────────────
-node_modules/
-.next/
-out/
-build/
-dist/
-.npm/
-.pnp
-.pnp.js
-.yarn/install-state.gz
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-next-env.d.ts
-*.tsbuildinfo
-
-# ── Go ─────────────────────────────────────────────────────────────────────────
-backend/server
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-
-# ── OS ─────────────────────────────────────────────────────────────────────────
+# OS/editor noise
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-Thumbs.db
-Desktop.ini
-
-# ── Editor / IDE ───────────────────────────────────────────────────────────────
-.idea/
-.vscode/settings.json
+*.log
+*.tmp
 *.swp
 *.swo
-*~
+.idea/
+.vscode/
 
-# ── Docker ─────────────────────────────────────────────────────────────────────
-.dockerignore
+# Dependencies
+node_modules/
 
-# ── Claude / tooling (local only) ──────────────────────────────────────────────
-.claude
-.worktrees/
+# Backend build/test artifacts
+backend/server
+backend/*.test
+backend/coverage.out
+
+# Frontend planning docs — kept local to avoid biasing parallel UI teams
+docs/superpowers/
 .impeccable.md
 CLAUDE.md
-
-# ── Frontend planning docs (kept local) ────────────────────────────────────────
-docs/superpowers/
+.agents/
+docs

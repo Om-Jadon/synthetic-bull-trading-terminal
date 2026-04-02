@@ -2,8 +2,6 @@
 package engine
 
 import (
-	"fmt"
-
 	"github.com/google/btree"
 )
 
@@ -169,13 +167,6 @@ func (ob *OrderBook) treeFor(side Side) *btree.BTreeG[*PriceLevel] {
 	return ob.asks
 }
 
-// UpdateOrderIndex updates the index after partial fill changes Remaining.
-// Call after modifying o.Remaining during matching.
-func (ob *OrderBook) UpdateOrderRemaining(orderID string, newRemaining float64) {
-	if idx, ok := ob.orders[orderID]; ok {
-		idx.levelOrder.Order.Remaining = newRemaining
-	}
-}
 
 func min(a, b float64) float64 {
 	if a < b {
@@ -184,5 +175,3 @@ func min(a, b float64) float64 {
 	return b
 }
 
-// Sprintf shim so test file can use fmt without separate import issue
-var _ = fmt.Sprintf

@@ -2,7 +2,6 @@ package hub
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -87,15 +86,6 @@ func (h *Hub) Broadcast(msg []byte) {
 	}
 }
 
-// BroadcastJSON serializes v and broadcasts it.
-func (h *Hub) BroadcastJSON(v any) {
-	b, err := json.Marshal(v)
-	if err != nil {
-		log.Printf("hub: marshal error: %v", err)
-		return
-	}
-	h.Broadcast(b)
-}
 
 // ServeWS upgrades an HTTP connection to WebSocket and registers the client.
 // snapshotFn is called once on connect to send the initial snapshot.
@@ -163,9 +153,3 @@ func (c *Client) writePump() {
 	}
 }
 
-// ClientCount returns the number of connected clients. Thread-safe.
-func (h *Hub) ClientCount() int {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	return len(h.clients)
-}

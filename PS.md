@@ -1,4 +1,4 @@
-# NEXTBULL X IIT Kharagpur  
+# SYNTHETIC-BULL X IIT Kharagpur  
 **Open Soft Competition | 2026**
 
 ## Title  
@@ -8,7 +8,7 @@
 
 ## Background & Objective
 
-At NextBull, before we deploy any new trading interface or execution algorithm into live markets, we test them in highly controlled, simulated environments. We are challenging the tech innovators at IIT Kharagpur to build **Project Synthetic-Bull**, a completely self-contained, real-time simulated cryptocurrency/stock exchange with an integrated web trading terminal and automated quantitative trading bots.
+At SYNTHETIC-BULL, before we deploy any new trading interface or execution algorithm into live markets, we test them in highly controlled, simulated environments. We are challenging the tech innovators at IIT Kharagpur to build **Project Synthetic-Bull**, a completely self-contained, real-time simulated cryptocurrency/stock exchange with an integrated web trading terminal and automated quantitative trading bots.
 
 This project sits at the intersection of high-throughput backend engineering, real-time frontend visualization, and algorithmic trading. No external datasets will be provided. Your system must generate its own synthetic market activity, maintain a live order book, and allow both human and AI users to trade against it.
 
@@ -39,13 +39,13 @@ This project sits at the intersection of high-throughput backend engineering, re
 
 ---
 
-### Module 2: The NextBull Web Terminal (Frontend / SDE)
+### Module 2: The SYNTHETIC-BULL Web Terminal (Frontend / SDE)
 
 - **Real-Time Data Streaming:**
   The backend must broadcast order book updates and trade executions to the frontend using **WebSockets**.
 
 - **The Dashboard:**
-  Build a modern, NextBull-styled web interface featuring:
+  Build a modern, SYNTHETIC-BULL-styled web interface featuring:
 
   - A live, auto-updating **Candlestick chart** (1-second or 5-second intervals)
   - A visual representation of the **Limit Order Book (Bid/Ask depth)**
