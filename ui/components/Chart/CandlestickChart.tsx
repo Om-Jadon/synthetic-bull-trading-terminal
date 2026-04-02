@@ -460,7 +460,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                             onClick={() => setChartTimeframe(tf.seconds)}
                             aria-pressed={tf.seconds === chartTimeframe}
                             className={`touch-target-compact flex h-7 max-sm:h-8 min-w-8 items-center justify-center rounded-xs px-2 py-1 font-mono text-micro uppercase tracking-[0.08em] transition-colors duration-100 ${tf.seconds === chartTimeframe
-                                ? "border border-border bg-bg-row text-text-primary"
+                                ? "border accent-chip-active"
                                 : "border border-transparent text-text-muted hover:text-text-primary"
                                 }`}
                         >
@@ -474,7 +474,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                             type="button"
                             aria-label="Command palette"
                             onClick={onPaletteOpen}
-                            className="touch-target-compact inline-flex h-6 w-6 max-sm:h-7 max-sm:w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-[12px] text-text-muted hover:text-text-primary transition-colors duration-100"
+                            className="touch-target-compact hover-info inline-flex h-6 w-6 max-sm:h-7 max-sm:w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-data text-text-muted transition-colors duration-100"
                         >
                             ⌘
                         </button>
@@ -483,7 +483,7 @@ export default function CandlestickChart({ onPaletteOpen, onFullscreenToggle }: 
                         type="button"
                         aria-label={chartFullscreen ? "Exit fullscreen chart" : "Toggle fullscreen chart"}
                         onClick={handleFullscreenToggle}
-                        className="touch-target-compact inline-flex h-6 w-6 max-sm:h-7 max-sm:w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-[12px] text-text-muted hover:text-text-primary transition-colors duration-100"
+                        className="touch-target-compact hover-info inline-flex h-6 w-6 max-sm:h-7 max-sm:w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-data text-text-muted transition-colors duration-100"
                     >
                         {chartFullscreen ? "✕" : "⛶"}
                     </button>

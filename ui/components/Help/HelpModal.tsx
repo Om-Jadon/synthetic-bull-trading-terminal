@@ -89,7 +89,7 @@ export default function HelpModal() {
           <div className="space-y-6">
             {SHORTCUTS.map((section) => (
               <div key={section.category}>
-                <h3 className="mb-3 font-mono text-micro uppercase tracking-wider text-brand">
+                <h3 className="mb-3 font-mono text-micro uppercase tracking-wider text-accent-ui">
                   {section.category}
                 </h3>
                 <div className="grid gap-2">

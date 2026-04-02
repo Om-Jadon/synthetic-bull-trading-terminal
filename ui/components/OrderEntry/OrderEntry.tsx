@@ -246,8 +246,8 @@ export default function OrderEntry() {
               onClick={() => setType(item)}
               aria-pressed={type === item}
               className={`order-chip h-8 max-sm:h-11 rounded-xs border px-2 text-label transition-shadow duration-150 ${type === item
-                  ? "border-brand bg-brand/10 text-brand font-medium"
-                  : "border-border text-text-muted hover:bg-bg-row hover:text-text-primary"
+                ? "accent-chip-active"
+                : "border-border text-text-muted hover:bg-bg-row hover:text-text-primary"
                 } ${ringClass(item)}`}
             >
               {item}
@@ -267,10 +267,10 @@ export default function OrderEntry() {
               onClick={() => setSide(item)}
               aria-pressed={side === item}
               className={`order-chip h-8 max-sm:h-11 rounded-xs border px-2 text-label transition-shadow duration-150 ${side === item
-                  ? item === "buy"
-                    ? "border-bull bg-bull-surface text-bull"
-                    : "border-bear bg-bear-surface text-bear"
-                  : "border-border text-text-muted"
+                ? item === "buy"
+                  ? "border-bull bg-bull-surface text-bull"
+                  : "border-bear bg-bear-surface text-bear"
+                : "border-border text-text-muted"
                 } ${ringClass(item)}`}
             >
               {item}
@@ -397,7 +397,7 @@ export default function OrderEntry() {
           <div
             role="status"
             aria-live="polite"
-            className="mt-2 min-h-4 text-data text-brand/80"
+            className="mt-2 min-h-4 text-data text-info"
           >
             Waiting for market snapshot
           </div>

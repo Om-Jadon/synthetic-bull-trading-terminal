@@ -86,7 +86,7 @@ export default function TradesPanel({ showTitle, action }: TradesPanelProps = {}
                     <div
                         role="status"
                         aria-live="polite"
-                        className="grid h-full place-items-center px-2 py-3 text-label text-brand/80"
+                        className="grid h-full place-items-center px-2 py-3 text-label text-info"
                     >
                         Connecting
                     </div>

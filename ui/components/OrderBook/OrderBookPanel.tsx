@@ -134,7 +134,7 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
                                             setIsGroupOpen(false);
                                         }}
                                         className={`touch-target-compact flex w-full items-center justify-end rounded-xs px-2 py-1.5 font-mono text-micro transition-colors ${bookGroupTick === tick
-                                            ? "bg-brand/10 text-brand font-semibold"
+                                            ? "accent-chip-active"
                                             : "text-text-muted hover:bg-bg-row hover:text-text-primary"
                                             }`}
                                     >
@@ -190,7 +190,7 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
             </div>
 
             {!snapshotReady && (
-                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-label text-brand/80">
+                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-label text-info">
                     Connecting
                 </div>
             )}

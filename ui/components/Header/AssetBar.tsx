@@ -36,7 +36,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
             ? "text-bull"
             : connectionStatus === "closed"
                 ? "text-bear"
-                : "text-text-muted";
+                : "text-info";
 
     return (
         <header className="h-auto shrink-0 border-b border-border bg-bg-panel" role="banner">
@@ -78,7 +78,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 {/* Right: SIM badge */}
                 <span
                     title="Simulation mode — no real money"
-                    className="hidden rounded-xs border border-brand/20 bg-brand/10 px-2 py-0.5 text-label text-brand sm:inline-block"
+                    className="hidden rounded-xs border border-accent-ui/25 bg-accent-ui-surface px-2 py-0.5 text-label text-accent-ui sm:inline-block"
                 >
                     Sim
                 </span>
@@ -99,7 +99,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                             className="hidden font-mono text-micro text-text-muted sm:block"
                             title="WebSocket latency and message rate"
                         >
-                            <span className="text-brand/80">WS</span>{" "}
+                            <span className="text-info">WS</span>{" "}
                             <span className="text-text-primary">
                                 {wsStats.latencyMs > 0 ? `${wsStats.latencyMs}ms` : "—"}
                             </span>
@@ -115,7 +115,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         onClick={toggleTheme}
                         aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
                         aria-pressed={theme === "light"}
-                        className="relative btn-tactile inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors hover:text-text-primary after:absolute after:-inset-3"
+                        className="relative btn-tactile hover-info inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors after:absolute after:-inset-3"
                     >
                         {theme === "dark" ? (
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -134,7 +134,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         type="button"
                         onClick={() => useTradingStore.getState().setHelpOpen(true)}
                         aria-label="Open shortcuts help"
-                        className="relative btn-tactile inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-micro font-bold text-text-muted transition-colors hover:text-text-primary after:absolute after:-inset-3"
+                        className="relative btn-tactile hover-info inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-micro font-bold text-text-muted transition-colors after:absolute after:-inset-3"
                     >
                         ?
                     </button>
@@ -143,7 +143,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="relative btn-tactile inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted hover:text-text-primary after:absolute after:-inset-3"
+                        className="relative btn-tactile hover-info inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted after:absolute after:-inset-3"
                     >
                         {muted ? (
                             <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">

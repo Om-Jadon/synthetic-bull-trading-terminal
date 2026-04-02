@@ -91,7 +91,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                                 }
                             }}
                             className={`flex w-full items-center rounded-xs px-3 py-2 text-label transition-colors ${mode === item
-                                ? "bg-brand/10 text-brand font-medium"
+                                ? "accent-chip-active"
                                 : "text-text-muted hover:bg-bg-row hover:text-text-primary"
                                 }`}
                         >
@@ -121,7 +121,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                             onClick={() => setActiveTab("book")}
                             onKeyDown={onTabKeyDown}
                             className={`h-8 max-sm:h-9 rounded-xs border px-3 text-label ${activeTab === "book"
-                                ? "border-brand bg-brand/10 text-brand font-medium"
+                                ? "accent-chip-active"
                                 : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                                 }`}
                         >
@@ -137,7 +137,7 @@ export default function MarketPanel({ mode, onModeChange }: MarketPanelProps) {
                             onClick={() => setActiveTab("trades")}
                             onKeyDown={onTabKeyDown}
                             className={`h-8 max-sm:h-9 rounded-xs border px-3 text-label ${activeTab === "trades"
-                                ? "border-brand bg-brand/10 text-brand font-medium"
+                                ? "accent-chip-active"
                                 : "border-transparent text-text-muted hover:border-border hover:bg-bg-row"
                                 }`}
                         >
