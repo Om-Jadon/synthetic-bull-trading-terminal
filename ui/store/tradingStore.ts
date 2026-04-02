@@ -133,6 +133,7 @@ function lsSet(key: string, value: unknown): void {
 }
 
 let toastSeq = 0;
+const MAX_UI_CANDLES = 1200;
 
 export const useTradingStore = create<TradingStore>((set, get) => ({
   fills: [],
@@ -257,7 +258,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
       })),
     }),
 
-  setCandles: (candles) => set({ candles: candles.slice(-300) }),
+  setCandles: (candles) => set({ candles: candles.slice(-MAX_UI_CANDLES) }),
 
   upsertCandle: (candle) =>
     set((state) => {
@@ -273,7 +274,7 @@ export const useTradingStore = create<TradingStore>((set, get) => ({
         next.push(candle);
       }
 
-      return { candles: next.slice(-300) };
+      return { candles: next.slice(-MAX_UI_CANDLES) };
     }),
 
   setStats: (stats) =>

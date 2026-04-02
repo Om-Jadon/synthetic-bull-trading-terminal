@@ -45,6 +45,23 @@ describe("tradingStore", () => {
     expect(useTradingStore.getState().trades[0].id).toBe("t_59");
   });
 
+  it("keeps candles capped to 1200", () => {
+    const setCandles = useTradingStore.getState().setCandles;
+    const candles = Array.from({ length: 1300 }, (_, i) => ({
+      time: i + 1,
+      open: 100,
+      high: 101,
+      low: 99,
+      close: 100,
+      volume: 1,
+    }));
+
+    setCandles(candles);
+
+    expect(useTradingStore.getState().candles).toHaveLength(1200);
+    expect(useTradingStore.getState().candles[0].time).toBe(101);
+  });
+
   it("filters order updates to known order ids", () => {
     const store = useTradingStore.getState();
     store.trackOrderId("o_1");
