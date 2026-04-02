@@ -123,7 +123,7 @@ export default function TradingTerminal() {
 
     const bookColumnWidth =
         mode === "large"
-            ? "clamp(260px, 32vw, 420px)"
+            ? "clamp(420px, 48vw, 680px)"
             : mode === "stacked"
                 ? "clamp(240px, 28vw, 360px)"
                 : "clamp(220px, 24vw, 320px)";

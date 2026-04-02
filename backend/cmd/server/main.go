@@ -72,7 +72,7 @@ func main() {
 					"asks": asks,
 					"ts":   time.Now().UnixMilli(),
 				},
-				"candles":          candleStore.Snapshot(1000),
+				"candles":          candleStore.Snapshot(7200),
 				"portfolio":        sessionPortfolio.State(currentStats.LastPrice),
 				"stats": map[string]any{
 					"type":           "stats",

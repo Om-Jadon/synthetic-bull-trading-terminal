@@ -56,7 +56,7 @@ function OrderRow({
             aria-label={`${side === "bid" ? "Buy" : "Sell"} at ${price.toFixed(2)}`}
             onClick={onRowClick}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(); } }}
-            className="book-row book-row-reflow relative grid h-[22px] max-md:h-8 shrink-0 cursor-pointer grid-cols-3 items-center px-2 max-sm:px-1 font-mono text-label max-md:text-data hover:bg-bg-row active:bg-brand/10"
+            className="book-row book-row-reflow relative grid h-[22px] max-md:h-8 shrink-0 cursor-pointer grid-cols-[5fr_3fr_3fr] gap-x-1 items-center px-2 max-sm:px-1 font-mono text-label max-md:text-data hover:bg-bg-row active:bg-brand/10"
         >
             <div
                 ref={depthRef}

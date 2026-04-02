@@ -89,10 +89,10 @@ export default function OrderBookPanel({ showTitle, action }: OrderBookPanelProp
             <div className="grid flex-1 min-h-0 grid-rows-[auto_1fr]">
                 {/* Column header + group selector */}
                 <div className="flex h-7 max-md:h-8 items-center border-b border-border/70 px-2 max-sm:px-1">
-                    <div className="grid flex-1 grid-cols-3 text-label text-text-muted">
+                    <div className="grid flex-1 grid-cols-[5fr_3fr_3fr] gap-x-1 text-label text-text-muted">
                         <span>Price</span>
                         <span className="text-right">Size</span>
-                        <span className="text-right max-sm:text-[9px]">Total</span>
+                        <span className="text-right">Total</span>
                     </div>
 
                     {/* Premium Grouping Selector */}

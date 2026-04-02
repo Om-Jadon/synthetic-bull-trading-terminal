@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const maxCandles = 3600
+const maxCandles = 7200
 const maxRecentTrades = 50
 
 // TradeRecord is a minimal trade entry for the trade tape snapshot.

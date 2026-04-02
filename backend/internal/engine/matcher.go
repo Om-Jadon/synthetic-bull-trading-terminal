@@ -115,7 +115,7 @@ func (m *Matcher) handleLimit(o *Order) ([]*Trade, []*OrderUpdate) {
 func (m *Matcher) handleMarket(o *Order) ([]*Trade, []*OrderUpdate) {
 	var trades []*Trade
 	var updates []*OrderUpdate
-	isTracked := o.UserID == "human"
+	isTracked := isTrackedUser(o.UserID)
 	if o.Side == Buy {
 		trades, updates = m.matchAgainstAsks(o, trades, updates, isTracked)
 	} else {
