@@ -18,7 +18,7 @@ export default function SessionStats({ variant = "header" }: SessionStatsProps) 
         if (variant === "fullscreen") return null;
         return (
             <span className="flex items-center gap-2 text-label text-text-muted">
-                <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-brand" />
+                <span className="status-dot inline-block h-1.5 w-1.5 rounded-full bg-info" />
                 Connecting
             </span>
         );

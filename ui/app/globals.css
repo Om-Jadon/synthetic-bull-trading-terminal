@@ -20,6 +20,13 @@
 
   /* ── Brand (amber gold — header only, unchanged) ── */
   --color-brand: oklch(75% 0.13 68);
+  --color-brand-watermark: rgba(200, 151, 42, 0.06);
+  --color-accent-ui: var(--color-brand);
+  --color-accent-ui-surface: oklch(14% 0.025 68);
+  --color-info: var(--color-text-muted);
+  --color-info-surface: var(--color-bg-row);
+  --color-shell-glow-a: transparent;
+  --color-shell-glow-b: transparent;
 
   /* ── Text ── */
   --color-text-primary: oklch(91% 0.006 60);
@@ -42,7 +49,9 @@
   --color-chart-vwap-hex: #8791a3;
   --color-bull-hex: #11b34a;
   --color-bear-hex: #df202e;
-  --color-text-muted-hex: #746d6a;
+  --color-text-muted-hex: #7f7672;
+  --color-bot-mm-hex: #6366f1;
+  --color-bot-alpha-hex: #f59e0b;
 
   /* ── Focus (amber-tinted, matches brand warmth) ── */
   --color-focus-ring: oklch(72% 0.14 68);
@@ -51,6 +60,42 @@
 
   --font-sans: var(--font-jakarta);
   --font-mono: var(--font-jetbrains);
+}
+
+:root[data-theme="light"] {
+  --color-bg-primary: oklch(97.5% 0.01 245);
+  --color-top-fade: oklch(97.5% 0.01 245 / 0.82);
+  --color-bg-panel: oklch(99% 0.008 245);
+  --color-bg-row: oklch(95.8% 0.016 245);
+  --color-spread-bg: oklch(95.8% 0.016 245);
+
+  --color-text-primary: oklch(24% 0.03 250);
+  --color-text-muted: oklch(48% 0.02 245);
+
+  --color-border: oklch(84% 0.016 245);
+  --color-spread: oklch(78% 0.02 245);
+  --color-neutral-hover: oklch(91% 0.02 245);
+  --color-hover-overlay: oklch(52% 0.12 245 / 0.08);
+
+  --color-accent-ui: oklch(50% 0.15 248);
+  --color-accent-ui-surface: oklch(92% 0.045 248);
+  --color-info: oklch(54% 0.14 238);
+  --color-info-surface: oklch(91% 0.05 238);
+
+  --color-chart-bg: oklch(97% 0.012 245);
+  --color-chart-grid: oklch(89% 0.02 245);
+  --color-chart-crosshair: oklch(76% 0.03 245);
+  --color-chart-bg-hex: #f1f5fd;
+  --color-chart-grid-hex: #d6deef;
+  --color-chart-crosshair-hex: #b1bed9;
+  --color-text-muted-hex: #66728d;
+  --color-bot-mm-hex: #6366f1;
+  --color-bot-alpha-hex: #f59e0b;
+  --color-brand-watermark: rgba(200, 151, 42, 0.08);
+  --color-shell-glow-a: oklch(89% 0.05 236 / 0.38);
+  --color-shell-glow-b: oklch(90% 0.035 210 / 0.28);
+
+  --shadow-overlay: 0 24px 64px oklch(0% 0 0 / 0.2);
 }
 
 /* ── Typography Scale ── */
@@ -105,7 +150,18 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--color-bg-primary);
+  background:
+    radial-gradient(
+      120% 75% at 0% -10%,
+      var(--color-shell-glow-a) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      110% 70% at 100% 0%,
+      var(--color-shell-glow-b) 0%,
+      transparent 62%
+    ),
+    var(--color-bg-primary);
   color: var(--color-text-primary);
   font-family: var(--font-sans), sans-serif;
 }
@@ -172,6 +228,29 @@ textarea:focus-visible,
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
+}
+
+.accent-chip-active {
+  border-color: var(--color-accent-ui);
+  background: var(--color-accent-ui-surface);
+  color: var(--color-accent-ui);
+  font-weight: 600;
+}
+
+.hover-info {
+  transition-property: background-color, color, border-color;
+}
+
+.hover-info:hover {
+  border-color: var(--color-border);
+  background: var(--color-bg-row);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme="light"] .hover-info:hover {
+  border-color: color-mix(in oklab, var(--color-info) 42%, var(--color-border));
+  background: var(--color-info-surface);
+  color: var(--color-info);
 }
 
 .terminal-shell {

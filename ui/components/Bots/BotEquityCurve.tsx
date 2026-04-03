@@ -9,6 +9,8 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { useTradingStore } from "@/store/tradingStore";
+import { readChartPalette } from "@/lib/chartTheme";
+import { useThemeRevision } from "@/hooks/useThemeRevision";
 
 type BotEquityCurveProps = {
   userId: string;
@@ -17,20 +19,24 @@ type BotEquityCurveProps = {
 
 export default function BotEquityCurve({ userId, color }: BotEquityCurveProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
   const lineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const botPortfolios = useTradingStore((state) => state.botPortfolios);
   const isActive = botPortfolios.has(userId);
+  const themeRevision = useThemeRevision();
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    const palette = readChartPalette();
 
     const chart = createChart(container, {
       layout: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...({ attributionLogo: false } as any),
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#746d6a",
+        textColor: palette.textMuted,
         fontFamily: "var(--font-jetbrains)",
       },
       rightPriceScale: { visible: false },
@@ -58,12 +64,28 @@ export default function BotEquityCurve({ userId, color }: BotEquityCurveProps) {
     });
 
     lineSeriesRef.current = lineSeries;
+    chartRef.current = chart;
 
     return () => {
       chart.remove();
+      chartRef.current = null;
       lineSeriesRef.current = null;
     };
   }, [color]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    const palette = readChartPalette();
+    chart.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: palette.textMuted,
+        fontFamily: "var(--font-jetbrains)",
+      },
+    });
+  }, [themeRevision]);
 
   useEffect(() => {
     const render = (history: Array<{ time: UTCTimestamp; value: number }>) => {
@@ -84,7 +106,7 @@ export default function BotEquityCurve({ userId, color }: BotEquityCurveProps) {
   }, [userId]);
 
   return (
-    <div className="relative h-[60px] w-full">
+    <div className="relative h-15 w-full">
       <div ref={containerRef} className="h-full w-full" />
       {!isActive && (
         <div className="absolute inset-0 grid place-items-center bg-bg-panel/80 font-mono text-micro uppercase tracking-widest text-text-muted">

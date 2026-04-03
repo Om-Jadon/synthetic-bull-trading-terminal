@@ -4,11 +4,15 @@ import { useEffect, useRef } from "react";
 import { useTradingStore } from "@/store/tradingStore";
 import BotEquityCurve from "./BotEquityCurve";
 import type { BotFill } from "@/types/ws";
+import { readBotPalette } from "@/lib/chartTheme";
 
-const BOT_CONFIGS = [
-  { userId: "market_maker", label: "Market Maker", color: "#6366f1" },
-  { userId: "alpha_bot", label: "Alpha Bot", color: "#f59e0b" },
-] as const;
+function getBotConfigs() {
+  const palette = readBotPalette();
+  return [
+    { userId: "market_maker", label: "Market Maker", color: palette.marketMaker },
+    { userId: "alpha_bot", label: "Alpha Bot", color: palette.alphaBot },
+  ] as const;
+}
 
 function formatTs(ts: number): string {
   const d = new Date(ts);
@@ -35,7 +39,7 @@ function FillRow({ fill }: FillRowProps) {
 }
 
 type BotColumnProps = {
-  config: (typeof BOT_CONFIGS)[number];
+  config: ReturnType<typeof getBotConfigs>[number];
 };
 
 function BotColumn({ config }: BotColumnProps) {
@@ -120,6 +124,7 @@ type BotModalProps = {
 
 export default function BotModal({ onClose }: BotModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const botConfigs = getBotConfigs();
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -137,7 +142,7 @@ export default function BotModal({ onClose }: BotModalProps) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-bg-primary/60 backdrop-blur-sm animate-in fade-in duration-200" />
       <div
         ref={modalRef}
@@ -150,14 +155,14 @@ export default function BotModal({ onClose }: BotModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-6 w-6 items-center justify-center rounded-xs text-text-muted transition-colors hover:bg-bg-primary hover:text-text-primary"
+            className="touch-target-compact inline-flex h-7 w-7 items-center justify-center rounded-xs text-text-muted transition-colors hover:bg-bg-primary hover:text-text-primary"
             aria-label="Close bots panel"
           >
             ✕
           </button>
         </div>
         <div className="flex divide-x divide-border max-h-[calc(100dvh-120px)] overflow-y-auto scrollbar-hide">
-          {BOT_CONFIGS.map((config) => (
+          {botConfigs.map((config) => (
             <BotColumn key={config.userId} config={config} />
           ))}
         </div>

@@ -3,14 +3,18 @@
 import { useEffect, useRef } from "react";
 import { useTradingStore } from "@/store/tradingStore";
 import type { PortfolioMsg } from "@/types/ws";
+import { readBotPalette } from "@/lib/chartTheme";
 
-const BOT_CONFIGS = [
-  { userId: "market_maker", label: "Market Maker", color: "#6366f1" },
-  { userId: "alpha_bot", label: "Alpha Bot", color: "#f59e0b" },
-] as const;
+function getBotConfigs() {
+  const palette = readBotPalette();
+  return [
+    { userId: "market_maker", label: "Market Maker", color: palette.marketMaker },
+    { userId: "alpha_bot", label: "Alpha Bot", color: palette.alphaBot },
+  ] as const;
+}
 
 type BotCardProps = {
-  config: (typeof BOT_CONFIGS)[number];
+  config: ReturnType<typeof getBotConfigs>[number];
   portfolio: PortfolioMsg | undefined;
   isLast: boolean;
 };
@@ -82,16 +86,17 @@ type BotDropdownProps = {
 
 export default function BotDropdown({ onClose, onExpand }: BotDropdownProps) {
   const botPortfolios = useTradingStore((state) => state.botPortfolios);
+  const botConfigs = getBotConfigs();
 
   return (
     <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xs border border-border bg-bg-panel shadow-2xl">
       <div className="flex divide-x divide-border">
-        {BOT_CONFIGS.map((config, i) => (
+        {botConfigs.map((config, i) => (
           <BotCard
             key={config.userId}
             config={config}
             portfolio={botPortfolios.get(config.userId)}
-            isLast={i === BOT_CONFIGS.length - 1}
+            isLast={i === botConfigs.length - 1}
           />
         ))}
       </div>

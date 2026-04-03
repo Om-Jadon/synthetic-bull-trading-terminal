@@ -28,7 +28,7 @@ function OrderRow({
     const priceClass = hasLiquidity
         ? (side === "bid" ? "text-bull" : "text-bear")
         : "text-text-muted/40";
-    
+
     const prevSizeRef = useRef(size);
     const depthRef = useRef<HTMLDivElement | null>(null);
 
@@ -36,7 +36,7 @@ function OrderRow({
         if (!depthRef.current) return;
         const prev = prevSizeRef.current;
         prevSizeRef.current = size;
-        
+
         // Only flash on significant size increases (>5%) to reduce jitter/noise
         const isSignificantIncrease = prev > 0 && (size - prev) / prev > 0.05;
         if (!isSignificantIncrease) return;
@@ -56,7 +56,7 @@ function OrderRow({
             aria-label={`${side === "bid" ? "Buy" : "Sell"} at ${price.toFixed(2)}`}
             onClick={onRowClick}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(); } }}
-            className="book-row book-row-reflow relative grid h-[22px] max-md:h-8 shrink-0 cursor-pointer grid-cols-[5fr_3fr_3fr] gap-x-1 items-center px-2 max-sm:px-1 font-mono text-label max-md:text-data hover:bg-bg-row active:bg-brand/10"
+            className="book-row book-row-reflow relative grid h-[22px] max-md:h-8 shrink-0 cursor-pointer grid-cols-[5fr_3fr_3fr] gap-x-1 items-center px-2 max-sm:px-1 font-mono text-label max-md:text-data hover:bg-bg-row active:bg-accent-ui-surface"
         >
             <div
                 ref={depthRef}

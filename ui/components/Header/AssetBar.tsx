@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import * as sounds from "@/lib/sound";
 import { useTradingStore } from "@/store/tradingStore";
 import BotButton from "@/components/Bots/BotButton";
+import { useTheme } from "@/hooks/useTheme";
 import SessionStats from "./SessionStats";
 
 type AssetBarProps = {
@@ -20,6 +22,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
     const wsStats = useTradingStore((state) => state.wsStats);
 
     const [muted, setMutedState] = useState(() => sounds.loadMutePreference());
+    const { theme, toggleTheme } = useTheme();
 
     const toggleMute = () => {
         const next = !muted;
@@ -33,7 +36,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
             ? "text-bull"
             : connectionStatus === "closed"
                 ? "text-bear"
-                : "text-text-muted";
+                : "text-info";
 
     return (
         <header className="h-auto shrink-0 border-b border-border bg-bg-panel" role="banner">
@@ -42,7 +45,13 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 {/* Left: wordmark + pair + live price */}
                 <div className="flex items-center gap-2 sm:gap-3">
                     <div className="flex items-center gap-1.5 border-r border-border pr-3 font-semibold tracking-[0.18em] text-brand">
-                        <img src="/bull-icon.svg" alt="" className="h-4 w-4 shrink-0" />
+                        <Image
+                            src="/bull-icon.svg"
+                            alt=""
+                            width={16}
+                            height={16}
+                            className="h-4 w-4 shrink-0"
+                        />
                         <span>SYNTHETIC-BULL</span>
                     </div>
 
@@ -69,7 +78,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                 {/* Right: SIM badge */}
                 <span
                     title="Simulation mode — no real money"
-                    className="hidden rounded-xs border border-brand/20 bg-brand/10 px-2 py-0.5 text-label text-brand sm:inline-block"
+                    className="hidden rounded-xs border border-accent-ui/25 bg-accent-ui-surface px-2 py-0.5 text-label text-accent-ui sm:inline-block"
                 >
                     Sim
                 </span>
@@ -90,7 +99,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                             className="hidden font-mono text-micro text-text-muted sm:block"
                             title="WebSocket latency and message rate"
                         >
-                            <span className="text-brand/80">WS</span>{" "}
+                            <span className="text-info">WS</span>{" "}
                             <span className="text-text-primary">
                                 {wsStats.latencyMs > 0 ? `${wsStats.latencyMs}ms` : "—"}
                             </span>
@@ -101,12 +110,31 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
 
                     <BotButton />
 
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                        aria-pressed={theme === "light"}
+                        className="relative btn-tactile hover-info inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted transition-colors after:absolute after:-inset-3"
+                    >
+                        {theme === "dark" ? (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.8" />
+                                <path d="M12 2.5V5.2M12 18.8V21.5M2.5 12H5.2M18.8 12H21.5M5.3 5.3L7.2 7.2M16.8 16.8L18.7 18.7M5.3 18.7L7.2 16.8M16.8 7.2L18.7 5.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                            </svg>
+                        ) : (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M20.2 14.6A8.7 8.7 0 1 1 9.4 3.8 7.2 7.2 0 0 0 20.2 14.6Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        )}
+                    </button>
+
                     {/* Interactive Help toggle */}
                     <button
                         type="button"
                         onClick={() => useTradingStore.getState().setHelpOpen(true)}
                         aria-label="Open shortcuts help"
-                        className="relative btn-tactile inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-micro font-bold text-text-muted transition-colors hover:text-text-primary after:absolute after:-inset-3"
+                        className="relative btn-tactile hover-info inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-micro font-bold text-text-muted transition-colors after:absolute after:-inset-3"
                     >
                         ?
                     </button>
@@ -115,7 +143,7 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                         onClick={toggleMute}
                         aria-label={muted ? "Unmute sounds" : "Mute sounds"}
                         aria-pressed={muted}
-                        className="relative btn-tactile inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted hover:text-text-primary after:absolute after:-inset-3"
+                        className="relative btn-tactile hover-info inline-flex h-7 w-7 items-center justify-center rounded-xs border border-border bg-bg-row text-text-muted after:absolute after:-inset-3"
                     >
                         {muted ? (
                             <svg width="10" height="10" viewBox="0 0 11 11" fill="none" aria-hidden="true">
@@ -139,10 +167,10 @@ export default function AssetBar({ priceRef, priceFlashRef, directionRef }: Asse
                     >
                         <span
                             className={`status-dot inline-block h-1.5 w-1.5 rounded-full ${connectionStatus === "open"
-                                    ? "bg-bull"
-                                    : connectionStatus === "closed"
-                                        ? "bg-bear"
-                                        : "bg-text-muted"
+                                ? "bg-bull"
+                                : connectionStatus === "closed"
+                                    ? "bg-bear"
+                                    : "bg-text-muted"
                                 }`}
                         />
                         {connectionStatus}

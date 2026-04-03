@@ -89,7 +89,7 @@ export default function PortfolioWidget() {
             </div>
 
             {!snapshotReady && (
-                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-label text-brand/80">
+                <div role="status" aria-live="polite" className="absolute inset-0 flex items-center justify-center bg-bg-panel/80 text-label text-info">
                     Connecting
                 </div>
             )}
