@@ -7,7 +7,7 @@ This folder contains the Go backend for the trading terminal. It provides:
 - HTTP APIs for manual order entry and historical candles
 - WebSocket streaming for order book, trades, stats, and portfolio updates
 
-This README is written for readers who are new to Docker and Go.
+This document captures the implemented backend architecture and API behavior for submission review.
 
 ## What You Are Running
 
@@ -22,39 +22,17 @@ When the backend starts, six main parts run together:
 
 All orders (from the human user, the generator, and both bots) are pushed into one shared channel and processed in sequence by the matcher. Each participant has an isolated portfolio. See [`internal/bots/README.md`](internal/bots/README.md) for full bot documentation.
 
-## Prerequisites
+## Runtime Requirements
 
-You can run this backend in two ways:
+- Docker Engine + Compose plugin, or Go 1.25.x for local execution
 
-1. With Docker (recommended for beginners)
-2. Directly with Go on your machine
-
-### Option A: Docker prerequisites
-
-- Docker Engine (with Docker Compose plugin)
-- Verify installation:
-
-```bash
-docker --version
-docker compose version
-```
-
-### Option B: Go prerequisites
-
-- Go 1.25.x (this repository uses Go 1.25.8 in `go.mod`)
-- Verify installation:
-
-```bash
-go version
-```
-
-## Quick Start (Docker, Recommended)
+## Quick Start (Docker)
 
 Run from the repository root (not from the `backend` folder):
 
 ```bash
 cp .env.example .env
-docker-compose up --build backend
+docker compose up --build backend
 ```
 
 What this does:
@@ -104,7 +82,7 @@ Expected response:
   HTTP /orders  ──┘                                    │
                                                        ▼
                                               PortfolioRegistry
-                                          (human / market_maker / alpha_bot)
+                                           (session UUIDs / market_maker / alpha_bot)
 ```
 
 Design note: the matcher is intentionally single-threaded for deterministic price-time priority and to avoid lock contention on the hot path. Bots run in their own goroutines and communicate only through `inChan`.
@@ -149,10 +127,17 @@ Base URL (local): `http://localhost:8080`
 
 Accepts a new human order.
 
+Requires header:
+
+```text
+X-Session-ID: <session-uuid>
+```
+
 Limit order example:
 
 ```bash
 curl -X POST http://localhost:8080/orders \
+  -H "X-Session-ID: <session-uuid>" \
   -H "Content-Type: application/json" \
   -d '{"type":"limit","side":"buy","price":100.25,"size":2}'
 ```
@@ -161,6 +146,7 @@ Market order example:
 
 ```bash
 curl -X POST http://localhost:8080/orders \
+  -H "X-Session-ID: <session-uuid>" \
   -H "Content-Type: application/json" \
   -d '{"type":"market","side":"sell","size":1.5}'
 ```
@@ -189,7 +175,8 @@ Short selling is supported: you can place a sell order larger than your current 
 Requests cancellation by order ID.
 
 ```bash
-curl -X DELETE http://localhost:8080/orders/o_your_order_id
+curl -X DELETE http://localhost:8080/orders/o_your_order_id \
+  -H "X-Session-ID: <session-uuid>"
 ```
 
 Response: `204 No Content`
@@ -241,11 +228,13 @@ Returns:
 
 WebSocket endpoint for live stream.
 
-Local URL:
+Local URL (session query param required):
 
 ```text
-ws://localhost:8080/ws
+ws://localhost:8080/ws?session=<session-uuid>
 ```
+
+If `session` is missing or invalid UUID, the server rejects the connection.
 
 ## WebSocket Message Types
 
@@ -256,7 +245,7 @@ All WebSocket messages are JSON.
 Contains initial state:
 
 - `book`: top bids/asks
-- `candles`: recent candles (up to 300)
+- `candles`: recent candles (up to 7200)
 - `portfolio`: human portfolio snapshot
 - `bot_portfolios`: latest bot portfolio snapshots (`market_maker`, `alpha_bot`)
 - `stats`: current session stats (same shape as a `stats` message; prevents 0-flash on reconnect)
@@ -312,11 +301,11 @@ Emitted for both taker fills (immediate) and maker fills (when a resting human o
 
 ### 6. `portfolio` (every second + after human fills)
 
-Broadcast for all three participants (`human`, `market_maker`, `alpha_bot`). Route by `user_id`.
+Bot portfolios (`market_maker`, `alpha_bot`) are broadcast globally. Human portfolio updates are routed to the owning session. Frontend routing is based on `user_id`.
 
 Includes:
 
-- `user_id` — `"human"`, `"market_maker"`, or `"alpha_bot"`
+- `user_id` — session UUID for humans, or `"market_maker"` / `"alpha_bot"` for bots
 - `cash`
 - `holdings` — positive for long positions, negative for short positions, zero when flat
 - `avg_entry`
@@ -343,9 +332,9 @@ These backend variables are consumed by `cmd/server/main.go`:
 | `GBM_SIGMA`               | `0.015` | GBM volatility                                 |
 | `GBM_TICK_MS`             | `10`    | Generator tick interval in milliseconds        |
 | `GBM_TARGET_MSGS_PER_SEC` | `200`   | Total synthetic message budget per second      |
-| `GBM_CANCEL_SHARE`        | `0.10`  | Share of synthetic flow used for cancels       |
+| `GBM_CANCEL_SHARE`        | `0.20`  | Share of synthetic flow used for cancels       |
 | `GBM_MARKET_ORDER_SHARE`  | `0.05`  | Share of synthetic flow used for market orders |
-| `GBM_MAX_RESTING`         | `600`   | Cap for tracked synthetic resting IDs          |
+| `GBM_MAX_RESTING`         | `150`   | Cap for tracked synthetic resting IDs          |
 
 The repository root `.env.example` already includes these values.
 
@@ -374,40 +363,20 @@ Current test files in this folder cover:
 - GBM generator behaviors (target msg rate, cancel/market flow presence)
 - alpha signal behaviors (trend/momentum triggers and guard conditions)
 
-## Docker Notes (Beginner-Friendly)
+## Deployment Notes
 
 `backend/Dockerfile` is multi-stage:
 
 1. Build stage uses `golang:1.25-alpine`
 2. Final runtime stage uses `gcr.io/distroless/static-debian12:nonroot`
 
-Why this is good practice:
+Why this is used:
 
 - smaller production image
 - fewer unnecessary tools in runtime container
 - non-root runtime user by default
 
-The project-level `docker-compose.yaml` defines a `backend` service and reads environment variables from `.env`.
-
-## Troubleshooting
-
-### Port 8080 already in use
-
-Set a different host port mapping in `docker-compose.yaml` or stop the process using 8080.
-
-### Health endpoint returns `503 not ready`
-
-Wait a moment and retry. The readiness flag is set during startup before normal serving.
-
-### `POST /orders` returns 400
-
-Check request JSON against validation rules (`type`, `side`, `size`, and `price` for limit orders). For limit buy orders, also verify `price * size` does not exceed your available cash.
-
-### No WebSocket updates seen
-
-- verify backend is running
-- verify client is connected to `ws://localhost:8080/ws`
-- check browser/network console for connection errors
+The project-level `compose.yaml` defines a `backend` service and reads environment variables from `.env`.
 
 ## Implementation Notes
 

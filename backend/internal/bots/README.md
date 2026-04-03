@@ -1,6 +1,6 @@
 # Trading Bots
 
-This package implements two autonomous trading bots that run as goroutines inside the backend process. Both bots share the same matching engine as the human user via `inChan`, and each has its own isolated portfolio tracked by the `PortfolioRegistry`.
+This package documents the two autonomous trading bots used in the submission. Both run as goroutines inside the backend process, share the same matcher input channel as human session users, and maintain isolated portfolios via `PortfolioRegistry`.
 
 ## Overview
 
@@ -162,13 +162,14 @@ Returns `0` if `len(prices) < period + 1`. Returns `100` if `avgLoss == 0` (all 
 Each bot has an isolated `Portfolio` managed by `PortfolioRegistry`:
 
 ```
-registry := engine.NewRegistry("human", "market_maker", "alpha_bot")
+registry := engine.NewRegistry("market_maker", "alpha_bot")
 ```
 
 - Each portfolio starts with `$100,000`
+- Human portfolios are created lazily per WebSocket/REST session UUID (not pre-seeded as a single `"human"` user)
 - The matching engine calls `p.OnTrade(t, isBuyer)` for each relevant fill
 - `Holdings()` and `Cash()` are thread-safe getters for use in bot goroutines
-- Every second, `main.go` broadcasts all three portfolio states over WebSocket with a `user_id` field for frontend routing
+- Every second, `main.go` broadcasts bot portfolio states globally and routes human session portfolio updates to the owning session
 
 ### WebSocket portfolio message
 
@@ -190,7 +191,7 @@ registry := engine.NewRegistry("human", "market_maker", "alpha_bot")
 }
 ```
 
-The frontend routes messages where `user_id != "human"` to the bot observability UI.
+The frontend routes bot messages by explicit IDs (`market_maker`, `alpha_bot`) to the bot observability UI.
 
 ---
 
@@ -203,7 +204,7 @@ The frontend routes messages where `user_id != "human"` to the bot observability
 
 ---
 
-## Testing
+## Validation
 
 ```bash
 cd backend

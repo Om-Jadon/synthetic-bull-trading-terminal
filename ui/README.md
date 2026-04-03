@@ -1,12 +1,12 @@
-# NEXTBULL UI
+# SYNTHETIC-BULL UI
 
-Next.js 15 frontend for the NEXTBULL trading terminal. Hyperliquid-inspired layout with full micro-animation treatment.
+Submission-facing frontend documentation for the SYNTHETIC-BULL trading terminal (Next.js 16).
 
 ## Quick Start
 
 ```bash
 # From repository root (recommended)
-docker-compose up --build
+docker compose up --build
 
 # Local dev
 cd ui
@@ -16,7 +16,7 @@ npm run dev
 
 Frontend runs on `http://localhost:3000`. Expects backend on `http://localhost:8080`.
 
-## Quality Checks
+## Validation Commands
 
 ```bash
 npm run test    # Vitest unit tests
@@ -26,34 +26,38 @@ npm run build   # Next.js production build
 
 ---
 
-## Architecture
+## Implementation Summary
 
 ### State — `store/tradingStore.ts`
 
 Single Zustand store for all live market state. Key slices:
 
-| Slice              | Type                         | Description                                |
-| ------------------ | ---------------------------- | ------------------------------------------ |
-| `orderBook`        | `OrderBookMsg`               | Top 20 bids/asks                           |
-| `trades`           | `TradeMsg[]`                 | Trade tape (capped at 100)                 |
-| `stats`            | `StatsMsg`                   | Session OHLCV, VWAP, change %              |
-| `portfolio`        | `PortfolioMsg`               | Human cash, holdings, P&L                  |
-| `openOrders`       | `OrderUpdateMsg[]`           | Active human orders                        |
-| `equityHistory`    | `EquityPoint[]`              | Human equity curve (capped at 600)         |
-| `botPortfolios`    | `Map<string, PortfolioMsg>`  | `market_maker` and `alpha_bot` portfolios  |
-| `botEquityHistory` | `Map<string, EquityPoint[]>` | Per-bot equity curves (capped at 600 each) |
-| `candles`          | `CandleData[]`               | 1 s OHLCV candles                          |
+| Slice              | Type                          | Description                                 |
+| ------------------ | ----------------------------- | ------------------------------------------- |
+| `orderBook`        | `OrderBookMsg`                | Top 150 bids/asks (from backend depth feed) |
+| `trades`           | `TradeMsg[]`                  | Trade tape (capped at 100)                  |
+| `stats`            | `StatsMsg`                    | Session OHLCV, VWAP, change %               |
+| `portfolio`        | `PortfolioMsg`                | Current session cash, holdings, P&L         |
+| `openOrders`       | `Map<string, OrderUpdateMsg>` | Active open orders for current session      |
+| `equityHistory`    | `EquityPoint[]`               | Human equity curve (capped at 600)          |
+| `botPortfolios`    | `Map<string, PortfolioMsg>`   | `market_maker` and `alpha_bot` portfolios   |
+| `botEquityHistory` | `Map<string, EquityPoint[]>`  | Per-bot equity curves (capped at 600 each)  |
+| `candles`          | `CandleData[]`                | 1 s OHLCV candles (capped at 1200 in UI)    |
 
 Key actions beyond simple setters:
 
 - **`seedBotSnapshots(portfolios, histories)`** — atomically hydrates both `botPortfolios` and `botEquityHistory` from snapshot data on connect/reconnect. Normalizes timestamps and caps histories at 600 points.
 - **`setBotPortfolio(p)`** — deduplicates equity points and appends live portfolio updates.
 
-**Hot path rule:** price tickers and order book updates use DOM refs (`useRef`) and direct DOM mutation — never `setState`. Avoids React re-render on every WebSocket tick.
+Hot path note: price tickers and order book updates use DOM refs (`useRef`) and direct DOM mutation to avoid per-tick React re-rendering.
 
 ### WebSocket — `hooks/useWebSocket.ts`
 
 Single persistent connection. Reconnects automatically on close. Handles two message categories:
+
+- Session URL: `ws://.../ws?session=<uuid>`
+- Session UUID source: `localStorage['trading_session_id']` from `ui/lib/api.ts`
+- The same session UUID is sent as `X-Session-ID` in REST order requests
 
 1. **`snapshot`** (on connect) — bulk-sets all initial state, then calls `seedBotSnapshots(bot_portfolios, bot_equity_history)` so bot equity curves are immediately populated after refresh/reconnect
 2. **Live messages** — routed by `type`:
@@ -62,8 +66,8 @@ Single persistent connection. Reconnects automatically on close. Handles two mes
    - `stats` → `setStats` + DOM-ref ticker updates
    - `order_update` → `updateOrder`
    - `portfolio` — **routed by `user_id`**:
-     - `user_id === "human"` (or absent) → `setPortfolio`
-     - anything else → `setBotPortfolio` (feeds bot observability UI)
+     - `user_id === "market_maker" | "alpha_bot"` → `setBotPortfolio`
+     - all other `user_id` values (session UUIDs) → `setPortfolio`
 
 ### Types — `types/ws.ts`
 
@@ -128,14 +132,15 @@ Theme now supports two modes with a dark default:
 - Default when unset: `dark`
 - Persistence key: `nb_theme`
 - Runtime source of truth: `document.documentElement.dataset.theme`
+- Theme change event: `nb-theme-change` (used by chart hooks to re-apply options)
 
 Core semantic color meanings remain locked across both themes:
 
-| Token      | Value                            | Usage                                          |
-| ---------- | -------------------------------- | ---------------------------------------------- |
-| Bull / bid | `#26a69a`                        | Buy prices, positive P&L                       |
-| Bear / ask | `#ef5350`                        | Sell prices, negative P&L                      |
-| Brand gold | `oklch(75% 0.13 68)` ≈ `#c8972a` | NEXTBULL wordmark only — never near price data |
+| Token      | Value                            | Usage                                                |
+| ---------- | -------------------------------- | ---------------------------------------------------- |
+| Bull / bid | `#26a69a`                        | Buy prices, positive P&L                             |
+| Bear / ask | `#ef5350`                        | Sell prices, negative P&L                            |
+| Brand gold | `oklch(75% 0.13 68)` ≈ `#c8972a` | SYNTHETIC-BULL wordmark only — never near price data |
 
 Dark palette anchor values:
 
@@ -144,6 +149,12 @@ Dark palette anchor values:
 | Background | `#0e1117` | Page background       |
 | Panel      | `#1a1d29` | All panel backgrounds |
 | Border     | `#1e222d` | Panel dividers        |
+
+Light mode uses cool-tinted neutrals with semantic accent layers:
+
+- `--color-accent-ui` / `--color-accent-ui-surface` for active controls
+- `--color-info` / `--color-info-surface` for status and utility feedback
+- `.accent-chip-active` and `.hover-info` utilities for consistent component behavior
 
 Chart theming uses CSS hex bridge tokens (`--color-*-hex`) resolved by `ui/lib/chartTheme.ts` so Lightweight Charts can update in real time when theme changes.
 
