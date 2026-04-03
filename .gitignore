@@ -25,3 +25,20 @@ docs/superpowers/
 CLAUDE.md
 .agents/
 docs
+
+# Submission-private authoring docs (do not include in final submission)
+PS.md
+guideline.md
+presentation-content.md
+AGENTS.md
+GEMINI.md
+copilot-instructions.md
+*.instructions.md
+*.prompt.md
+*.agent.md
+
+# Report generation artifacts (local build outputs)
+docs/Report/*.aux
+docs/Report/*.log
+docs/Report/*.out
+docs/Report/*.toc
