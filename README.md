@@ -145,6 +145,7 @@ X-Session-ID: <session-uuid>
 ```
 backend/
   cmd/server/main.go              Entry point — wires all components together
+  cmd/loadtest/                   Concurrent HTTP + WebSocket load tester
   internal/engine/                Matching engine, order book, portfolio, candles
   internal/bots/                  Market Maker + Alpha Bot
   internal/generator/             GBM synthetic market generator
@@ -160,9 +161,8 @@ ui/
   types/ws.ts                     TypeScript types for all WebSocket messages
   README.md                       Frontend component and store documentation
 
-compose.yaml                      Launches backend + frontend together
+docker-compose.yaml               Launches backend + frontend together
 .env.example                      Environment variable template
-docs/                             Architecture report and presentation materials
 ```
 
 ---
@@ -170,10 +170,21 @@ docs/                             Architecture report and presentation materials
 ## Testing
 
 ```bash
-# Backend — matching engine, portfolio math, bot logic, GBM throughput
+# Backend unit tests
 cd backend && go test ./...
 
-# Frontend — type check + build
+# Backend benchmarks
+cd backend && go test ./internal/engine/... ./internal/hub/... ./internal/generator/... \
+  -run '^$' -bench . -benchmem -cpu=1
+
+# Load test (backend must already be running)
+cd backend && go run ./cmd/loadtest \
+  -url http://localhost:8080 -ws ws://localhost:8080/ws \
+  -concurrency 20 -ws-clients 200 -duration 10s
+
+# Frontend
+cd ui && npm test -- --run
+cd ui && npx vitest bench --run
 cd ui && npm run build
 ```
 

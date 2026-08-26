@@ -1,4 +1,4 @@
-module github.com/nextbull/trading-terminal
+module github.com/Om-Jadon/synthetic-bull-trading-terminal/backend
 
 go 1.25.8
 

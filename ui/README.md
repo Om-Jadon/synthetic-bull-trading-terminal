@@ -19,9 +19,10 @@ Frontend runs on `http://localhost:3000`. Expects backend on `http://localhost:8
 ## Validation Commands
 
 ```bash
-npm run test    # Vitest unit tests
-npm run lint    # ESLint
-npm run build   # Next.js production build
+npm run test            # Vitest unit tests
+npx vitest bench --run  # store update benches
+npm run lint
+npm run build
 ```
 
 ---

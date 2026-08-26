@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/nextbull/trading-terminal/internal/api"
-	"github.com/nextbull/trading-terminal/internal/bots"
-	"github.com/nextbull/trading-terminal/internal/engine"
-	"github.com/nextbull/trading-terminal/internal/generator"
-	"github.com/nextbull/trading-terminal/internal/hub"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/api"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/bots"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/engine"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/generator"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/hub"
 )
 
 func main() {

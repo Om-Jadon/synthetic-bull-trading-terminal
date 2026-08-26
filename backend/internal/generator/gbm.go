@@ -8,7 +8,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/nextbull/trading-terminal/internal/engine"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/engine"
 )
 
 // Config holds GBM parameters.

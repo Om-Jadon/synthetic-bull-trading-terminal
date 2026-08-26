@@ -92,6 +92,7 @@ Design note: the matcher is intentionally single-threaded for deterministic pric
 ```text
 backend/
 ├── cmd/server/main.go
+├── cmd/loadtest/main.go
 ├── internal/
 │   ├── api/handlers.go
 │   ├── bots/
@@ -118,6 +119,8 @@ backend/
 ├── go.mod
 └── go.sum
 ```
+
+Benchmarks live next to the packages they exercise (`*_bench_test.go`).
 
 ## API Reference
 
@@ -362,6 +365,28 @@ Current test files in this folder cover:
 - API handlers (cash validation, short selling)
 - GBM generator behaviors (target msg rate, cancel/market flow presence)
 - alpha signal behaviors (trend/momentum triggers and guard conditions)
+
+### Benchmarks
+
+```bash
+go test ./internal/engine/... ./internal/hub/... ./internal/generator/... \
+  -run '^$' -bench . -benchmem -cpu=1
+```
+
+### Load test
+
+With the backend running (`docker compose up --build` from the repo root works):
+
+```bash
+go run ./cmd/loadtest \
+  -url http://localhost:8080 \
+  -ws ws://localhost:8080/ws \
+  -concurrency 20 \
+  -ws-clients 200 \
+  -duration 10s
+```
+
+Flags: `-skip-http`, `-skip-ws` to run one side only.
 
 ## Deployment Notes
 

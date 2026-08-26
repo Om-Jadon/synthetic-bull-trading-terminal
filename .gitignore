@@ -16,6 +16,7 @@ node_modules/
 
 # Backend build/test artifacts
 backend/server
+backend/loadtest
 backend/*.test
 backend/coverage.out
 
@@ -36,6 +37,7 @@ copilot-instructions.md
 *.instructions.md
 *.prompt.md
 *.agent.md
+backend/backend-guide.md
 
 # Report generation artifacts (local build outputs)
 docs/Report/*.aux

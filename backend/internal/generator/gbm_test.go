@@ -3,7 +3,7 @@ package generator
 import (
 	"testing"
 
-	"github.com/nextbull/trading-terminal/internal/engine"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/engine"
 )
 
 func TestTick_RespectsTargetMessageRate(t *testing.T) {

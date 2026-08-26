@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/nextbull/trading-terminal/internal/engine"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/engine"
 )
 
 const (

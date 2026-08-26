@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/nextbull/trading-terminal/internal/engine"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/engine"
 )
 
 const testSessionID = "12345678-1234-1234-1234-123456789abc"

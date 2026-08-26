@@ -3,7 +3,7 @@ package bots
 import (
 	"testing"
 
-	"github.com/nextbull/trading-terminal/internal/engine"
+	"github.com/Om-Jadon/synthetic-bull-trading-terminal/backend/internal/engine"
 )
 
 func TestAlphaSignal_BullishCrossWithMomentumRSI_TriggersBuy(t *testing.T) {
